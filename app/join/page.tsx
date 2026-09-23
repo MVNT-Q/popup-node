@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { askNotification, subscribePush } from "@/components/alerts";
+import { subscribePush } from "@/components/alerts";
 import { BackButton } from "@/components/BackButton";
 import { InstallCard } from "@/components/InstallCard";
 import { parseImagine } from "@/lib/imagine";
@@ -43,7 +43,6 @@ export default function JoinPage() {
   async function submit() {
     setError("");
     setPending(true);
-    const perm = askNotification();
     try {
       const response = await fetch("/api/session", {
         method: "POST",
@@ -56,11 +55,8 @@ export default function JoinPage() {
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(data.error || "저장 실패");
-      if (perm && (await perm) === "granted") {
-        await Promise.race([
-          subscribePush().catch(() => undefined),
-          new Promise((resolve) => setTimeout(resolve, 1200)),
-        ]);
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        await subscribePush();
       }
       router.push("/map");
       router.refresh();
@@ -139,11 +135,11 @@ export default function JoinPage() {
       <InstallCard />
 
       <button className="btn" type="button" disabled={pending} onClick={submit} style={{ marginTop: 8 }}>
-        {pending ? "…" : "알림 허용하고 들어가기"}
+        {pending ? "…" : editing ? "저장" : "들어가기"}
       </button>
       <p className="hint" style={{ marginTop: 10 }}>
-        알림을 거절해도 들어간다. 새 말은 상단 종에 쌓인다. 아이폰은 홈 화면 아이콘으로 다시 열어야 탭을 닫아도
-        알림이 온다.
+        알림은 위 순서대로입니다. 홈 화면에 넣은 뒤에 이 폰으로 연결됩니다. 거절해도 들어가고, 새 말은 상단 종에
+        쌓입니다.
       </p>
       {error ? <p className="error">{error}</p> : null}
     </main>

@@ -37,10 +37,7 @@ export default function GatePage() {
       const data = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(data.error || "입장 실패");
       if (perm && (await perm) === "granted") {
-        await Promise.race([
-          subscribePush().catch(() => undefined),
-          new Promise((resolve) => setTimeout(resolve, 1200)),
-        ]);
+        await subscribePush();
       }
       router.push("/map");
       router.refresh();

@@ -12,6 +12,7 @@ self.addEventListener("push", (event) => {
       if (focused) return;
       await self.registration.showNotification(data.title, {
         body: data.body,
+        icon: "/icon-192.png",
         data: { url: data.url },
         tag: data.url,
       });
@@ -22,5 +23,17 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/inbox";
-  event.waitUntil(self.clients.openWindow(url));
+  event.waitUntil(
+    (async () => {
+      const opened = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of opened) {
+        if ("focus" in client) {
+          await client.focus();
+          if ("navigate" in client) await client.navigate(url);
+          return;
+        }
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
 });

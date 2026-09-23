@@ -283,6 +283,7 @@ p { margin: 0; }
 }
 
 .install.compact { margin: 10px 0 0; }
+.install.banner { margin: 8px 16px 0; }
 
 .install .row { margin-top: 10px; }
 

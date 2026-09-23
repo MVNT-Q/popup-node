@@ -43,6 +43,7 @@ export function Notifier() {
               const note = new Notification(`NODE ${item.fromCode}`, {
                 body: item.body,
                 tag: item.id,
+                icon: "/icon-192.png",
               });
               note.onclick = () => {
                 window.focus();
