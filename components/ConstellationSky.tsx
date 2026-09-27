@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fitCam, focusCam, zoomCam, type Cam } from "@/lib/layout";
+import { fitCam, focusBandY, focusCam, zoomCam, type Cam } from "@/lib/layout";
 
 export type SkyPoint = {
   id: string;
@@ -128,8 +128,23 @@ export function ConstellationSky({
     const star = starsRef.current.find((item) => item.id === focusId);
     if (!star) return;
     hadFocus.current = true;
-    setCamEase(true);
-    setCam(focusCam(star, el.clientWidth, el.clientHeight));
+    const apply = () => {
+      const node = viewportRef.current;
+      const target = starsRef.current.find((item) => item.id === focusId);
+      if (!node || !target) return;
+      setCamEase(true);
+      // 제목 아래·카드/틱커 위 빈 구간 중앙 — 폰 높이 달라도 같은 느낌
+      setCam(focusCam(target, node.clientWidth, node.clientHeight, focusBandY(node)));
+    };
+    apply();
+    // 카드가 같은 프레임에 붙을 수 있어 한 번 더
+    const raf = requestAnimationFrame(apply);
+    const onResize = () => apply();
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, [focusId]);
 
   useEffect(() => {

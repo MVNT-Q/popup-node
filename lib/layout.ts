@@ -68,12 +68,32 @@ export function zoomCam(cam: Cam, px: number, py: number, factor: number): Cam {
   return { s, x: px - wx * s, y: py - wy * s };
 }
 
-/** 선택한 별을 제목 아래·정보칸 위 하늘에 두고 살짝 줌 — 하단 고정 카드와 안 겹치게 */
-export function focusCam(star: Point, width: number, height: number): Cam {
+/**
+ * 선택한 별을 focusY(하늘 뷰포트 로컬 Y)에 두고 살짝 줌.
+ * focusY는 제목 아래~카드(없으면 틱커) 위 빈 구간의 세로 중앙 — 고정 % 금지.
+ */
+export function focusCam(star: Point, width: number, height: number, focusY?: number): Cam {
   if (width < 10 || height < 10) return { x: 0, y: 0, s: 1 };
   const s = Math.min(2.35, Math.max(1.35, Math.min(width, height) / 280));
   const fx = width * 0.5;
-  // 세로 가운데(0.5)보다 위. 제목 아래·카드 위 — 하늘 상단 ~11%
-  const fy = height * 0.11;
+  const fy =
+    focusY != null && Number.isFinite(focusY)
+      ? Math.min(height - 8, Math.max(8, focusY))
+      : height * 0.5;
   return { s, x: fx - star.x * s, y: fy - star.y * s };
+}
+
+/** 제목 블록 하단과 정보 카드(없으면 틱커) 상단 사이 중앙 → 하늘 로컬 Y */
+export function focusBandY(skyEl: HTMLElement): number {
+  const sky = skyEl.getBoundingClientRect();
+  const page = skyEl.closest(".cyp-sky-page");
+  const head = page?.querySelector(".cyp-sky-head");
+  const sheet = page?.querySelector(".cyp-sheet") ?? document.querySelector(".cyp-sheet");
+  const ticker = page?.querySelector(".cyp-ticker");
+  const topBound = head ? head.getBoundingClientRect().bottom : sky.top;
+  let bottomBound = sky.bottom;
+  if (sheet) bottomBound = sheet.getBoundingClientRect().top;
+  else if (ticker) bottomBound = ticker.getBoundingClientRect().top;
+  if (bottomBound <= topBound + 16) return sky.height * 0.5;
+  return (topBound + bottomBound) / 2 - sky.top;
 }
