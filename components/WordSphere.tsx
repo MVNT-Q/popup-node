@@ -22,16 +22,17 @@ function frac(seed: number) {
 
 function basePlace(words: SphereWord[]): Base[] {
   const n = words.length || 1;
+  // 피보나치 구면: y(+위)를 [-1,1] 균등 → 투영에서 top=50-y*R 로 위·아래 대칭
   return words.map((word, index) => {
-    // 균일 피보나치가 아니라 성긴 성단처럼 흔든다
     const r1 = frac(index + 1.7);
     const r2 = frac(index * 3.1 + 0.4);
     const r3 = frac(index * 7.3 + 2.2);
-    const golden = index * 2.399963 + r1 * 1.1;
-    const yRaw = 1 - (index / Math.max(n - 1, 1)) * 2;
-    const y = Math.max(-1, Math.min(1, yRaw * (0.78 + r2 * 0.45) + (r3 - 0.5) * 0.22));
-    const shell = 0.58 + r1 * 0.52;
-    const radius = Math.sqrt(Math.max(0, 1 - y * y)) * shell;
+    const i = index + 0.5;
+    const y0 = 1 - (i / n) * 2;
+    // 살짝만 흔들어 성긴 성단감. |y|를 한쪽으로 몰지 않음
+    const y = Math.max(-0.98, Math.min(0.98, y0 + (r3 - 0.5) * 0.08));
+    const radius = Math.sqrt(Math.max(0, 1 - y * y));
+    const golden = i * 2.399963229728653 + (r1 - 0.5) * 0.35;
     const x = Math.cos(golden) * radius;
     const z = Math.sin(golden) * radius;
     // 무게·난수로 점 크기·발광을 크게 갈라 둔다 (목업 계층)
@@ -128,7 +129,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
 
-      // x·y 같은 배율 → 납작 타원이 아니라 원에 가깝게. 목업처럼 더 크게.
+      // x·y 같은 배율. 수학 y(+위) → CSS top은 아래로 커지므로 부호 반전
       const R = 47;
       const projWords = base.map((p) => {
         const x = p.x * cos + p.z * sin;
@@ -137,7 +138,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
         const depth = (z + 1) / 2;
         return {
           left: 50 + x * R,
-          top: 50 + y * R,
+          top: 50 - y * R,
           size: p.sizeBase + depth * (p.example ? 2.5 : 6),
           opacity: Math.min(1, (p.example ? 0.22 + depth * 0.28 : 0.42 + depth * 0.58) * p.glow),
           zIndex: Math.round(depth * 30) + 2,
@@ -153,7 +154,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
         const depth = (z + 1) / 2;
         return {
           left: 50 + x * R,
-          top: 50 + y * R,
+          top: 50 - y * R,
           size: p.size * (0.7 + depth * 0.6),
           opacity: Math.min(0.95, (0.25 + depth * 0.65) * p.glow),
           zIndex: Math.round(depth * 20),

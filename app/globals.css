@@ -1233,19 +1233,18 @@ p { margin: 0; }
 .cyp-line.weak { stroke-opacity: 0.42; }
 .cyp-line.dim { stroke-opacity: 0.2; }
 
+/* left/top = 별 중심. 라벨은 옆에 absolute — flex 박스가 선 앵커를 밀지 않음 */
 .cyp-star {
   position: absolute;
   transform: translate(-50%, -50%);
   border: 0;
   background: transparent;
   color: #e9fff3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 12px 10px 6px;
-  min-width: 52px;
-  min-height: 52px;
+  display: block;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
   z-index: 3;
   cursor: pointer;
   pointer-events: auto;
@@ -1253,7 +1252,10 @@ p { margin: 0; }
 
 /* 흰 코어 + 넓게 번지는 초록 bloom — 중·강은 목업처럼 한눈에 */
 .cyp-star .dot {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -1264,6 +1266,7 @@ p { margin: 0; }
     0 0 36px 14px rgba(28, 255, 138, 0.55),
     0 0 72px 28px rgba(28, 255, 138, 0.24),
     0 0 110px 42px rgba(28, 255, 138, 0.1);
+  pointer-events: none;
 }
 
 .cyp-star .dot .cross {
@@ -1365,20 +1368,30 @@ p { margin: 0; }
 }
 
 .cyp-star .num {
+  position: absolute;
+  left: calc(50% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.08em;
   color: #e9fff3;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .cyp-star .call {
+  position: absolute;
+  left: calc(50% + 14px);
+  top: calc(50% + 11px);
   font-size: 10px;
   color: #8d929c;
   max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .cyp-star.on .dot {

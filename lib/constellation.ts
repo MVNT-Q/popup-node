@@ -14,7 +14,7 @@ function dist(a: Point, b: Point) {
   return Math.hypot(a.x - b.x, a.y - b.y) || 0.001;
 }
 
-function clamp(point: Point, pad = 40) {
+function clamp(point: Point, pad = 60) {
   point.x = Math.min(1000 - pad, Math.max(pad, point.x));
   point.y = Math.min(1000 - pad, Math.max(pad, point.y));
 }
@@ -100,7 +100,17 @@ function componentCenter(ids: string[], points: Map<string, Point>): Point {
   return { x: x / n, y: y / n };
 }
 
-// 그로브: 줄로 이어진 조각끼리 당기고, 조각끼리는 밀어 낸다. 혼자인 별은 틈에.
+function componentRadius(ids: string[], points: Map<string, Point>, center: Point): number {
+  let maxR = 28;
+  for (const id of ids) {
+    const p = points.get(id)!;
+    maxR = Math.max(maxR, dist(p, center));
+  }
+  return maxR + 18;
+}
+
+// 그로브: 조각 안은 짧은 줄·별 최소거리. 조각끼리는 (반지름+여백)만 밀고 화면 끝까지 안 흩음.
+// 고독별은 조각 사이 빈칸. 질문 토글은 호출부가 자리를 다시 안 잡음.
 export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point> {
   const points = new Map<string, Point>();
   if (!nodes.length) return points;
@@ -111,15 +121,29 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
   const multi = comps.filter((c) => c.length >= 2);
   const solo = comps.filter((c) => c.length === 1).map((c) => c[0]);
 
+  const STAR_MIN = 46;
+  const EDGE_IDEAL = 54;
+  const PIECE_GAP = 40;
+  const PACK_R = 210;
+
   const centers: Point[] = [];
+  const radii: number[] = multi.map((comp) => (comp.length === 2 ? 48 : 32 + comp.length * 7));
   const count = Math.max(multi.length, 1);
-  // 조각이 여러 개면 멀리 떨어뜨린다. 하나면 살짝 중심에서 비킨다.
-  const ringR = multi.length <= 1 ? 0 : Math.min(340, 180 + multi.length * 36);
-  multi.forEach((comp, index) => {
-    const angle = (index / count) * Math.PI * 2 - Math.PI / 2 + (multi.length === 1 ? 0 : 0.15);
+
+  // 초기 고리: 조각 반지름 합으로 둘레 잡고, 화면 끝까지 안 나가게 상한
+  let ringR = 0;
+  if (multi.length > 1) {
+    const step =
+      radii.reduce((sum, r, i) => sum + r + radii[(i + 1) % radii.length]! + PIECE_GAP, 0) /
+      multi.length;
+    ringR = Math.min(PACK_R, Math.max(64, (step * multi.length) / (Math.PI * 2)));
+  }
+
+  multi.forEach((_, index) => {
+    const angle = (index / count) * Math.PI * 2 - Math.PI / 2 + (multi.length === 1 ? 0 : 0.12);
     centers.push({
       x: 500 + Math.cos(angle) * ringR,
-      y: 480 + Math.sin(angle) * ringR * 0.92,
+      y: 500 + Math.sin(angle) * ringR * 0.94,
     });
   });
 
@@ -129,7 +153,7 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
     const ordered = [...comp].sort((a, b) => (byId.get(a)?.code ?? 0) - (byId.get(b)?.code ?? 0));
     ordered.forEach((id, index) => {
       const angle = (index / ordered.length) * Math.PI * 2 + hashAngle(id) * 0.12;
-      const radius = ordered.length === 2 ? 58 : 36 + ordered.length * 10;
+      const radius = ordered.length === 2 ? 42 : 28 + ordered.length * 7;
       local.set(id, {
         x: center.x + Math.cos(angle) * radius,
         y: center.y + Math.sin(angle) * radius,
@@ -137,13 +161,12 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
     });
 
     const localEdges = edges.filter((edge) => comp.includes(edge.a) && comp.includes(edge.b));
-    for (let iter = 0; iter < 56; iter += 1) {
+    for (let iter = 0; iter < 64; iter += 1) {
       for (const edge of localEdges) {
         const a = local.get(edge.a)!;
         const b = local.get(edge.b)!;
         const d = dist(a, b);
-        const ideal = 78;
-        const pull = (d - ideal) * 0.1;
+        const pull = (d - EDGE_IDEAL) * 0.14;
         const ux = (b.x - a.x) / d;
         const uy = (b.y - a.y) / d;
         a.x += ux * pull;
@@ -156,8 +179,8 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
           const a = local.get(ordered[i])!;
           const b = local.get(ordered[j])!;
           const d = dist(a, b);
-          if (d >= 56) continue;
-          const push = (56 - d) * 0.16;
+          if (d >= STAR_MIN) continue;
+          const push = (STAR_MIN - d) * 0.2;
           const ux = (b.x - a.x) / d;
           const uy = (b.y - a.y) / d;
           a.x -= ux * push;
@@ -168,7 +191,6 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
       }
     }
 
-    // 조각 중심을 다시 centers에 맞춤.
     const mid = componentCenter(ordered, local);
     const dx = center.x - mid.x;
     const dy = center.y - mid.y;
@@ -177,28 +199,29 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
       point.y += dy;
       points.set(id, point);
     }
+    radii[cIndex] = componentRadius(ordered, local, center);
   });
 
-  // 조각 중심끼리 강하게 밀어 떨어뜨린다.
-  const minComp = 260;
-  for (let iter = 0; iter < 36; iter += 1) {
+  // 조각끼리: 반지름+여백만 밀고, 중심에서 멀면 다시 모아 화면 끝까지 안 흩음
+  for (let iter = 0; iter < 48; iter += 1) {
     for (let i = 0; i < multi.length; i += 1) {
       for (let j = i + 1; j < multi.length; j += 1) {
-        const ca = centers[i];
-        const cb = centers[j];
+        const ca = centers[i]!;
+        const cb = centers[j]!;
+        const need = radii[i]! + radii[j]! + PIECE_GAP;
         const d = dist(ca, cb);
-        if (d >= minComp) continue;
-        const push = (minComp - d) * 0.22;
+        if (d >= need) continue;
+        const push = (need - d) * 0.2;
         const ux = (cb.x - ca.x) / d;
         const uy = (cb.y - ca.y) / d;
         const dx = ux * push;
         const dy = uy * push;
-        for (const id of multi[i]) {
+        for (const id of multi[i]!) {
           const p = points.get(id)!;
           p.x -= dx;
           p.y -= dy;
         }
-        for (const id of multi[j]) {
+        for (const id of multi[j]!) {
           const p = points.get(id)!;
           p.x += dx;
           p.y += dy;
@@ -209,29 +232,60 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
         cb.y += dy;
       }
     }
+    for (let i = 0; i < multi.length; i += 1) {
+      const ca = centers[i]!;
+      const fromMid = dist(ca, { x: 500, y: 500 });
+      const cap = PACK_R + radii[i]! * 0.35;
+      if (fromMid <= cap) continue;
+      const pull = (fromMid - cap) * 0.12;
+      const ux = (500 - ca.x) / fromMid;
+      const uy = (500 - ca.y) / fromMid;
+      const dx = ux * pull;
+      const dy = uy * pull;
+      for (const id of multi[i]!) {
+        const p = points.get(id)!;
+        p.x += dx;
+        p.y += dy;
+      }
+      ca.x += dx;
+      ca.y += dy;
+    }
   }
 
-  // 혼자인 별: 무리 사이 바깥 고리에 둔다.
+  // 고독별: 조각 사이·안쪽 빈칸. 바깥 큰 고리로 안 밀어냄
   const occupied = [...points.values()];
+  const soloMin = 52;
   solo
     .sort((a, b) => (byId.get(a)?.code ?? 0) - (byId.get(b)?.code ?? 0))
     .forEach((id, index) => {
-      const angle =
-        (index / Math.max(solo.length, 1)) * Math.PI * 2 + 0.55 + hashAngle(id) * 0.04;
-      let radius = multi.length ? 360 + (index % 4) * 28 : 220 + (index % 5) * 24;
-      let x = 500 + Math.cos(angle) * radius;
-      let y = 500 + Math.sin(angle) * radius;
-      for (let tryN = 0; tryN < 8; tryN += 1) {
+      let best: Point | null = null;
+      let bestScore = -Infinity;
+      const tries = 36;
+      for (let tryN = 0; tryN < tries; tryN += 1) {
+        const angle =
+          (index / Math.max(solo.length, 1)) * Math.PI * 2 +
+          tryN * 0.47 +
+          hashAngle(id) * 0.08;
+        const band = multi.length ? 90 + (tryN % 5) * 28 + (index % 3) * 12 : 120 + (tryN % 6) * 22;
+        const x = 500 + Math.cos(angle) * band;
+        const y = 500 + Math.sin(angle) * band * 0.96;
         let closest = Infinity;
         for (const point of occupied) {
           closest = Math.min(closest, Math.hypot(point.x - x, point.y - y));
         }
-        if (closest >= 96) break;
-        radius += 28;
-        x = 500 + Math.cos(angle + tryN * 0.35) * radius;
-        y = 500 + Math.sin(angle + tryN * 0.35) * radius;
+        if (closest < soloMin) continue;
+        // 빈칸에 가깝고, 화면 가장자리보다 안쪽을 선호
+        const edgeDist = Math.min(x, y, 1000 - x, 1000 - y);
+        const score = Math.min(closest, 140) + edgeDist * 0.35 - Math.hypot(x - 500, y - 500) * 0.08;
+        if (score > bestScore) {
+          bestScore = score;
+          best = { x, y };
+        }
       }
-      const point = { x, y };
+      const point = best ?? {
+        x: 500 + Math.cos(hashAngle(id)) * 140,
+        y: 500 + Math.sin(hashAngle(id)) * 140,
+      };
       clamp(point);
       points.set(id, point);
       occupied.push(point);
