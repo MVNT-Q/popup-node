@@ -1,3 +1,4 @@
+import { SLOT_TARGETS } from "./prompts";
 import type { Band, Slot } from "./types";
 
 export type HitLite = {
@@ -30,6 +31,15 @@ function slotAnswer(slots: Slot[], index: number) {
   return slots[index]?.answer?.trim() ?? "";
 }
 
+/** hit.theirIndex가 그 질문의 SLOT_TARGETS 안일 때만 유효 */
+function slotHit(hits: HitLite[], questionIndex: number): HitLite | undefined {
+  const hit = hits.find((item) => item.questionIndex === questionIndex);
+  if (!hit) return undefined;
+  const allowed = SLOT_TARGETS[questionIndex] ?? [];
+  if (!allowed.includes(hit.theirIndex)) return undefined;
+  return hit;
+}
+
 /** 원문 언어 추정 — 이미 목표 언어면 번역 호출 생략 */
 export function guessTextLang(text: string): SheetLang | "mixed" | "empty" {
   const t = text.trim();
@@ -59,77 +69,51 @@ export function sheetChrome(lang: SheetLang) {
   };
 }
 
-// 퍼센트 없이 세 줄. API 번역 없이 손으로 쓴 en/ko 쌍만 토글.
-export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): RelationBlock[] {
-  const byQ = new Map(hits.map((hit) => [hit.questionIndex, hit]));
+// 퍼센트 없이 세 줄. 라벨은 손글 en/ko. 인용은 그 슬롯 짝만.
+export function relationBlocks(_meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): RelationBlock[] {
+  const seek = slotHit(hits, 0);
+  const offer = slotHit(hits, 1);
+  const imagine = slotHit(hits, 2);
 
-  const seek = byQ.get(0);
-  const offer = byQ.get(1);
-  const imagine = byQ.get(2);
+  // SEEK 행: 상대 OFFER(또는 허용된 SEEK). IMAGINE 금지. 겹침 없으면 빈 줄.
+  const theyHelpQuote = seek
+    ? tidy(slotAnswer(theirSlots, seek.theirIndex) || seek.answer || "")
+    : "";
 
-  const theyOffer = tidy(
-    seek
-      ? slotAnswer(theirSlots, seek.theirIndex) || seek.answer || slotAnswer(theirSlots, 1)
-      : slotAnswer(theirSlots, 1),
-  );
-  const mySeek = tidy(slotAnswer(meSlots, 0));
-  const myOffer = tidy(slotAnswer(meSlots, 1));
-  const theirSeek = tidy(
-    offer
-      ? slotAnswer(theirSlots, offer.theirIndex) || offer.answer || slotAnswer(theirSlots, 0)
-      : slotAnswer(theirSlots, 0),
-  );
-  const myImagine = tidy(slotAnswer(meSlots, 2));
-  const theirImagine = tidy(
-    imagine
-      ? slotAnswer(theirSlots, imagine.theirIndex) || imagine.answer || slotAnswer(theirSlots, 2)
-      : slotAnswer(theirSlots, 2),
-  );
+  // OFFER 행: 상대 SEEK(또는 허용된 OFFER). IMAGINE 금지.
+  const youHelpQuote = offer
+    ? tidy(slotAnswer(theirSlots, offer.theirIndex) || offer.answer || "")
+    : "";
 
-  const theyHelpQuote =
-    seek && theyOffer
-      ? mySeek && mySeek !== theyOffer
-        ? `${theyOffer} · ${mySeek}`
-        : theyOffer
-      : theyOffer;
-
-  const youHelpQuote =
-    offer && myOffer
-      ? theirSeek && theirSeek !== myOffer
-        ? `${myOffer} · ${theirSeek}`
-        : myOffer
-      : myOffer;
-
-  const sharedQuote = imagine
-    ? myImagine && theirImagine && myImagine !== theirImagine
-      ? `${myImagine} · ${theirImagine}`
-      : myImagine || theirImagine
+  // IMAGINE 행: 미래상 칸(2)만. SEEK/OFFER 문장 끌어오지 않음.
+  const imagineQuote = imagine
+    ? tidy(slotAnswer(theirSlots, 2) || (imagine.theirIndex === 2 ? imagine.answer || "" : ""))
     : "";
 
   return [
     {
       key: "theyHelp",
-      en: seek && theyOffer ? "They can give what you are looking for" : "No overlap on what you seek",
-      ko: seek && theyOffer ? "내가 찾는 걸 이 사람이 갖고 있어" : "내가 찾는 걸과는 아직 안 겹쳐",
+      en: seek && theyHelpQuote ? "They can give what you are looking for" : "No overlap on what you seek",
+      ko: seek && theyHelpQuote ? "내가 찾는 걸 이 사람이 갖고 있어" : "내가 찾는 걸과는 아직 안 겹쳐",
       hintEn: "their offer · your seek",
       hintKo: "상대 제안 · 내가 찾는 것",
       quote: theyHelpQuote,
     },
     {
       key: "youHelp",
-      en: offer && myOffer ? "You can give what they are looking for" : "No overlap on what you offer",
-      ko: offer && myOffer ? "이 사람이 찾는 걸 내가 줄 수 있어" : "내가 줄 수 있는 걸과는 아직 안 겹쳐",
+      en: offer && youHelpQuote ? "You can give what they are looking for" : "No overlap on what you offer",
+      ko: offer && youHelpQuote ? "이 사람이 찾는 걸 내가 줄 수 있어" : "내가 줄 수 있는 걸과는 아직 안 겹쳐",
       hintEn: "your offer · their seek",
       hintKo: "내가 줄 수 있는 것 · 상대가 찾는 것",
       quote: youHelpQuote,
     },
     {
       key: "shared",
-      en: imagine && sharedQuote ? "Your imaginations meet" : "Imaginations do not meet yet",
-      ko: imagine && sharedQuote ? "상상하는 게 겹쳐" : "상상은 아직 안 겹쳐",
+      en: imagine && imagineQuote ? "Your imaginations meet" : "Imaginations do not meet yet",
+      ko: imagine && imagineQuote ? "상상하는 게 겹쳐" : "상상은 아직 안 겹쳐",
       hintEn: "shared imagining",
       hintKo: "겹치는 상상",
-      quote: sharedQuote,
+      quote: imagineQuote,
     },
   ];
 }

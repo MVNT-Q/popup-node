@@ -85,18 +85,19 @@ export function scoreText(question: string, answer: string): number {
   return Math.min(1, Math.max(themeScore(question, answer), softScore(question, answer), lexBoost));
 }
 
-// 선호 칸(SEEK↔OFFER, IMAGINE끼리)이 0.02 안이면 그 칸을 고른다. 더 잘 맞는 다른 칸이 있으면 그쪽으로 넘어간다.
-export function pickIndex(scores: number[], preferred: readonly number[], bias = 0.02): number {
-  const prefer = new Set(preferred);
+// SLOT_TARGETS 칸만 본다. SEEK/OFFER가 IMAGINE 문장을 가져가지 않게.
+// preferred가 비면 전체에서 최고점. 동점이면 목록 앞 칸(SEEK→OFFER 우선).
+export function pickIndex(scores: number[], preferred: readonly number[], _bias = 0.02): number {
+  const pool = preferred.length ? [...preferred] : scores.map((_, index) => index);
   let best = -1;
-  let boosted = -Infinity;
-  scores.forEach((score, index) => {
-    const next = score + (prefer.has(index) ? bias : 0);
-    if (next > boosted) {
-      boosted = next;
+  let top = -Infinity;
+  for (const index of pool) {
+    const score = scores[index] ?? 0;
+    if (score > top) {
+      top = score;
       best = index;
     }
-  });
+  }
   return best;
 }
 

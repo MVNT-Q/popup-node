@@ -1616,16 +1616,16 @@ p { margin: 0; }
   cursor: pointer;
 }
 
-/* 작은 정보 카드. 하단 절반 시트 금지. 모드바(z80)보다 아래. 노드마다 좌우 이동 금지 */
+/* 작은 정보 카드. 하단 절반 시트 금지. 모드바(z80)보다 아래. 높이 고정·본문 스크롤 */
 .cyp-sheet {
   position: fixed;
   z-index: 40;
-  width: min(320px, calc(100vw - 24px));
-  max-height: min(52dvh, 420px);
+  width: min(300px, calc(100vw - 24px));
+  max-height: min(36dvh, 280px);
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 10px 12px 14px;
+  padding: 10px 12px 12px;
   border-radius: 14px;
   border: 1px solid rgba(28, 255, 138, 0.35);
   background: rgba(2, 6, 4, 0.96);
@@ -1712,12 +1712,8 @@ p { margin: 0; }
   font-size: 11px;
   letter-spacing: 0.04em;
   color: #e9fff3;
-  line-height: 1.4;
+  line-height: 1.35;
   white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
 }
 
 .cyp-sheet-hint {
@@ -1763,13 +1759,10 @@ p { margin: 0; }
   margin: 4px 0 0;
   color: #a8c4b4;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.35;
   white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
   display: block;
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
+  /* 줄 clamp로 숨기지 않음 — 카드 max-height 안에서 스크롤 */
 }
 
 /* /my-node 만 — 별 키우고 내 별은 더 크게. 청록 링 유지 */

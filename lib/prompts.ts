@@ -120,8 +120,8 @@ export const IMAGINE_CARDS = [
   },
 ] as const;
 
-// 선호 짝. SEEK는 상대 OFFER, OFFER는 상대 SEEK, IMAGINE은 미래끼리.
-// 점수가 더 높으면 다른 칸과도 겹친다. 차이는 lib/match.ts pickIndex.
+// 짝만. SEEK→상대 OFFER(보조 SEEK), OFFER→상대 SEEK(보조 OFFER), IMAGINE끼리.
+// pickIndex는 이 목록 밖(특히 IMAGINE↔SEEK/OFFER)을 고르지 않는다.
 export const SLOT_TARGETS: readonly (readonly number[])[] = [
   [1, 0],
   [0, 1],
