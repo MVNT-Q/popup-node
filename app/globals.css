@@ -1893,7 +1893,7 @@ p { margin: 0; }
   will-change: transform;
   /* 오른쪽 → 왼쪽 (문장이 오른쪽에서 들어와 왼쪽으로) */
   animation: cyp-marquee-rtl 140s linear infinite;
-  font-size: 20px;
+  font-size: 16px;
   letter-spacing: 0.04em;
   color: #d0e4d8;
 }
@@ -1905,7 +1905,7 @@ p { margin: 0; }
 
 .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
   animation-duration: 170s;
-  font-size: 19px;
+  font-size: 15px;
   color: #a8c0b0;
 }
 
@@ -2107,12 +2107,15 @@ p { margin: 0; }
     --sphere: min(520px, 58dvh, 78vw);
   }
   .cyp-ticker {
-    min-height: 44px;
+    min-height: 40px;
     gap: 4px;
     margin-top: 2px;
   }
   .cyp-ticker-track {
-    font-size: 14px;
+    font-size: 12px;
+  }
+  .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
+    font-size: 11px;
   }
   .cyp-ticker-row {
     padding: 2px 0;
