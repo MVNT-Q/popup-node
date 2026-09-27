@@ -80,13 +80,15 @@ function lexical(question: string, answer: string): number {
 export function scoreText(question: string, answer: string): number {
   if (!question.trim() || !answer.trim()) return 0;
   const lex = lexical(question, answer);
-  // 거의 같은 문장은 그대로 쓴다. 그보다 얕은 글자 겹침은 약까지만 올린다.
-  const lexBoost = lex >= 0.55 ? lex : lex >= 0.28 ? Math.min(lex, THEME_BAND.mid - 0.01) : 0;
+  // SEEK/OFFER/IMAGINE 공통 막대. mid·strong을 넘기면 그대로 쓰고, 그 아래 얕은 겹침만 약으로 자른다.
+  // (예전엔 mid 직전에서 어휘를 잘라 IMAGINE 테마만 중으로 올라가는 일이 있었다.)
+  const lexBoost =
+    lex >= THEME_BAND.mid ? lex : lex >= 0.28 ? Math.min(lex, THEME_BAND.mid - 0.01) : 0;
   return Math.min(1, Math.max(themeScore(question, answer), softScore(question, answer), lexBoost));
 }
 
-// SLOT_TARGETS 칸만 본다. SEEK/OFFER가 IMAGINE 문장을 가져가지 않게.
-// preferred가 비면 전체에서 최고점. 동점이면 목록 앞 칸(SEEK→OFFER 우선).
+// SLOT_TARGETS(짝 칸)만 본다. SEEK/OFFER가 IMAGINE 문장을 가져가지 않게.
+// preferred가 비면 전체에서 최고점. 동점이면 목록 앞 칸.
 export function pickIndex(scores: number[], preferred: readonly number[], _bias = 0.02): number {
   const pool = preferred.length ? [...preferred] : scores.map((_, index) => index);
   let best = -1;

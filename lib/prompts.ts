@@ -120,13 +120,16 @@ export const IMAGINE_CARDS = [
   },
 ] as const;
 
-// 짝만. SEEK→상대 OFFER(보조 SEEK), OFFER→상대 SEEK(보조 OFFER), IMAGINE끼리.
+// 한 방향 짝. SEEK→상대 OFFER, OFFER→상대 SEEK, IMAGINE끼리.
 // pickIndex는 이 목록 밖(특히 IMAGINE↔SEEK/OFFER)을 고르지 않는다.
 export const SLOT_TARGETS: readonly (readonly number[])[] = [
-  [1, 0],
-  [0, 1],
+  [1],
+  [0],
   [2],
 ];
+
+/** 카드 인용 칸 — 히트 방향과 같은 짝의 상대 문장 */
+export const SLOT_COUNTERPART: readonly number[] = [1, 0, 2];
 
 export function emptySlots() {
   return PROMPTS.map((prompt) => ({ question: prompt.key, answer: "" }));

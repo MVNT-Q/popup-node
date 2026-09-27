@@ -1,4 +1,4 @@
-import { SLOT_TARGETS } from "./prompts";
+import { SLOT_COUNTERPART, SLOT_TARGETS } from "./prompts";
 import type { Band, Slot } from "./types";
 
 export type HitLite = {
@@ -31,12 +31,20 @@ function slotAnswer(slots: Slot[], index: number) {
   return slots[index]?.answer?.trim() ?? "";
 }
 
-/** hit.theirIndex가 그 질문의 SLOT_TARGETS 안일 때만 유효 */
-function slotHit(hits: HitLite[], questionIndex: number): HitLite | undefined {
-  const hit = hits.find((item) => item.questionIndex === questionIndex);
+export function midStrongHits(hits: HitLite[]) {
+  return hits.filter((hit) => hit.band === "mid" || hit.band === "strong");
+}
+
+/**
+ * 중·강 히트만 카드 문장에 쓴다 (줄·토글과 같은 mid 막대).
+ * 짝 칸(SLOT_TARGETS) 히트만 인정. 인용 문장은 SLOT_COUNTERPART에서 읽는다.
+ */
+function solidSlotHit(hits: HitLite[], questionIndex: number): HitLite | undefined {
+  const hit = midStrongHits(hits).find((item) => item.questionIndex === questionIndex);
   if (!hit) return undefined;
   const allowed = SLOT_TARGETS[questionIndex] ?? [];
-  if (!allowed.includes(hit.theirIndex)) return undefined;
+  // 예전 IMAGINE 유출 히트는 버린다. 짝 칸 히트만 인정.
+  if (allowed.length && !allowed.includes(hit.theirIndex)) return undefined;
   return hit;
 }
 
@@ -69,48 +77,48 @@ export function sheetChrome(lang: SheetLang) {
   };
 }
 
-// 퍼센트 없이 세 줄. 라벨은 손글 en/ko. 인용은 그 슬롯 짝만.
+// 퍼센트 없이 세 줄. 라벨은 손글 en/ko. 인용은 중·강일 때 그 슬롯 짝 문장만.
 export function relationBlocks(_meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): RelationBlock[] {
-  const seek = slotHit(hits, 0);
-  const offer = slotHit(hits, 1);
-  const imagine = slotHit(hits, 2);
+  const seek = solidSlotHit(hits, 0);
+  const offer = solidSlotHit(hits, 1);
+  const imagine = solidSlotHit(hits, 2);
 
-  // SEEK 행: 상대 OFFER(또는 허용된 SEEK). IMAGINE 금지. 겹침 없으면 빈 줄.
+  // SEEK 행: 상대 OFFER. IMAGINE 금지. mid 미만이면 빈 줄.
   const theyHelpQuote = seek
-    ? tidy(slotAnswer(theirSlots, seek.theirIndex) || seek.answer || "")
+    ? tidy(slotAnswer(theirSlots, SLOT_COUNTERPART[0]) || seek.answer || "")
     : "";
 
-  // OFFER 행: 상대 SEEK(또는 허용된 OFFER). IMAGINE 금지.
+  // OFFER 행: 상대 SEEK. IMAGINE 금지.
   const youHelpQuote = offer
-    ? tidy(slotAnswer(theirSlots, offer.theirIndex) || offer.answer || "")
+    ? tidy(slotAnswer(theirSlots, SLOT_COUNTERPART[1]) || offer.answer || "")
     : "";
 
-  // IMAGINE 행: 미래상 칸(2)만. SEEK/OFFER 문장 끌어오지 않음.
+  // IMAGINE 행: 미래상 칸만. SEEK/OFFER 문장 끌어오지 않음.
   const imagineQuote = imagine
-    ? tidy(slotAnswer(theirSlots, 2) || (imagine.theirIndex === 2 ? imagine.answer || "" : ""))
+    ? tidy(slotAnswer(theirSlots, SLOT_COUNTERPART[2]) || imagine.answer || "")
     : "";
 
   return [
     {
       key: "theyHelp",
-      en: seek && theyHelpQuote ? "They can give what you are looking for" : "No overlap on what you seek",
-      ko: seek && theyHelpQuote ? "내가 찾는 걸 이 사람이 갖고 있어" : "내가 찾는 걸과는 아직 안 겹쳐",
+      en: theyHelpQuote ? "They can give what you are looking for" : "No overlap on what you seek",
+      ko: theyHelpQuote ? "내가 찾는 걸 이 사람이 갖고 있어" : "내가 찾는 걸과는 아직 안 겹쳐",
       hintEn: "their offer · your seek",
       hintKo: "상대 제안 · 내가 찾는 것",
       quote: theyHelpQuote,
     },
     {
       key: "youHelp",
-      en: offer && youHelpQuote ? "You can give what they are looking for" : "No overlap on what you offer",
-      ko: offer && youHelpQuote ? "이 사람이 찾는 걸 내가 줄 수 있어" : "내가 줄 수 있는 걸과는 아직 안 겹쳐",
+      en: youHelpQuote ? "You can give what they are looking for" : "No overlap on what you offer",
+      ko: youHelpQuote ? "이 사람이 찾는 걸 내가 줄 수 있어" : "내가 줄 수 있는 걸과는 아직 안 겹쳐",
       hintEn: "your offer · their seek",
       hintKo: "내가 줄 수 있는 것 · 상대가 찾는 것",
       quote: youHelpQuote,
     },
     {
       key: "shared",
-      en: imagine && imagineQuote ? "Your imaginations meet" : "Imaginations do not meet yet",
-      ko: imagine && imagineQuote ? "상상하는 게 겹쳐" : "상상은 아직 안 겹쳐",
+      en: imagineQuote ? "Your imaginations meet" : "Imaginations do not meet yet",
+      ko: imagineQuote ? "상상하는 게 겹쳐" : "상상은 아직 안 겹쳐",
       hintEn: "shared imagining",
       hintKo: "겹치는 상상",
       quote: imagineQuote,
@@ -120,10 +128,6 @@ export function relationBlocks(_meSlots: Slot[], theirSlots: Slot[], hits: HitLi
 
 export function hasAnyHit(hits: HitLite[]) {
   return hits.length > 0;
-}
-
-export function midStrongHits(hits: HitLite[]) {
-  return hits.filter((hit) => hit.band === "mid" || hit.band === "strong");
 }
 
 export function brightestBand(hits: HitLite[]): Band | "dim" {
