@@ -1593,6 +1593,13 @@ p { margin: 0; }
   flex: none;
   max-width: 100%;
   max-height: 100%;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.cyp-sphere.dragging {
+  cursor: grabbing;
 }
 
 .cyp-sphere-core {
@@ -1629,6 +1636,7 @@ p { margin: 0; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  pointer-events: none;
 }
 
 .cyp-word-dot {
@@ -1644,9 +1652,9 @@ p { margin: 0; }
 }
 
 .cyp-word.example {
-  color: #4a705c;
+  color: #6a9478;
   letter-spacing: 0.16em;
-  text-shadow: 0 0 6px rgba(28, 255, 138, 0.2);
+  text-shadow: 0 0 6px rgba(28, 255, 138, 0.28);
 }
 
 /* 구 안 먼지점 — 라벨 없이 밀도만 */

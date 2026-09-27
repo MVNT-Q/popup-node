@@ -20,29 +20,49 @@ function frac(seed: number) {
   return t - Math.floor(t);
 }
 
+/** 결정적 셔플 — 무게 순이 위 반구에 몰리지 않게 위도를 다시 섞는다. */
+function shuffleWords(words: SphereWord[]): SphereWord[] {
+  const arr = [...words];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(frac(i * 19.73 + 4.2) * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j]!;
+    arr[j] = tmp!;
+  }
+  return arr;
+}
+
 function basePlace(words: SphereWord[]): Base[] {
-  const n = words.length || 1;
-  // 피보나치 구면: y(+위)를 [-1,1] 균등 → 투영에서 top=50-y*R 로 위·아래 대칭
-  return words.map((word, index) => {
+  const ordered = shuffleWords(words);
+  const n = ordered.length || 1;
+  // 피보나치 구면: y를 [-1,1] 균등 → 위·옆·아래 전면
+  return ordered.map((word, index) => {
     const r1 = frac(index + 1.7);
     const r2 = frac(index * 3.1 + 0.4);
     const r3 = frac(index * 7.3 + 2.2);
     const i = index + 0.5;
     const y0 = 1 - (i / n) * 2;
-    // 살짝만 흔들어 성긴 성단감. |y|를 한쪽으로 몰지 않음
-    const y = Math.max(-0.98, Math.min(0.98, y0 + (r3 - 0.5) * 0.08));
+    const y = Math.max(-0.98, Math.min(0.98, y0 + (r3 - 0.5) * 0.06));
     const radius = Math.sqrt(Math.max(0, 1 - y * y));
-    const golden = i * 2.399963229728653 + (r1 - 0.5) * 0.35;
+    const golden = i * 2.399963229728653 + (r1 - 0.5) * 0.28;
     const x = Math.cos(golden) * radius;
     const z = Math.sin(golden) * radius;
-    // 무게·난수로 점 크기·발광을 크게 갈라 둔다 (목업 계층)
     const hub = !word.example && word.weight >= 2;
+    const phrase = word.text.includes(" ");
     const sizeBase = word.example
-      ? 5 + r2 * 4
+      ? phrase
+        ? 6 + r2 * 4
+        : 7 + r2 * 6
       : hub
-        ? 18 + Math.min(18, word.weight * 3.5) + r1 * 8
-        : 8 + Math.min(12, word.weight * 2.4) + r3 * 8;
-    const glow = word.example ? 0.4 + r1 * 0.3 : hub ? 1.15 + r2 * 0.45 : 0.65 + r3 * 0.55;
+        ? 16 + Math.min(16, word.weight * 3.2) + r1 * 7
+        : phrase
+          ? 8 + Math.min(8, word.weight * 1.8) + r3 * 5
+          : 9 + Math.min(12, word.weight * 2.4) + r3 * 7;
+    const glow = word.example
+      ? 0.55 + r1 * 0.4
+      : hub
+        ? 1.15 + r2 * 0.45
+        : 0.7 + r3 * 0.5;
     return { ...word, x, y, z, sizeBase, glow };
   });
 }
@@ -53,10 +73,13 @@ function makeDust(count: number): Dust[] {
     const r1 = frac(i * 2.17 + 9.1);
     const r2 = frac(i * 5.33 + 1.4);
     const r3 = frac(i * 11.7 + 3.8);
-    const y = (r1 * 2 - 1) * 0.92;
-    const shell = 0.35 + r2 * 0.7;
+    // 먼지도 피보나치에 가깝게 전면 분포
+    const yi = i + 0.5;
+    const y0 = 1 - (yi / count) * 2;
+    const y = Math.max(-0.95, Math.min(0.95, y0 + (r1 - 0.5) * 0.1));
+    const shell = 0.55 + r2 * 0.45;
     const radius = Math.sqrt(Math.max(0, 1 - y * y)) * shell;
-    const ang = r3 * Math.PI * 2;
+    const ang = yi * 2.399963229728653 + r3;
     out.push({
       x: Math.cos(ang) * radius,
       y,
@@ -69,7 +92,7 @@ function makeDust(count: number): Dust[] {
 }
 
 function linkPairs(base: Base[], dust: Dust[]): Pair[] {
-  // 가까운 점끼리 많이 이어서 그물. 단어↔단어 + 먼지 일부.
+  // 가까운 점끼리만 — 먼 대각선은 줄인다
   const points = [
     ...base.map((p) => ({ x: p.x, y: p.y, z: p.z, w: p.example ? 0.4 : p.weight, word: true })),
     ...dust.map((p) => ({ x: p.x, y: p.y, z: p.z, w: 0.25, word: false })),
@@ -77,34 +100,51 @@ function linkPairs(base: Base[], dust: Dust[]): Pair[] {
   const scored: { i: number; j: number; dist: number; prefer: number }[] = [];
   for (let i = 0; i < points.length; i++) {
     for (let j = i + 1; j < points.length; j++) {
-      const a = points[i];
-      const b = points[j];
+      const a = points[i]!;
+      const b = points[j]!;
       const dx = a.x - b.x;
       const dy = a.y - b.y;
       const dz = a.z - b.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      // 가까운 이웃만 — 먼 대각선은 줄인다
-      if (dist > 0.58 || dist < 0.04) continue;
+      if (dist > 0.48 || dist < 0.04) continue;
       const prefer = a.w + b.w + (1.2 - dist) * 2.2 + (a.word && b.word ? 0.8 : 0);
       const gate = frac(i * 17 + j * 31 + 0.9);
-      if (prefer < 1.6 && gate > 0.55) continue;
-      if (prefer < 2.4 && gate > 0.78) continue;
+      if (prefer < 1.6 && gate > 0.5) continue;
+      if (prefer < 2.4 && gate > 0.72) continue;
       scored.push({ i, j, dist, prefer });
     }
   }
   scored.sort((a, b) => b.prefer - a.prefer || a.dist - b.dist);
-  const maxLinks = Math.max(48, Math.min(220, Math.floor(points.length * 2.4)));
+  const maxLinks = Math.max(56, Math.min(260, Math.floor(points.length * 1.8)));
   return scored.slice(0, maxLinks).map((row) => ({
     i: row.i,
     j: row.j,
-    a: 0.14 + (1 - row.dist / 0.58) * 0.32,
+    a: 0.14 + (1 - row.dist / 0.48) * 0.32,
     kind: row.i < base.length && row.j < base.length ? "word" : "dust",
   }));
 }
 
+function projectPoint(
+  p: { x: number; y: number; z: number },
+  yaw: number,
+  pitch: number,
+) {
+  const cy = Math.cos(yaw);
+  const sy = Math.sin(yaw);
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
+  // yaw(Y) → pitch(X)
+  const x1 = p.x * cy + p.z * sy;
+  const y1 = p.y;
+  const z1 = -p.x * sy + p.z * cy;
+  const y2 = y1 * cp - z1 * sp;
+  const z2 = y1 * sp + z1 * cp;
+  return { x: x1, y: y2, z: z2 };
+}
+
 export function WordSphere({ imagines }: { imagines: string[] }) {
   const base = useMemo(() => basePlace(sphereWords(imagines)), [imagines]);
-  const dust = useMemo(() => makeDust(Math.max(90, base.length * 3)), [base.length]);
+  const dust = useMemo(() => makeDust(Math.max(110, base.length * 2.2)), [base.length]);
   const pairs = useMemo(() => linkPairs(base, dust), [base, dust]);
   const rootRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -117,30 +157,77 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
     const wordEls = Array.from(root.querySelectorAll<HTMLElement>(".cyp-word"));
     const dustEls = Array.from(root.querySelectorAll<HTMLElement>(".cyp-dust"));
     const lineEls = Array.from(svg.querySelectorAll("line"));
-    let angle = 0;
+    let yaw = 0;
+    let pitch = 0.18;
     let raf = 0;
     let last = performance.now();
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+    let activeId: number | null = null;
+
+    const onDown = (event: PointerEvent) => {
+      dragging = true;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      activeId = event.pointerId;
+      root.classList.add("dragging");
+      try {
+        root.setPointerCapture(event.pointerId);
+      } catch {
+        /* ignore */
+      }
+      event.preventDefault();
+    };
+
+    const onMove = (event: PointerEvent) => {
+      if (!dragging || (activeId !== null && event.pointerId !== activeId)) return;
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      yaw += dx * 0.008;
+      pitch = Math.max(-1.05, Math.min(1.05, pitch + dy * 0.008));
+      event.preventDefault();
+    };
+
+    const onUp = (event: PointerEvent) => {
+      if (activeId !== null && event.pointerId !== activeId) return;
+      dragging = false;
+      activeId = null;
+      root.classList.remove("dragging");
+      try {
+        root.releasePointerCapture(event.pointerId);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    root.addEventListener("pointerdown", onDown);
+    root.addEventListener("pointermove", onMove);
+    root.addEventListener("pointerup", onUp);
+    root.addEventListener("pointercancel", onUp);
 
     const tick = (now: number) => {
       const dt = Math.min(48, now - last);
       last = now;
-      // 한 바퀴 약 90초 — 붙여넣은 그림이 아니라 구 표면이 천천히 돈다
-      angle += (dt / 1000) * ((Math.PI * 2) / 90);
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
+      // 드래그 중이 아니면 현재 각도에서 Y축 자동 회전만 이어감
+      if (!dragging) {
+        yaw += (dt / 1000) * ((Math.PI * 2) / 90);
+      }
 
-      // x·y 같은 배율. 수학 y(+위) → CSS top은 아래로 커지므로 부호 반전
-      const R = 47;
+      const R = 46;
       const projWords = base.map((p) => {
-        const x = p.x * cos + p.z * sin;
-        const z = -p.x * sin + p.z * cos;
-        const y = p.y;
-        const depth = (z + 1) / 2;
+        const r = projectPoint(p, yaw, pitch);
+        const depth = (r.z + 1) / 2;
         return {
-          left: 50 + x * R,
-          top: 50 - y * R,
-          size: p.sizeBase + depth * (p.example ? 2.5 : 6),
-          opacity: Math.min(1, (p.example ? 0.22 + depth * 0.28 : 0.42 + depth * 0.58) * p.glow),
+          left: 50 + r.x * R,
+          top: 50 - r.y * R,
+          size: p.sizeBase + depth * (p.example ? 2.2 : 5.5),
+          opacity: Math.min(
+            1,
+            (p.example ? 0.38 + depth * 0.42 : 0.45 + depth * 0.55) * p.glow,
+          ),
           zIndex: Math.round(depth * 30) + 2,
           depth,
           glow: p.glow,
@@ -148,13 +235,11 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       });
 
       const projDust = dust.map((p) => {
-        const x = p.x * cos + p.z * sin;
-        const z = -p.x * sin + p.z * cos;
-        const y = p.y;
-        const depth = (z + 1) / 2;
+        const r = projectPoint(p, yaw, pitch);
+        const depth = (r.z + 1) / 2;
         return {
-          left: 50 + x * R,
-          top: 50 - y * R,
+          left: 50 + r.x * R,
+          top: 50 - r.y * R,
           size: p.size * (0.7 + depth * 0.6),
           opacity: Math.min(0.95, (0.25 + depth * 0.65) * p.glow),
           zIndex: Math.round(depth * 20),
@@ -211,7 +296,13 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
     };
 
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      root.removeEventListener("pointerdown", onDown);
+      root.removeEventListener("pointermove", onMove);
+      root.removeEventListener("pointerup", onUp);
+      root.removeEventListener("pointercancel", onUp);
+    };
   }, [base, dust, pairs]);
 
   return (
@@ -238,9 +329,9 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       {dust.map((_, index) => (
         <i key={`dust-${index}`} className="cyp-dust" />
       ))}
-      {base.map((word) => (
+      {base.map((word, index) => (
         <span
-          key={`${word.example ? "ex" : "real"}-${word.text}`}
+          key={`${word.example ? "ex" : "real"}-${word.text}-${index}`}
           className={word.example ? "cyp-word example" : "cyp-word"}
           style={{
             left: "50%",
