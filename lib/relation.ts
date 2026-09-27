@@ -22,6 +22,11 @@ export type RelationBlock = {
 
 export type SheetLang = "en" | "ko";
 
+export type QuoteView = {
+  text: string;
+  note: string;
+};
+
 function clip(text: string, max = 96) {
   const t = text.trim().replace(/\s+/g, " ");
   if (t.length <= max) return t;
@@ -44,23 +49,69 @@ export function guessTextLang(text: string): SheetLang | "mixed" | "empty" {
 }
 
 /**
- * 선택 언어와 같은 원문만 남긴다. 번역 API 없음 — 반대 언어는 숨김.
- * `a · b`처럼 섞인 줄은 맞는 쪽만 남긴다.
+ * 선택 언어와 같으면 원문만. 다르면 원문을 남기고 짧은 안내.
+ * 번역 API 없음 — 임의 문장을 바꿔 쓰지 않음.
  */
-export function quoteForLang(quote: string, lang: SheetLang): string {
+export function quoteForLang(quote: string, lang: SheetLang): QuoteView {
   const raw = quote.trim();
-  if (!raw) return "";
+  if (!raw) return { text: "", note: "" };
   const parts = raw.split(/\s*·\s*/).map((part) => part.trim()).filter(Boolean);
   if (parts.length <= 1) {
     const guessed = guessTextLang(raw);
-    if (guessed === "empty" || guessed === lang || guessed === "mixed") return raw;
-    return "";
+    if (guessed === "empty" || guessed === lang || guessed === "mixed") {
+      return { text: raw, note: "" };
+    }
+    return {
+      text: raw,
+      note:
+        lang === "ko"
+          ? "원문은 영어입니다. 번역 키 없이 그대로 둡니다."
+          : "Original is in Korean. Shown as written — no translate key.",
+    };
   }
-  const kept = parts.filter((part) => {
+
+  const same: string[] = [];
+  const other: string[] = [];
+  for (const part of parts) {
     const guessed = guessTextLang(part);
-    return guessed === "empty" || guessed === lang || guessed === "mixed";
-  });
-  return kept.join(" · ");
+    if (guessed === "empty" || guessed === lang || guessed === "mixed") same.push(part);
+    else other.push(part);
+  }
+  if (!other.length) return { text: same.join(" · "), note: "" };
+  if (!same.length) {
+    return {
+      text: other.join(" · "),
+      note:
+        lang === "ko"
+          ? "원문은 영어입니다. 번역 키 없이 그대로 둡니다."
+          : "Original is in Korean. Shown as written — no translate key.",
+    };
+  }
+  return {
+    text: [...same, ...other].join(" · "),
+    note:
+      lang === "ko"
+        ? "일부 원문은 영어입니다. 번역 키 없이 그대로 둡니다."
+        : "Some lines are in Korean. Shown as written — no translate key.",
+  };
+}
+
+/** 카드 크롬 — en/ko 토글이 여기만 보면 됨 */
+export function sheetChrome(lang: SheetLang) {
+  if (lang === "ko") {
+    return {
+      kicker: "연결된 노드",
+      close: "닫기",
+      channel: "프라이빗 채널 열기",
+      switchTo: "Show in English" as const,
+    };
+  }
+  return {
+    kicker: "CONNECTED NODE",
+    close: "Close",
+    channel: "OPEN PRIVATE CHANNEL",
+    switchTo: "한국어로 보기" as const,
+  };
 }
 
 // 퍼센트 없이 세 줄. API 번역 없이 우리가 쓴 en/ko 쌍만 토글.

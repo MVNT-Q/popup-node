@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/ConstellationSky";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
@@ -22,7 +21,6 @@ type Star = {
 type Mode = "grove" | "collective";
 
 export default function ShowPage() {
-  const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [stars, setStars] = useState<Star[]>([]);
   const [all, setAll] = useState<AllNode[]>([]);
@@ -163,13 +161,9 @@ export default function ShowPage() {
               edges={skyEdges}
               focusId={picked}
               onPick={(id) => {
-                if (me && id === me.id) {
-                  router.push("/my-node");
-                  return;
-                }
-                // 시트 열 때 콜렉티브로 자동 전환 금지 — 그로브 유지
+                // 보이는 별은 전부 같은 정보 카드 — 내 별·약·고독 포함. 줄 유무와 무관.
                 setMode("grove");
-                setPicked(id);
+                setPicked((prev) => (prev === id ? null : id));
               }}
             />
           ) : (

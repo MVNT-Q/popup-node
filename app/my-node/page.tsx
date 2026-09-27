@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/ConstellationSky";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
-import { NotifyReveal } from "@/components/NotifyReveal";
 import { RelationSheet } from "@/components/RelationSheet";
 import { layoutMyNode } from "@/lib/constellation";
 import { midStrongHits, type HitLite } from "@/lib/relation";
@@ -95,7 +94,7 @@ export default function MyNodePage() {
         x: points.get(me.id)?.x ?? 500,
         y: points.get(me.id)?.y ?? 500,
         band: "self",
-        selected: false,
+        selected: picked === me.id,
       },
     ];
     for (const star of stars) {
@@ -130,7 +129,15 @@ export default function MyNodePage() {
       });
   }, [edgesRaw, on, me, points, skyStars]);
 
-  const pickedStar = stars.find((star) => star.id === picked) ?? null;
+  // 보이는 별은 전부 시트 — 내 별·약·고독 포함. 줄 유무와 클릭을 묶지 않음.
+  const pickedStar: Star | null = useMemo(() => {
+    if (!me || !picked) return null;
+    if (picked === me.id) {
+      return { id: me.id, code: me.code, name: me.name, band: "strong", slots: me.slots, hits: [] };
+    }
+    return stars.find((star) => star.id === picked) ?? null;
+  }, [me, picked, stars]);
+
   const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";
   const resonance = stars.filter((star) => midStrongHits(star.hits).length > 0).length;
 
@@ -145,7 +152,7 @@ export default function MyNodePage() {
   }
 
   return (
-    <main className="cyp cyp-sky-page">
+    <main className="cyp cyp-sky-page cyp-my-node">
       <GroveBackdrop />
       <header className="cyp-sky-head">
         <div>
@@ -187,11 +194,7 @@ export default function MyNodePage() {
           edges={skyEdges}
           focusId={picked}
           onPick={(id) => {
-            if (me && id === me.id) {
-              setPicked(null);
-              return;
-            }
-            setPicked(id);
+            setPicked((prev) => (prev === id ? null : id));
           }}
         />
       )}
@@ -201,7 +204,6 @@ export default function MyNodePage() {
           <span>MY SIGNALS</span>
           <small>내 시그널</small>
         </Link>
-        <NotifyReveal />
         <Link className="cyp-btn" href="/grove">
           <span>
             EXPLORE THE NODE GROVE <i aria-hidden>→</i>

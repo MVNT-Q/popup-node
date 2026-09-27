@@ -67,9 +67,10 @@ export function layoutMyNode(
   const ring = ordered.filter((node) => linked.has(node.id));
   const outer = ordered.filter((node) => !linked.has(node.id));
 
+  // 간격 타이트 — 타인 별은 보이게, 화면 밖으로 안 흩음
   ring.forEach((node, index) => {
     const angle = (index / Math.max(ring.length, 1)) * Math.PI * 2 - Math.PI / 2 + hashAngle(node.id) * 0.05;
-    const radius = 150 + (index % 3) * 28;
+    const radius = 108 + (index % 3) * 18;
     points.set(node.id, {
       x: center.x + Math.cos(angle) * radius,
       y: center.y + Math.sin(angle) * radius,
@@ -78,7 +79,7 @@ export function layoutMyNode(
 
   outer.forEach((node, index) => {
     const angle = (index / Math.max(outer.length, 1)) * Math.PI * 2 + 0.4 + hashAngle(node.id) * 0.08;
-    const radius = 260 + (index % 4) * 22;
+    const radius = 175 + (index % 4) * 14;
     points.set(node.id, {
       x: center.x + Math.cos(angle) * radius,
       y: center.y + Math.sin(angle) * radius,
