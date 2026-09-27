@@ -48,7 +48,15 @@ export function InstallCard({ place = "join" }: { place?: Place }) {
         if (!stop) setPhase("off");
         return;
       }
-      if (window.location.pathname === "/show" || window.location.pathname.startsWith("/show/")) {
+      const path = window.location.pathname;
+      if (
+        path === "/show" ||
+        path.startsWith("/show/") ||
+        path === "/devshow" ||
+        path.startsWith("/devshow/") ||
+        path === "/usershow" ||
+        path.startsWith("/usershow/")
+      ) {
         if (!stop) setPhase("off");
         return;
       }

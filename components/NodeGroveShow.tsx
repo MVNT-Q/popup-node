@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/ConstellationSky";
@@ -12,20 +13,17 @@ import { layoutGrove } from "@/lib/constellation";
 import type { HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
-type Star = {
-  id: string;
-  code: number;
-  name: string;
-  band: "dim" | "weak" | "mid" | "strong";
-  slots: Slot[];
-  hits: HitLite[];
-};
-
 type AllNode = { id: string; code: number; name: string; slots: Slot[] };
 type Me = { id: string; code: number; name: string; slots: Slot[] };
+type Star = {
+  id: string;
+  hits: HitLite[];
+  band?: "dim" | "weak" | "mid" | "strong";
+};
 type Mode = "grove" | "collective";
 
-export default function GrovePage() {
+/** 전시 패드(/devshow)와 유저 보기(/usershow) 공통. 그로브 탭은 답변 카드. */
+export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [stars, setStars] = useState<Star[]>([]);
@@ -33,60 +31,86 @@ export default function GrovePage() {
   const [edges, setEdges] = useState<{ a: string; b: string; questions: number[] }[]>([]);
   const [imagines, setImagines] = useState<string[]>([]);
   const [counts, setCounts] = useState({ nodes: 0, connections: 0 });
-  const [picked, setPicked] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("grove");
+  const [picked, setPicked] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
   const laid = useRef(false);
+  const touching = useRef(false);
+  const collectiveSince = useRef(0);
+  const pickedRef = useRef<string | null>(null);
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  pickedRef.current = picked;
 
   useEffect(() => {
     let stop = false;
     async function load() {
-      const response = await fetch("/api/sky?view=grove", { cache: "no-store" });
-      if (response.status === 401) {
-        router.replace("/");
-        return;
-      }
+      const response = await fetch("/api/sky?view=show", { cache: "no-store" });
       const data = (await response.json()) as {
         error?: string;
-        me?: Me;
+        me?: Me | null;
         stars?: Star[];
         all?: AllNode[];
         edges?: { a: string; b: string; questions: number[] }[];
         imagines?: string[];
         counts?: { nodes: number; connections: number };
       };
-      if (!response.ok) throw new Error(data.error || "그로브를 열지 못했습니다.");
+      if (!response.ok) throw new Error(data.error || "전시 화면을 열지 못했습니다.");
       if (stop) return;
-      const nextMe = data.me ?? null;
       const nextAll = data.all ?? [];
       const nextEdges = data.edges ?? [];
-      setMe(nextMe);
+      setMe(data.me ?? null);
       setStars(data.stars ?? []);
       setAll(nextAll);
       setEdges(nextEdges);
       setImagines(data.imagines ?? []);
       setCounts(data.counts ?? { nodes: 0, connections: 0 });
       setError("");
-      if (nextMe && nextAll.length && !laid.current) {
+      if (nextAll.length && !laid.current) {
         laid.current = true;
         setLayout(layoutGrove(nextAll.map((n) => ({ id: n.id, code: n.code })), nextEdges));
       }
     }
     load().catch((reason) => {
-      if (!stop) setError(reason instanceof Error ? reason.message : "그로브를 열지 못했습니다.");
+      if (!stop) setError(reason instanceof Error ? reason.message : "전시 화면을 열지 못했습니다.");
     });
+    const poll = window.setInterval(() => {
+      load().catch(() => undefined);
+    }, 30000);
     return () => {
       stop = true;
+      window.clearInterval(poll);
     };
-  }, [router]);
+  }, []);
+
+  // 전시: 12초 교차. 만지는 동안·카드 읽는 동안 멈춤. 컬렉티브에 오래 머물면 그로브로.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (touching.current) return;
+      if (pickedRef.current) return;
+      if (modeRef.current === "collective") {
+        const stayed = Date.now() - collectiveSince.current;
+        if (stayed > 24000) {
+          setMode("grove");
+          return;
+        }
+      }
+      setMode((prev) => {
+        const next = prev === "grove" ? "collective" : "grove";
+        if (next === "collective") collectiveSince.current = Date.now();
+        return next;
+      });
+    }, 12000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const skyStars: SkyPoint[] = useMemo(() => {
-    if (!me || !layout) return [];
+    if (!layout) return [];
     return all.map((node) => {
       const point = layout.get(node.id) ?? { x: 500, y: 500 };
       const against = stars.find((star) => star.id === node.id);
-      const self = node.id === me.id;
+      const self = Boolean(me && node.id === me.id);
       return {
         id: node.id,
         code: node.code,
@@ -97,7 +121,7 @@ export default function GrovePage() {
         selected: picked === node.id,
       };
     });
-  }, [me, all, layout, stars, picked]);
+  }, [all, layout, me, picked, stars]);
 
   const skyEdges: SkyEdge[] = useMemo(
     () => edges.map((edge) => ({ ...edge, bright: true })),
@@ -106,11 +130,45 @@ export default function GrovePage() {
 
   const pickedNode = all.find((node) => node.id === picked) ?? null;
   const pickedHits = stars.find((star) => star.id === picked)?.hits ?? [];
+  const emptySlots: Slot[] = [
+    { question: "SEEK", answer: "" },
+    { question: "OFFER", answer: "" },
+    { question: "IMAGINE", answer: "" },
+  ];
+
+  function goBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/");
+  }
 
   return (
-    <main className={`cyp cyp-sky-page cyp-grove mode-${mode}`}>
+    <main
+      className={`cyp cyp-sky-page cyp-grove cyp-show mode-${mode}${nav ? " cyp-usershow" : ""}`}
+      onPointerDown={() => {
+        touching.current = true;
+      }}
+      onPointerUp={() => {
+        touching.current = false;
+      }}
+      onPointerCancel={() => {
+        touching.current = false;
+      }}
+    >
       <GroveBackdrop />
       <header className="cyp-sky-head">
+        {nav ? (
+          <div className="cyp-show-nav" role="navigation" aria-label="Show navigation">
+            <button type="button" className="cyp-show-nav-btn" onClick={goBack}>
+              ← BACK
+            </button>
+            <Link href="/" className="cyp-show-nav-btn">
+              HOME
+            </Link>
+          </div>
+        ) : null}
         <SkyTitle mode={mode} nodes={counts.nodes} connections={counts.connections} />
       </header>
 
@@ -118,7 +176,7 @@ export default function GrovePage() {
 
       <div className={`cyp-grove-stage ${mode}`}>
         <div className={mode === "grove" ? "cyp-fade on" : "cyp-fade"}>
-          {layout && me ? (
+          {layout ? (
             <ConstellationSky
               stars={skyStars}
               edges={skyEdges}
@@ -142,10 +200,10 @@ export default function GrovePage() {
 
       {!pickedNode ? <ImagineTicker lines={imagines} /> : null}
 
-      {pickedNode && me ? (
+      {pickedNode ? (
         <RelationSheet
           variant="answers"
-          meSlots={me.slots}
+          meSlots={me?.slots ?? emptySlots}
           theirSlots={pickedNode.slots}
           code={pickedNode.code}
           name={pickedNode.name}
@@ -156,13 +214,19 @@ export default function GrovePage() {
       ) : null}
 
       {/* 모드바는 시트보다 아래 DOM·더 높은 z — 홈 탭처럼 항상 맨 아래 */}
-      <div className="cyp-mode-bar" role="tablist" aria-label="Grove mode">
+      <div
+        className="cyp-mode-bar"
+        role="tablist"
+        aria-label="Grove mode"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <button
           type="button"
           role="tab"
           aria-selected={mode === "grove"}
           className={mode === "grove" ? "on" : ""}
           onClick={() => {
+            touching.current = true;
             setPicked(null);
             setMode("grove");
           }}
@@ -176,7 +240,9 @@ export default function GrovePage() {
           aria-selected={mode === "collective"}
           className={mode === "collective" ? "on" : ""}
           onClick={() => {
+            touching.current = true;
             setPicked(null);
+            collectiveSince.current = Date.now();
             setMode("collective");
           }}
         >

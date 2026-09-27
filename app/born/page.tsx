@@ -36,7 +36,7 @@ export default function BornPage() {
         </span>
         <small>내 노드 보기</small>
       </a>
-      <a className="cyp-btn" href="/grove">
+      <a className="cyp-btn" href="/usershow">
         <span>
           EXPLORE THE NODE GROVE <i aria-hidden>→</i>
         </span>

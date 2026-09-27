@@ -72,21 +72,43 @@ export function guessTextLang(text: string): SheetLang | "mixed" | "empty" {
 }
 
 /** 카드 크롬 — en/ko 토글이 여기만 보면 됨 */
-export function sheetChrome(lang: SheetLang) {
+export function sheetChrome(lang: SheetLang, variant: "relation" | "answers" = "relation") {
   if (lang === "ko") {
     return {
-      kicker: "연결된 노드",
+      kicker: variant === "answers" ? "노드" : "연결된 노드",
       close: "닫기",
       channel: "프라이빗 채널 열기",
       switchTo: "Show in English" as const,
     };
   }
   return {
-    kicker: "CONNECTED NODE",
+    kicker: variant === "answers" ? "NODE" : "CONNECTED NODE",
     close: "Close",
     channel: "OPEN PRIVATE CHANNEL",
     switchTo: "한국어로 보기" as const,
   };
+}
+
+export type AnswerBlock = {
+  key: "SEEK" | "OFFER" | "IMAGINE";
+  en: string;
+  ko: string;
+  quote: string;
+};
+
+/** 그로브 카드 — 상대가 적은 SEEK/OFFER/IMAGINE 원문만. 관계 문장 금지. */
+export function answerBlocks(theirSlots: Slot[]): AnswerBlock[] {
+  const rows: { key: AnswerBlock["key"]; en: string; ko: string; index: number }[] = [
+    { key: "SEEK", en: "SEEK", ko: "SEEK", index: 0 },
+    { key: "OFFER", en: "OFFER", ko: "OFFER", index: 1 },
+    { key: "IMAGINE", en: "IMAGINE", ko: "IMAGINE", index: 2 },
+  ];
+  return rows.map((row) => ({
+    key: row.key,
+    en: row.en,
+    ko: row.ko,
+    quote: tidy(slotAnswer(theirSlots, row.index)),
+  }));
 }
 
 // 퍼센트 없이 세 줄. 라벨은 손글 en/ko. 인용은 중·강일 때 그 슬롯 짝 문장만.

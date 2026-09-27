@@ -218,7 +218,7 @@ export default function MyNodePage() {
           <span>MY SIGNALS</span>
           <small>내 시그널</small>
         </Link>
-        <Link className="cyp-btn" href="/grove">
+        <Link className="cyp-btn" href="/usershow">
           <span>
             EXPLORE THE NODE GROVE <i aria-hidden>→</i>
           </span>

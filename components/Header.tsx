@@ -46,7 +46,12 @@ export function Header() {
   }, []);
 
   const bare =
-    pathname === "/" || pathname.startsWith("/join") || pathname === "/born" || pathname === "/show";
+    pathname === "/" ||
+    pathname.startsWith("/join") ||
+    pathname === "/born" ||
+    pathname === "/show" ||
+    pathname === "/devshow" ||
+    pathname === "/usershow";
   if (bare) return null;
 
   return (

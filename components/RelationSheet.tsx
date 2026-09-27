@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { themeHits } from "@/lib/match";
 import {
+  answerBlocks,
   midStrongHits,
   relationBlocks,
   sheetChrome,
@@ -62,6 +63,7 @@ export function RelationSheet({
   id,
   hits,
   onClose,
+  variant = "relation",
 }: {
   meSlots: Slot[];
   theirSlots: Slot[];
@@ -70,14 +72,20 @@ export function RelationSheet({
   id: string;
   hits: HitLite[];
   onClose: () => void;
+  /** relation = 내 노드 관계 카드. answers = 그로브 SEEK/OFFER/IMAGINE 원문 */
+  variant?: "relation" | "answers";
 }) {
   const [lang, setLang] = useState<SheetLang>("en");
-  const chrome = sheetChrome(lang);
+  const chrome = sheetChrome(lang, variant);
   const effectiveHits = useMemo(
     () => hitsForCard(meSlots, theirSlots, hits),
     [meSlots, theirSlots, hits],
   );
-  const blocks = relationBlocks(meSlots, theirSlots, effectiveHits);
+  const relationRows = useMemo(
+    () => relationBlocks(meSlots, theirSlots, effectiveHits),
+    [meSlots, theirSlots, effectiveHits],
+  );
+  const answerRows = useMemo(() => answerBlocks(theirSlots), [theirSlots]);
   const label = `#${String(code).padStart(3, "0")} ${name}`;
   // 카드가 뜬 직후 같은 좌표로 오는 호환 click을 흡수 — 포커스·카드가 바로 닫히던 원인
   const scrimArmedAt = useRef(0);
@@ -134,18 +142,29 @@ export function RelationSheet({
             <span aria-hidden>{lang}</span>
           </button>
         </div>
-        <div className="cyp-sheet-blocks" key={lang}>
-          {blocks.map((block) => {
-            const line = lang === "ko" ? block.ko : block.en;
-            const hint = lang === "ko" ? block.hintKo : block.hintEn;
-            return (
-              <section key={block.key} className="cyp-sheet-row">
-                <p className="cyp-sheet-row-label">{line}</p>
-                <p className="cyp-sheet-hint">{hint}</p>
-                <TranslatedQuote quote={block.quote} lang={lang} />
-              </section>
-            );
-          })}
+        <div className="cyp-sheet-blocks" key={`${variant}-${lang}`}>
+          {variant === "answers"
+            ? answerRows.map((block) => {
+                const line = lang === "ko" ? block.ko : block.en;
+                // 빈 칸은 라벨만 조용히 — 관계 문구·힌트 금지
+                return (
+                  <section key={block.key} className="cyp-sheet-row">
+                    <p className="cyp-sheet-row-label">{line}</p>
+                    {block.quote ? <TranslatedQuote quote={block.quote} lang={lang} /> : null}
+                  </section>
+                );
+              })
+            : relationRows.map((block) => {
+                const line = lang === "ko" ? block.ko : block.en;
+                const hint = lang === "ko" ? block.hintKo : block.hintEn;
+                return (
+                  <section key={block.key} className="cyp-sheet-row">
+                    <p className="cyp-sheet-row-label">{line}</p>
+                    <p className="cyp-sheet-hint">{hint}</p>
+                    <TranslatedQuote quote={block.quote} lang={lang} />
+                  </section>
+                );
+              })}
         </div>
         <Link className="cyp-btn" href={`/chat/${id}`}>
           <span>
