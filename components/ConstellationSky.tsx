@@ -23,6 +23,10 @@ export type SkyEdge = {
 const WORLD = 1000;
 /** 화면 픽셀 기준 별 히트 반경 — 줌·태블릿 데스크톱 모드에서도 손가락이 먹게 */
 const HIT_PX = 44;
+/** 이 안이면 짧은 탭 — 손가락 떨림은 허용, 길게 누를 필요 없음 */
+const TAP_SLOP_PX = 12;
+/** 터치 직후 따라오는 호환 mouse 클릭이 선택을 다시 토글하지 않게 */
+const MOUSE_SUPPRESS_MS = 700;
 
 function lineClass(bright: boolean, a: SkyPoint["band"], b: SkyPoint["band"]) {
   if (!bright) return "cyp-line dim";
@@ -127,6 +131,7 @@ export function ConstellationSky({
     starId?: string;
   } | null>(null);
   const pinch = useRef<{ dist: number; cam: Cam } | null>(null);
+  const ignoreMouseUntil = useRef(0);
   const starsRef = useRef(stars);
   starsRef.current = stars;
   const focusRef = useRef(focusId);
@@ -213,6 +218,10 @@ export function ConstellationSky({
       className={`cyp-sky${focusId ? " is-focus" : ""}`}
       ref={viewportRef}
       onPointerDown={(event) => {
+        // 터치 직후 합성 mouse는 무시 — 짧은 탭이 열렸다 바로 닫히던 원인
+        if (event.pointerType === "mouse" && performance.now() < ignoreMouseUntil.current) {
+          return;
+        }
         const el = event.currentTarget;
         // 버튼이 클릭을 삼키지 않게 — 하늘이 포인터를 갖는다
         try {
@@ -262,9 +271,8 @@ export function ConstellationSky({
         if (!current || current.id !== event.pointerId) return;
         const dx = event.clientX - current.x;
         const dy = event.clientY - current.y;
-        // 별 탭은 손가락 떨림을 더 허용 — 10px면 모바일에서 선택이 자주 죽음
-        const slop = current.starId ? 32 : 10;
-        if (Math.hypot(dx, dy) > slop) current.moved = true;
+        // 약 12px까지는 탭 — 떨림만으로 선택이 죽지 않게
+        if (Math.hypot(dx, dy) > TAP_SLOP_PX) current.moved = true;
         // 별 위에서 시작한 제스처는 팬하지 않음 — 탭으로 시트 열기
         if (current.starId) return;
         setCamEase(false);
@@ -277,20 +285,31 @@ export function ConstellationSky({
         pointers.current.delete(event.pointerId);
         if (pointers.current.size < 2) pinch.current = null;
         if (drag.current?.id === event.pointerId) drag.current = null;
+        if (event.pointerType === "touch" || event.pointerType === "pen") {
+          ignoreMouseUntil.current = performance.now() + MOUSE_SUPPRESS_MS;
+        }
         if (dragged || pinched || !current) return;
         const el = viewportRef.current;
         // 업 시점에도 다시 히트 — 포커스 변환·mouse/touch 혼용에서도 같은 별
-        const again =
-          el
-            ? nearestStarId(el, event.clientX, event.clientY, camRef.current, starsRef.current)
-            : undefined;
+        const again = el
+          ? nearestStarId(el, event.clientX, event.clientY, camRef.current, starsRef.current)
+          : undefined;
         const id = again || current.starId;
         if (id) onPick(id);
       }}
       onPointerCancel={(event) => {
+        const current = drag.current?.id === event.pointerId ? drag.current : null;
+        const dragged = Boolean(current?.moved);
+        const pinched = Boolean(pinch.current);
         pointers.current.delete(event.pointerId);
-        pinch.current = null;
-        drag.current = null;
+        if (pointers.current.size < 2) pinch.current = null;
+        if (drag.current?.id === event.pointerId) drag.current = null;
+        if (event.pointerType === "touch" || event.pointerType === "pen") {
+          ignoreMouseUntil.current = performance.now() + MOUSE_SUPPRESS_MS;
+        }
+        // cancel만 오고 up이 없는 폰 — 짧은 탭이면 down에서 잡은 별로 선택
+        if (dragged || pinched || !current?.starId) return;
+        onPick(current.starId);
       }}
     >
       <div

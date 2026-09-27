@@ -1398,7 +1398,8 @@ p { margin: 0; }
   cursor: pointer;
   pointer-events: auto;
   overflow: visible;
-  touch-action: manipulation;
+  /* 하늘과 같이 none — manipulation이면 짧은 탭이 브라우저 클릭으로 새어 나감 */
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
 
