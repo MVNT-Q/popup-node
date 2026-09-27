@@ -973,6 +973,13 @@ p { margin: 0; }
   background: rgba(0, 0, 0, 0.35);
   padding: 12px;
   outline: none;
+  line-height: 1.45;
+}
+textarea.cyp-input {
+  min-height: calc(1.45em * 4 + 24px);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  resize: vertical;
 }
 
 .ghost-line, .example, .chip {

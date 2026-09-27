@@ -74,7 +74,7 @@ export default function ImaginePage() {
 
       <textarea
         className="cyp-input"
-        rows={6}
+        rows={4}
         maxLength={500}
         value={words}
         placeholder="I imagine a future where..."
@@ -88,16 +88,19 @@ export default function ImaginePage() {
       <button className="ghost-line" type="button" onClick={() => setOpen((value) => !value)}>
         {open ? "HIDE EXAMPLES ↑" : "SEE EXAMPLES ↓"}
       </button>
-      {open ? (
-        <div className="imagine-cards">
-          {IMAGINE_CARDS.map((card) => (
-            <article key={card.scene} className="imagine-card text-only">
-              <p>{card.en}</p>
-              <p className="ko">{card.ko}</p>
-            </article>
-          ))}
-        </div>
-      ) : null}
+      {open
+        ? IMAGINE_CARDS.map((card) => (
+            <button
+              key={card.scene}
+              className="example"
+              type="button"
+              onClick={() => setWords(card.en)}
+            >
+              <span>{card.en}</span>
+              <small>{card.ko}</small>
+            </button>
+          ))
+        : null}
 
       {error ? <p className="cyp-error">{error}</p> : null}
       <button className="cyp-btn" type="button" disabled={pending || !draft} onClick={() => void complete()}>
