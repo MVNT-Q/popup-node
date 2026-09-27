@@ -112,6 +112,7 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
     return all.map((node) => {
       const point = layout.get(node.id) ?? { x: 500, y: 500 };
       const against = stars.find((star) => star.id === node.id);
+      // 청록 self는 이 브라우저 세션 쿠키의 노드만. 무세션·렌즈 노드는 초록.
       const self = Boolean(me && node.id === me.id);
       return {
         id: node.id,

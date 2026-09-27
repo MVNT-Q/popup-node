@@ -1134,6 +1134,16 @@ textarea.cyp-input {
 
 /* --- CYP3 하늘 / 시트 / 그로브 --- */
 
+/* 하늘·전체 컨트롤: iOS/WebKit 탭 시 파란 하이라이트가 화면 전체로 번지지 않게 */
+.cyp-sky-page,
+.cyp-sky-page button,
+.cyp-sky-page a,
+.cyp-sky,
+.cyp-sheet-scrim,
+.cyp-mode-bar button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .cyp-sky-page {
   display: flex;
   flex-direction: column;
@@ -1430,6 +1440,8 @@ textarea.cyp-input {
   border-radius: 0;
   background: transparent;
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .cyp-world {
@@ -1730,6 +1742,13 @@ textarea.cyp-input {
   margin: 0;
   background: rgba(0, 0, 0, 0.18);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.cyp-sheet-scrim:active,
+.cyp-sheet-scrim:focus {
+  background: rgba(0, 0, 0, 0.18);
 }
 
 /* 작은 정보 카드. 하단 절반 시트 금지. 모드바(z80)보다 아래. 높이 고정·본문 스크롤 */
@@ -2235,6 +2254,7 @@ textarea.cyp-input {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cyp-mode-bar button i {

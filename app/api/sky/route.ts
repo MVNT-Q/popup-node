@@ -54,13 +54,13 @@ export async function GET(request: Request) {
   });
 
   // /show 무세션: 카드 hits가 비면 SEEK/OFFER/IMAGINE 설명이 전부 빈다.
-  // 가장 작은 code 노드를 렌즈로 써서 관계 문장을 채운다 (전시장 태블릿).
+  // 가장 작은 code 노드를 렌즈로만 써서 관계 문장을 채운다 (전시장 태블릿).
+  // 렌즈는 내 별이 아님 — me(응답·청록)는 세션 쿠키 노드만.
   const lens =
     sessionMe ??
     (view === "show" && nodes.length
       ? [...nodes].sort((a, b) => a.code - b.code || a.id.localeCompare(b.id))[0]
       : null);
-  const me = lens;
 
   let mode: "theme" | "embed" = "theme";
   const againstMe: {
@@ -72,10 +72,10 @@ export async function GET(request: Request) {
     band: Band | "dim";
   }[] = [];
 
-  if (me) {
+  if (lens) {
     for (const node of nodes) {
-      if (node.id === me.id) continue;
-      const ranked = await pairHits(me, node);
+      if (node.id === lens.id) continue;
+      const ranked = await pairHits(lens, node);
       mode = ranked.mode;
       const hits = ranked.hits;
       // /my-node: 중·강 겹침 있는 별만 (줄 없는 고독 별 숨김)
@@ -109,12 +109,12 @@ export async function GET(request: Request) {
         });
       }
     }
-  } else if (me) {
+  } else if (sessionMe) {
     for (const star of againstMe) {
       const solid = midStrongHits(star.hits);
       if (!solid.length) continue;
       edges.push({
-        a: me.id,
+        a: sessionMe.id,
         b: star.id,
         questions: solid.map((hit) => hit.questionIndex),
       });
@@ -128,12 +128,12 @@ export async function GET(request: Request) {
   return Response.json({
     view,
     matcher: mode,
-    me: me
+    me: sessionMe
       ? {
-          id: me.id,
-          code: me.code,
-          name: me.name,
-          slots: me.slots,
+          id: sessionMe.id,
+          code: sessionMe.code,
+          name: sessionMe.name,
+          slots: sessionMe.slots,
         }
       : null,
     stars: againstMe,
