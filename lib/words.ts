@@ -31,6 +31,24 @@ export const EXAMPLE_WORDS = [
   "FRIENDSHIP",
   "DREAMING",
   "MOONLIGHT",
+  "GARDENS",
+  "KINSHIP",
+  "SOFT POWER",
+  "NODE TRUST",
+  "NIGHT WALKS",
+  "SEED BANKS",
+  "OPEN TOOLS",
+  "CIRCLES",
+  "REST",
+  "WATER",
+  "SOIL",
+  "LISTEN",
+  "GIFT",
+  "THRESHOLDS",
+  "SHELTER",
+  "PLAY",
+  "MEMORY",
+  "TIDE",
 ] as const;
 
 const STOP = new Set(
@@ -126,17 +144,17 @@ export function sphereWords(imagines: string[]): SphereWord[] {
 
   const real: SphereWord[] = [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, 48)
+    .slice(0, 64)
     .map(([text, weight]) => ({ text, weight, example: false }));
 
-  if (real.length >= 12) return real;
-
+  // 실제 답이 충분해도 예시를 조금 섞어 그물 밀도를 유지
   const used = new Set(real.map((w) => w.text.toUpperCase()));
   const extras: SphereWord[] = [];
+  const target = real.length >= 20 ? Math.min(72, real.length + 18) : 48;
   for (const word of EXAMPLE_WORDS) {
     if (used.has(word)) continue;
     extras.push({ text: word, weight: 1, example: true });
-    if (real.length + extras.length >= 28) break;
+    if (real.length + extras.length >= target) break;
   }
   return [...real, ...extras];
 }

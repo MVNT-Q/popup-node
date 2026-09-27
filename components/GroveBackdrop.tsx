@@ -111,25 +111,25 @@ function paintStarSky(canvas: HTMLCanvasElement) {
     ctx.restore();
   }
 
-  // 5) 배경 미세 별 밀집
+  // 5) 배경 미세 별 — 조금 더 보이게 (라벨·사진 없음)
   const area = (w * h) / (dpr * dpr);
-  const count = Math.min(4200, Math.floor(area * 0.0042));
+  const count = Math.min(5600, Math.floor(area * 0.0058));
   for (let i = 0; i < count; i++) {
     const x = rand() * w;
     const y = rand() * h;
     const bright = rand();
-    const r = (bright > 0.97 ? 1.6 : bright > 0.9 ? 1.1 : bright > 0.7 ? 0.7 : 0.4) * dpr;
-    const alpha = bright > 0.97 ? 0.95 : bright > 0.85 ? 0.7 : 0.2 + bright * 0.35;
-    const green = bright > 0.92;
+    const r = (bright > 0.97 ? 1.9 : bright > 0.9 ? 1.35 : bright > 0.7 ? 0.85 : 0.5) * dpr;
+    const alpha = bright > 0.97 ? 1 : bright > 0.85 ? 0.85 : 0.32 + bright * 0.45;
+    const green = bright > 0.88;
     ctx.fillStyle = green
       ? `rgba(180, 255, 210, ${alpha})`
       : `rgba(230, 255, 240, ${alpha})`;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-    if (bright > 0.985) {
-      ctx.strokeStyle = `rgba(120, 255, 180, ${alpha * 0.55})`;
-      ctx.lineWidth = 0.6 * dpr;
+    if (bright > 0.978) {
+      ctx.strokeStyle = `rgba(120, 255, 180, ${alpha * 0.65})`;
+      ctx.lineWidth = 0.7 * dpr;
       ctx.beginPath();
       ctx.moveTo(x - r * 5, y);
       ctx.lineTo(x + r * 5, y);
