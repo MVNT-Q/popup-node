@@ -73,14 +73,16 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
 
+      // x·y 같은 배율 → 납작 타원이 아니라 원에 가깝게
+      const R = 40;
       const proj = base.map((p) => {
         const x = p.x * cos + p.z * sin;
         const z = -p.x * sin + p.z * cos;
         const y = p.y;
         const depth = (z + 1) / 2;
         return {
-          left: 50 + x * 46,
-          top: 50 + y * 44,
+          left: 50 + x * R,
+          top: 50 + y * R,
           size: p.example ? p.sizeBase + depth * 3 : p.sizeBase + depth * 4,
           opacity: p.example ? 0.14 + depth * 0.14 : 0.42 + depth * 0.55,
           zIndex: Math.round(depth * 30),
@@ -127,7 +129,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       <svg
         className="cyp-sphere-wires"
         viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         ref={svgRef}
       >
         {pairs.map((_, index) => (

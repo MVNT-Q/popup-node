@@ -1,7 +1,7 @@
 "use client";
 
 export function ImagineTicker({ lines }: { lines: string[] }) {
-  // 저장된 IMAGINE 문장 두 줄. 왼쪽→오른쪽, 천천히, 크게.
+  // 저장된 IMAGINE 문장 두 줄. 오른쪽→왼쪽, 천천히, 잘리지 않게.
   const cleaned: string[] = [];
   const seen = new Set<string>();
   for (const raw of lines) {

@@ -108,39 +108,32 @@ export default function GrovePage() {
   const pickedHits = stars.find((star) => star.id === picked)?.hits ?? [];
 
   return (
-    <main className="cyp cyp-sky-page cyp-grove">
+    <main className={`cyp cyp-sky-page cyp-grove mode-${mode}`}>
       <GroveBackdrop />
       <header className="cyp-sky-head">
-        <div>
-          <p className="fine">NODE GROVE</p>
-          <h1 className="cyp-sky-title">
-            {counts.nodes} NODES · {counts.connections} CONNECTIONS
-          </h1>
+        <div className="cyp-sky-head-main">
+          {mode === "grove" ? (
+            <>
+              <h1 className="cyp-sky-hero">NODE GROVE</h1>
+              <p className="cyp-sky-ko">노드 그로브</p>
+              <p className="cyp-sky-meta">
+                {counts.nodes} NODES · {counts.connections} CONNECTIONS
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="cyp-sky-hero">COLLECTIVE IMAGINATION</h1>
+              <p className="fine cyp-sky-subbrand">NODE GROVE</p>
+              <p className="cyp-sky-meta">
+                {counts.nodes} NODES · {counts.connections} CONNECTIONS
+              </p>
+            </>
+          )}
         </div>
         <div className="cyp-sky-head-right">
           <Link className="cyp-mini" href="/my-node">
             MY NODE
           </Link>
-          <div className="cyp-mode-toggle" role="tablist" aria-label="Grove mode">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "grove"}
-              className={mode === "grove" ? "on" : ""}
-              onClick={() => setMode("grove")}
-            >
-              GROVE
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "collective"}
-              className={mode === "collective" ? "on" : ""}
-              onClick={() => setMode("collective")}
-            >
-              COLLECTIVE IMAGINATION
-            </button>
-          </div>
         </div>
       </header>
 
@@ -166,13 +159,35 @@ export default function GrovePage() {
         </div>
         <div className={mode === "collective" ? "cyp-fade on" : "cyp-fade"}>
           <div className="cyp-collective">
-            <p className="cyp-collective-title">COLLECTIVE IMAGINATION</p>
             <WordSphere imagines={imagines} />
           </div>
         </div>
       </div>
 
       <ImagineTicker lines={imagines} />
+
+      <div className="cyp-mode-bar" role="tablist" aria-label="Grove mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "grove"}
+          className={mode === "grove" ? "on" : ""}
+          onClick={() => setMode("grove")}
+        >
+          <i aria-hidden />
+          GROVE
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "collective"}
+          className={mode === "collective" ? "on" : ""}
+          onClick={() => setMode("collective")}
+        >
+          <i aria-hidden />
+          COLLECTIVE IMAGINATION
+        </button>
+      </div>
 
       {pickedNode && me ? (
         <RelationSheet

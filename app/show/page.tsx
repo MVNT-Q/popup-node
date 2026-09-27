@@ -127,7 +127,7 @@ export default function ShowPage() {
 
   return (
     <main
-      className="cyp cyp-sky-page cyp-grove cyp-show"
+      className={`cyp cyp-sky-page cyp-grove cyp-show mode-${mode}`}
       onPointerDown={() => {
         touching.current = true;
       }}
@@ -140,43 +140,24 @@ export default function ShowPage() {
     >
       <GroveBackdrop />
       <header className="cyp-sky-head">
-        <div>
-          <p className="fine">NODE GROVE</p>
-          <h1 className="cyp-sky-title">
-            {counts.nodes} NODES · {counts.connections} CONNECTIONS
-          </h1>
-        </div>
-        <div
-          className="cyp-sky-head-right"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <div className="cyp-mode-toggle" role="tablist" aria-label="Grove mode">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "grove"}
-              className={mode === "grove" ? "on" : ""}
-              onClick={() => {
-                touching.current = true;
-                setMode("grove");
-              }}
-            >
-              GROVE
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "collective"}
-              className={mode === "collective" ? "on" : ""}
-              onClick={() => {
-                touching.current = true;
-                collectiveSince.current = Date.now();
-                setMode("collective");
-              }}
-            >
-              COLLECTIVE IMAGINATION
-            </button>
-          </div>
+        <div className="cyp-sky-head-main">
+          {mode === "grove" ? (
+            <>
+              <h1 className="cyp-sky-hero">NODE GROVE</h1>
+              <p className="cyp-sky-ko">노드 그로브</p>
+              <p className="cyp-sky-meta">
+                {counts.nodes} NODES · {counts.connections} CONNECTIONS
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="cyp-sky-hero">COLLECTIVE IMAGINATION</h1>
+              <p className="fine cyp-sky-subbrand">NODE GROVE</p>
+              <p className="cyp-sky-meta">
+                {counts.nodes} NODES · {counts.connections} CONNECTIONS
+              </p>
+            </>
+          )}
         </div>
       </header>
 
@@ -202,13 +183,47 @@ export default function ShowPage() {
         </div>
         <div className={mode === "collective" ? "cyp-fade on" : "cyp-fade"}>
           <div className="cyp-collective">
-            <p className="cyp-collective-title">COLLECTIVE IMAGINATION</p>
             <WordSphere imagines={imagines} />
           </div>
         </div>
       </div>
 
       <ImagineTicker lines={imagines} />
+
+      <div
+        className="cyp-mode-bar"
+        role="tablist"
+        aria-label="Grove mode"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "grove"}
+          className={mode === "grove" ? "on" : ""}
+          onClick={() => {
+            touching.current = true;
+            setMode("grove");
+          }}
+        >
+          <i aria-hidden />
+          GROVE
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "collective"}
+          className={mode === "collective" ? "on" : ""}
+          onClick={() => {
+            touching.current = true;
+            collectiveSince.current = Date.now();
+            setMode("collective");
+          }}
+        >
+          <i aria-hidden />
+          COLLECTIVE IMAGINATION
+        </button>
+      </div>
 
       {pickedNode ? (
         <RelationSheet
