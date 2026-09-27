@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fitCam, zoomCam, type Cam } from "@/lib/layout";
 
 export type SkyPoint = {
@@ -32,6 +32,31 @@ function lineClass(bright: boolean, a: SkyPoint["band"], b: SkyPoint["band"]) {
   return "cyp-line weak";
 }
 
+/** 연결된 선 반대쪽으로 라벨을 밀어 선·번호가 겹치지 않게 */
+function labelPlacement(
+  star: SkyPoint,
+  neighbors: SkyPoint[],
+): { side: "right" | "left" | "above" | "below"; alone: boolean } {
+  if (!neighbors.length) return { side: "right", alone: true };
+  let sx = 0;
+  let sy = 0;
+  for (const n of neighbors) {
+    const dx = n.x - star.x;
+    const dy = n.y - star.y;
+    const d = Math.hypot(dx, dy) || 1;
+    sx += dx / d;
+    sy += dy / d;
+  }
+  // 선들이 모인 쪽의 반대 = 라벨
+  const ox = -sx;
+  const oy = -sy;
+  if (Math.hypot(ox, oy) < 0.15) return { side: "right", alone: false };
+  if (Math.abs(ox) >= Math.abs(oy)) {
+    return { side: ox >= 0 ? "right" : "left", alone: false };
+  }
+  return { side: oy >= 0 ? "below" : "above", alone: false };
+}
+
 export function ConstellationSky({
   stars,
   edges,
@@ -60,7 +85,20 @@ export function ConstellationSky({
   starsRef.current = stars;
   // 자리만 키로. 밝기·선택 바뀌어도 카메라를 다시 맞추지 않는다.
   const layoutKey = stars.map((star) => `${star.id}:${Math.round(star.x)}:${Math.round(star.y)}`).join("|");
-  const byId = new Map(stars.map((star) => [star.id, star]));
+  const byId = useMemo(() => new Map(stars.map((star) => [star.id, star])), [stars]);
+
+  const neighborsOf = useMemo(() => {
+    const map = new Map<string, SkyPoint[]>();
+    for (const star of stars) map.set(star.id, []);
+    for (const edge of edges) {
+      const a = byId.get(edge.a);
+      const b = byId.get(edge.b);
+      if (!a || !b) continue;
+      map.get(edge.a)?.push(b);
+      map.get(edge.b)?.push(a);
+    }
+    return map;
+  }, [stars, edges, byId]);
 
   useEffect(() => {
     const el = viewportRef.current;
@@ -178,11 +216,12 @@ export function ConstellationSky({
             star.band === "strong" ||
             star.band === "mid" ||
             star.code % 5 === 0;
+          const place = labelPlacement(star, neighborsOf.get(star.id) ?? []);
           return (
             <button
               key={star.id}
               type="button"
-              className={`cyp-star ${star.band}${star.selected ? " on" : ""}${flare ? " flare" : ""}`}
+              className={`cyp-star ${star.band}${star.selected ? " on" : ""}${flare ? " flare" : ""} label-${place.side}`}
               style={{ left: star.x, top: star.y }}
               data-star={star.id}
               aria-label={star.name ? `#${String(star.code).padStart(3, "0")} ${star.name}` : `NODE ${star.code}`}

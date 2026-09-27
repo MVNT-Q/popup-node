@@ -13,6 +13,13 @@ type Base = SphereWord & {
 
 type Dust = { x: number; y: number; z: number; size: number; glow: number };
 
+/** 구 표면 플라즈마 — 부드러운 초록 빛 가닥 (단어 없음) */
+type Plasma = {
+  pts: { x: number; y: number; z: number }[];
+  width: number;
+  alpha: number;
+};
+
 type Pair = { i: number; j: number; a: number; kind: "word" | "dust" };
 
 function frac(seed: number) {
@@ -49,7 +56,7 @@ function basePlace(words: SphereWord[]): Base[] {
     const z = Math.sin(golden) * radius;
     const hub = !word.example && word.weight >= 2;
     const phrase = word.text.includes(" ");
-    // 목업처럼 숨 쉬는 간격 — 예전보다 한 단계 작게
+    // 목업처럼 숨 쉬는 간격 — 글자 과하지 않게
     const sizeBase = word.example
       ? phrase
         ? 5 + r2 * 2.5
@@ -74,19 +81,50 @@ function makeDust(count: number): Dust[] {
     const r1 = frac(i * 2.17 + 9.1);
     const r2 = frac(i * 5.33 + 1.4);
     const r3 = frac(i * 11.7 + 3.8);
-    // 먼지도 피보나치에 가깝게 전면 분포
+    // 구 표면 잔점 — 배경 먼지별과 별개 레이어
     const yi = i + 0.5;
     const y0 = 1 - (yi / count) * 2;
     const y = Math.max(-0.95, Math.min(0.95, y0 + (r1 - 0.5) * 0.1));
-    const shell = 0.55 + r2 * 0.45;
+    const shell = 0.72 + r2 * 0.28;
     const radius = Math.sqrt(Math.max(0, 1 - y * y)) * shell;
     const ang = yi * 2.399963229728653 + r3;
     out.push({
       x: Math.cos(ang) * radius,
       y,
       z: Math.sin(ang) * radius,
-      size: 1.2 + r1 * 2.4,
-      glow: 0.35 + r2 * 0.55,
+      size: 1.1 + r1 * 2.1,
+      glow: 0.4 + r2 * 0.5,
+    });
+  }
+  return out;
+}
+
+function makePlasma(count: number): Plasma[] {
+  const out: Plasma[] = [];
+  for (let i = 0; i < count; i++) {
+    const r1 = frac(i * 4.11 + 2.3);
+    const r2 = frac(i * 9.27 + 0.8);
+    const r3 = frac(i * 13.5 + 5.1);
+    const yMid = (r1 - 0.5) * 1.6;
+    const steps = 7 + Math.floor(r2 * 5);
+    const pts: { x: number; y: number; z: number }[] = [];
+    const baseAng = r3 * Math.PI * 2;
+    for (let s = 0; s < steps; s++) {
+      const t = s / (steps - 1);
+      const y = Math.max(-0.92, Math.min(0.92, yMid + (t - 0.5) * (0.55 + r2 * 0.45)));
+      const shell = 0.78 + r1 * 0.2;
+      const radius = Math.sqrt(Math.max(0, 1 - y * y)) * shell;
+      const ang = baseAng + (t - 0.5) * (0.9 + r3 * 1.1) + Math.sin(t * Math.PI * 2 + r1) * 0.35;
+      pts.push({
+        x: Math.cos(ang) * radius,
+        y,
+        z: Math.sin(ang) * radius,
+      });
+    }
+    out.push({
+      pts,
+      width: 0.9 + r2 * 1.6,
+      alpha: 0.1 + r1 * 0.14,
     });
   }
   return out;
@@ -145,19 +183,24 @@ function projectPoint(
 
 export function WordSphere({ imagines }: { imagines: string[] }) {
   const base = useMemo(() => basePlace(sphereWords(imagines)), [imagines]);
-  const dust = useMemo(() => makeDust(Math.max(72, base.length * 1.6)), [base.length]);
+  // 구 위 잔점 — 배경별보다 밀도로 구분
+  const dust = useMemo(() => makeDust(Math.max(110, Math.floor(base.length * 2.4))), [base.length]);
+  const plasma = useMemo(() => makePlasma(14), []);
   const pairs = useMemo(() => linkPairs(base, dust), [base, dust]);
   const rootRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const plasmaRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
     const svg = svgRef.current;
-    if (!root || !svg) return;
+    const plasmaSvg = plasmaRef.current;
+    if (!root || !svg || !plasmaSvg) return;
 
     const wordEls = Array.from(root.querySelectorAll<HTMLElement>(".cyp-word"));
     const dustEls = Array.from(root.querySelectorAll<HTMLElement>(".cyp-dust"));
     const lineEls = Array.from(svg.querySelectorAll("line"));
+    const plasmaEls = Array.from(plasmaSvg.querySelectorAll("path"));
     let yaw = 0;
     let pitch = 0.18;
     let raf = 0;
@@ -251,7 +294,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
           left: 50 + r.x * R,
           top: 50 - r.y * R,
           size: p.size * (0.7 + depth * 0.6),
-          opacity: Math.min(0.95, (0.25 + depth * 0.65) * p.glow),
+          opacity: Math.min(0.95, (0.28 + depth * 0.65) * p.glow),
           zIndex: Math.round(depth * 20),
           depth,
         };
@@ -302,6 +345,31 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
         line.setAttribute("stroke", `rgba(28,255,138,${alpha})`);
       }
 
+      for (let p = 0; p < plasma.length; p++) {
+        const el = plasmaEls[p];
+        const strand = plasma[p];
+        if (!el || !strand) continue;
+        const projected = strand.pts.map((pt) => {
+          const r = projectPoint(pt, yaw, pitch);
+          return {
+            x: 50 + r.x * R,
+            y: 50 - r.y * R,
+            depth: (r.z + 1) / 2,
+          };
+        });
+        const avgDepth = projected.reduce((s, q) => s + q.depth, 0) / projected.length;
+        const d = projected
+          .map((q, idx) => `${idx === 0 ? "M" : "L"}${q.x.toFixed(2)} ${q.y.toFixed(2)}`)
+          .join(" ");
+        el.setAttribute("d", d);
+        el.setAttribute(
+          "stroke",
+          `rgba(60,255,160,${(strand.alpha * (0.45 + avgDepth * 0.7)).toFixed(3)})`,
+        );
+        el.setAttribute("stroke-width", String(strand.width * (0.7 + avgDepth * 0.5)));
+        el.style.opacity = String(0.55 + avgDepth * 0.45);
+      }
+
       raf = requestAnimationFrame(tick);
     };
 
@@ -313,11 +381,29 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       root.removeEventListener("pointerup", onUp);
       root.removeEventListener("pointercancel", onUp);
     };
-  }, [base, dust, pairs]);
+  }, [base, dust, pairs, plasma]);
 
   return (
     <div className="cyp-sphere" aria-hidden ref={rootRef}>
       <div className="cyp-sphere-core" />
+      <svg
+        className="cyp-sphere-plasma"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid meet"
+        ref={plasmaRef}
+      >
+        {plasma.map((_, index) => (
+          <path
+            key={`plasma-${index}`}
+            d="M0 0"
+            fill="none"
+            stroke="rgba(60,255,160,0.15)"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
       <svg
         className="cyp-sphere-wires"
         viewBox="0 0 100 100"

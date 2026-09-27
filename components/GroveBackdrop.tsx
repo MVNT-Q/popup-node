@@ -33,19 +33,17 @@ function paintStarSky(canvas: HTMLCanvasElement) {
 
   const rand = mulberry32(0xc003 ^ (w * 131 + h));
 
-  // 1) 깊은 검정 바닥
+  // 1) 깊은 검정 바닥 — POC처럼 검은 바탕이 주인공
   ctx.fillStyle = "#020403";
   ctx.fillRect(0, 0, w, h);
 
-  // 2) 초록 성운 — 큰 구름 여러 겹
+  // 2) 성운 — 옅은 초록 기운만 (짙은 구름·섬유 줄임)
   const blobs = [
-    { x: 0.18, y: 0.22, rx: 0.55, ry: 0.38, a: 0.22 },
-    { x: 0.72, y: 0.18, rx: 0.48, ry: 0.42, a: 0.18 },
-    { x: 0.5, y: 0.48, rx: 0.7, ry: 0.55, a: 0.14 },
-    { x: 0.28, y: 0.72, rx: 0.5, ry: 0.4, a: 0.2 },
-    { x: 0.78, y: 0.78, rx: 0.45, ry: 0.36, a: 0.16 },
-    { x: 0.08, y: 0.5, rx: 0.35, ry: 0.55, a: 0.12 },
-    { x: 0.92, y: 0.42, rx: 0.32, ry: 0.48, a: 0.11 },
+    { x: 0.22, y: 0.28, rx: 0.42, ry: 0.32, a: 0.07 },
+    { x: 0.72, y: 0.22, rx: 0.36, ry: 0.3, a: 0.055 },
+    { x: 0.5, y: 0.55, rx: 0.5, ry: 0.4, a: 0.045 },
+    { x: 0.3, y: 0.75, rx: 0.38, ry: 0.28, a: 0.06 },
+    { x: 0.8, y: 0.72, rx: 0.32, ry: 0.26, a: 0.05 },
   ];
   for (const blob of blobs) {
     const cx = blob.x * w;
@@ -54,8 +52,8 @@ function paintStarSky(canvas: HTMLCanvasElement) {
     const ry = blob.ry * h;
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
     g.addColorStop(0, `rgba(40, 255, 140, ${blob.a})`);
-    g.addColorStop(0.35, `rgba(12, 90, 48, ${blob.a * 0.55})`);
-    g.addColorStop(0.7, `rgba(4, 28, 14, ${blob.a * 0.2})`);
+    g.addColorStop(0.4, `rgba(12, 70, 40, ${blob.a * 0.4})`);
+    g.addColorStop(0.75, `rgba(4, 20, 12, ${blob.a * 0.12})`);
     g.addColorStop(1, "rgba(2, 4, 3, 0)");
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -63,40 +61,17 @@ function paintStarSky(canvas: HTMLCanvasElement) {
     ctx.fill();
   }
 
-  // 3) 가느다란 성운 실 — 목업의 섬유질 느낌
-  ctx.save();
-  ctx.globalCompositeOperation = "lighter";
-  for (let i = 0; i < 14; i++) {
-    const x0 = rand() * w;
-    const y0 = rand() * h;
-    const x1 = x0 + (rand() - 0.5) * w * 0.55;
-    const y1 = y0 + (rand() - 0.5) * h * 0.35;
-    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
-    const a = 0.04 + rand() * 0.07;
-    grad.addColorStop(0, "rgba(28,255,138,0)");
-    grad.addColorStop(0.5, `rgba(60,255,160,${a})`);
-    grad.addColorStop(1, "rgba(28,255,138,0)");
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = (8 + rand() * 28) * dpr;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.quadraticCurveTo((x0 + x1) / 2 + (rand() - 0.5) * 80 * dpr, (y0 + y1) / 2, x1, y1);
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  // 4) 저해상도 먼지 노이즈 → 확대 (성운 입자)
-  const nw = Math.max(64, Math.floor(w / 6));
-  const nh = Math.max(96, Math.floor(h / 6));
+  // 3) 먼지 노이즈 — 거의 안 보이게
+  const nw = Math.max(48, Math.floor(w / 10));
+  const nh = Math.max(72, Math.floor(h / 10));
   const dust = ctx.createImageData(nw, nh);
   for (let i = 0; i < dust.data.length; i += 4) {
     const n = rand();
-    const v = n > 0.62 ? Math.floor((n - 0.62) * 90) : 0;
-    dust.data[i] = Math.floor(v * 0.35);
-    dust.data[i + 1] = Math.floor(v * 1.1);
-    dust.data[i + 2] = Math.floor(v * 0.55);
-    dust.data[i + 3] = v > 0 ? 40 + Math.floor(rand() * 50) : 0;
+    const v = n > 0.88 ? Math.floor((n - 0.88) * 40) : 0;
+    dust.data[i] = Math.floor(v * 0.3);
+    dust.data[i + 1] = Math.floor(v * 1.0);
+    dust.data[i + 2] = Math.floor(v * 0.45);
+    dust.data[i + 3] = v > 0 ? 18 + Math.floor(rand() * 22) : 0;
   }
   const off = document.createElement("canvas");
   off.width = nw;
@@ -105,48 +80,48 @@ function paintStarSky(canvas: HTMLCanvasElement) {
   if (octx) {
     octx.putImageData(dust, 0, 0);
     ctx.save();
-    ctx.globalAlpha = 0.55;
+    ctx.globalAlpha = 0.22;
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(off, 0, 0, w, h);
     ctx.restore();
   }
 
-  // 5) 배경 미세 별 — 조금 더 보이게 (라벨·사진 없음)
+  // 4) 배경 잔별 — POC처럼 듬성듬성 (구 표면 점과 구분)
   const area = (w * h) / (dpr * dpr);
-  const count = Math.min(5600, Math.floor(area * 0.0058));
+  const count = Math.min(420, Math.floor(area * 0.00042));
   for (let i = 0; i < count; i++) {
     const x = rand() * w;
     const y = rand() * h;
     const bright = rand();
-    const r = (bright > 0.97 ? 1.9 : bright > 0.9 ? 1.35 : bright > 0.7 ? 0.85 : 0.5) * dpr;
-    const alpha = bright > 0.97 ? 1 : bright > 0.85 ? 0.85 : 0.32 + bright * 0.45;
-    const green = bright > 0.88;
+    const r = (bright > 0.96 ? 1.4 : bright > 0.85 ? 0.9 : 0.45) * dpr;
+    const alpha = bright > 0.96 ? 0.75 : bright > 0.8 ? 0.45 : 0.14 + bright * 0.22;
+    const green = bright > 0.9;
     ctx.fillStyle = green
-      ? `rgba(180, 255, 210, ${alpha})`
-      : `rgba(230, 255, 240, ${alpha})`;
+      ? `rgba(140, 255, 190, ${alpha})`
+      : `rgba(200, 230, 210, ${alpha})`;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-    if (bright > 0.978) {
-      ctx.strokeStyle = `rgba(120, 255, 180, ${alpha * 0.65})`;
-      ctx.lineWidth = 0.7 * dpr;
+    if (bright > 0.985) {
+      ctx.strokeStyle = `rgba(100, 255, 170, ${alpha * 0.5})`;
+      ctx.lineWidth = 0.55 * dpr;
       ctx.beginPath();
-      ctx.moveTo(x - r * 5, y);
-      ctx.lineTo(x + r * 5, y);
-      ctx.moveTo(x, y - r * 5);
-      ctx.lineTo(x, y + r * 5);
+      ctx.moveTo(x - r * 4, y);
+      ctx.lineTo(x + r * 4, y);
+      ctx.moveTo(x, y - r * 4);
+      ctx.lineTo(x, y + r * 4);
       ctx.stroke();
     }
   }
 
-  // 6) 미세 그레인 — 전 픽셀 스캔 대신 점 흩기
+  // 5) 그레인 — 아주 약하게
   ctx.save();
-  ctx.globalAlpha = 0.12;
-  for (let i = 0; i < Math.floor(area * 0.08); i++) {
+  ctx.globalAlpha = 0.04;
+  for (let i = 0; i < Math.floor(area * 0.02); i++) {
     const x = rand() * w;
     const y = rand() * h;
-    const g = 80 + Math.floor(rand() * 120);
-    ctx.fillStyle = `rgb(${Math.floor(g * 0.45)}, ${g}, ${Math.floor(g * 0.55)})`;
+    const g = 70 + Math.floor(rand() * 90);
+    ctx.fillStyle = `rgb(${Math.floor(g * 0.4)}, ${g}, ${Math.floor(g * 0.5)})`;
     ctx.fillRect(x, y, dpr, dpr);
   }
   ctx.restore();

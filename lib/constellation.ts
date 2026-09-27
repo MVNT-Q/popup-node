@@ -121,8 +121,8 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
   const multi = comps.filter((c) => c.length >= 2);
   const solo = comps.filter((c) => c.length === 1).map((c) => c[0]);
 
-  const STAR_MIN = 46;
-  const EDGE_IDEAL = 54;
+  const STAR_MIN = 52;
+  const EDGE_IDEAL = 58;
   const PIECE_GAP = 40;
   const PACK_R = 210;
 
