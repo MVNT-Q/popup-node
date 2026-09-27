@@ -13,9 +13,11 @@
 html, body {
   margin: 0;
   width: 100%;
+  height: 100%;
   min-height: 100%;
   background: #020403;
   color: var(--ink);
+  overflow: hidden;
 }
 
 body {
@@ -37,11 +39,17 @@ p { margin: 0; }
 
 .column {
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
   margin: 0;
   background: #020403;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  /* standalone·갤럭시 탭 하단 시스템 바 */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .top {
@@ -681,11 +689,16 @@ p { margin: 0; }
   width: 100%;
 }
 
-/* 랜딩·가입: 성운은 가로 꽉, 글·폼만 읽기 폭 */
+/* 랜딩·가입: 성운은 가로 꽉, 글·폼만 읽기 폭 — 셸 안에서만 스크롤 */
 .cyp:not(.cyp-sky-page) {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .cyp:not(.cyp-sky-page) > :not(.grove-bg) {
   width: min(400px, 100%);
@@ -1012,9 +1025,11 @@ p { margin: 0; }
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  height: calc(100dvh - 48px);
-  min-height: calc(100dvh - 48px);
-  /* 목업처럼 위 숨 — 키커가 화면 맨 끝에 붙지 않게 */
+  /* 헤더 아래 남은 셸 높이만 쓰고, 100vh 고정 금지 */
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  /* 목업처럼 위 숨 — 하단 safe-area는 .column 셸이 담당 */
   padding: max(28px, env(safe-area-inset-top, 0px) + 20px) 0 10px;
   overflow: hidden;
   background: transparent;
@@ -1855,8 +1870,9 @@ p { margin: 0; }
 
 .cyp-dev {
   overflow: hidden;
-  height: calc(100dvh - 48px);
-  min-height: calc(100dvh - 48px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
 }
 
 .cyp-dev .cyp-grove-stage {
@@ -1975,6 +1991,11 @@ p { margin: 0; }
 .cyp-chat, .cyp-inbox {
   background: #020403;
   color: #e9fff3;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cyp-chat .subhead,
