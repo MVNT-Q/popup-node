@@ -179,6 +179,7 @@ export function GroveBackdrop() {
     <div className="grove-bg" aria-hidden>
       <div className="grove-bg-nebula" />
       <div className="grove-bg-photo" />
+      {/* 캔버스는 미세 별만 — 번호·콜사인 안 그림 */}
       <canvas ref={ref} className="grove-bg-canvas" />
     </div>
   );

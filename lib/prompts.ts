@@ -54,7 +54,7 @@ export const SEEK_EXAMPLES = [
   },
   {
     en: "A collaborator from a completely different field, especially someone working in hardware / biology / game design, who could take my idea somewhere I wouldn't reach alone.",
-    ko: "지금 현재와는 전혀 다른 분야(특히 하드웨어 / 생물공학 / 게임 디자인 등)의 협업자. 함께라면 나의 아이디어가 전혀 다른 방향으로 확장될 수 있는 사람.",
+    ko: "지금까지는 전혀 다른 분야(특히 하드웨어 / 생공학 / 게임 디자인 등)의 협업자. 혼자라면 나의 아이디어를 전혀 다른 방향으로 확장할 수 있는 사람.",
   },
 ] as const;
 

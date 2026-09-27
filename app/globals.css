@@ -729,15 +729,44 @@ p { margin: 0; }
   opacity: 0.95;
 }
 
-/* 목업 구 잠상 — 강하게 블러해서 글자·번호는 안 읽히게 */
+/* 목업 성운 조각 — 글자·가짜 번호 없음 */
 .grove-bg-photo {
   position: absolute;
-  inset: -8%;
+  inset: 0;
   pointer-events: none;
-  background: url("/poc-sphere-lock.jpg") center 42% / cover no-repeat;
-  opacity: 0.34;
+  background:
+    url("/poc-nebula.jpg") right center / auto 115% no-repeat;
+  opacity: 0.55;
   mix-blend-mode: screen;
-  filter: blur(14px) saturate(1.35) brightness(0.75);
+  filter: saturate(1.2) brightness(0.9);
+}
+
+.landing-lock-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.landing-lock-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  opacity: 0.55;
+  filter: brightness(0.55) saturate(1.1);
+}
+.cyp-landing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(2, 4, 3, 0.35) 0%, rgba(2, 4, 3, 0.72) 55%, rgba(2, 4, 3, 0.88) 100%);
+}
+.cyp-landing > :not(.landing-lock-bg) {
+  position: relative;
+  z-index: 1;
 }
 
 .grove-bg-canvas {
@@ -762,17 +791,17 @@ p { margin: 0; }
 }
 
 .mark-lock {
-  width: 100px;
+  width: 110px;
   margin: 8px auto 18px;
 }
 
-.mark-lock.born { width: 120px; }
+.mark-lock.born { width: 128px; }
 
-.mark-lock svg {
+.mark-lock img {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 0 10px rgba(28, 255, 138, 0.55));
+  filter: drop-shadow(0 0 12px rgba(28, 255, 138, 0.55));
 }
 
 .landing-brand {
@@ -1033,6 +1062,9 @@ p { margin: 0; }
   align-items: flex-end;
   gap: 8px;
   flex: none;
+  position: relative;
+  z-index: 5;
+  pointer-events: auto;
 }
 
 .cyp-sky-title {
@@ -1420,13 +1452,15 @@ p { margin: 0; }
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.9s ease;
+  visibility: hidden;
+  transition: opacity 0.7s ease;
   z-index: 1;
 }
 
 .cyp-fade.on {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
   z-index: 2;
 }
 
@@ -1447,22 +1481,24 @@ p { margin: 0; }
   margin: 0;
   flex: none;
   font-family: var(--mono);
-  font-size: clamp(11px, 1.8vw, 14px);
+  font-size: clamp(10px, 1.5vw, 12px);
   font-weight: 500;
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
-  color: #c8ffe0;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  color: #b8f0d0;
   text-align: center;
-  line-height: 1.2;
-  opacity: 0.85;
+  line-height: 1.1;
+  opacity: 0.75;
+  min-height: 0;
+  padding: 0;
 }
 
 .cyp-sphere {
   position: relative;
-  width: min(860px, 98vw);
+  width: min(920px, 99vw);
   aspect-ratio: 1;
   margin-top: 0;
-  max-height: min(68dvh, 720px);
+  max-height: min(74dvh, 780px);
   flex: 1;
 }
 
@@ -1534,18 +1570,18 @@ p { margin: 0; }
 
 .cyp-ticker-track {
   display: inline-flex;
-  gap: 64px;
-  /* 왼쪽 → 오른쪽 */
-  animation: cyp-marquee-ltr 90s linear infinite;
-  font-size: 18px;
+  gap: 72px;
+  /* 왼쪽 → 오른쪽, 더 천천히 */
+  animation: cyp-marquee-ltr 140s linear infinite;
+  font-size: 20px;
   letter-spacing: 0.04em;
-  color: #c8ddd0;
+  color: #d0e4d8;
 }
 
 .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
-  animation-duration: 110s;
-  font-size: 17px;
-  color: #9ab0a2;
+  animation-duration: 170s;
+  font-size: 19px;
+  color: #a8c0b0;
 }
 
 @keyframes cyp-marquee-ltr {

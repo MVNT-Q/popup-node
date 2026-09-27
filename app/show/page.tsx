@@ -146,14 +146,20 @@ export default function ShowPage() {
             {counts.nodes} NODES · {counts.connections} CONNECTIONS
           </h1>
         </div>
-        <div className="cyp-sky-head-right">
+        <div
+          className="cyp-sky-head-right"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
           <div className="cyp-mode-toggle" role="tablist" aria-label="Grove mode">
             <button
               type="button"
               role="tab"
               aria-selected={mode === "grove"}
               className={mode === "grove" ? "on" : ""}
-              onClick={() => setMode("grove")}
+              onClick={() => {
+                touching.current = true;
+                setMode("grove");
+              }}
             >
               GROVE
             </button>
@@ -162,7 +168,11 @@ export default function ShowPage() {
               role="tab"
               aria-selected={mode === "collective"}
               className={mode === "collective" ? "on" : ""}
-              onClick={() => setMode("collective")}
+              onClick={() => {
+                touching.current = true;
+                collectiveSince.current = Date.now();
+                setMode("collective");
+              }}
             >
               COLLECTIVE IMAGINATION
             </button>
