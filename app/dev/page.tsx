@@ -33,7 +33,7 @@ function whyLine(hits: HitLite[], theirName: string) {
 }
 
 export default function DevPage() {
-  const { layout, edges, rows, skyStars, skyEdges, counts } = useMemo(() => {
+  const { layout, rows, skyStars, skyEdges, counts } = useMemo(() => {
     const answers = (id: string) => {
       const node = DEV_PERSONAS.find((p) => p.id === id)!;
       return node.slots.map((slot) => slot.answer);
@@ -113,7 +113,6 @@ export default function DevPage() {
 
     return {
       layout: points,
-      edges: solidEdges,
       rows,
       skyStars,
       skyEdges,
