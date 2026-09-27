@@ -37,8 +37,8 @@ export default function InboxPage() {
   }, []);
 
   return (
-    <main className="pad">
-      <BackButton fallback="/map" />
+    <main className="pad cyp-inbox">
+      <BackButton fallback="/my-node" />
       <h1 className="lede">받은 말</h1>
       {threads.length === 0 ? <p className="hint">아직 대화가 없다.</p> : null}
       <div className="threads">

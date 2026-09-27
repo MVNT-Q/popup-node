@@ -45,10 +45,14 @@ export function Header() {
     return () => window.removeEventListener("node-inbox", onInbox);
   }, []);
 
+  const bare =
+    pathname === "/" || pathname.startsWith("/join") || pathname === "/born" || pathname === "/show";
+  if (bare) return null;
+
   return (
     <header className="top">
-      <Link href={code ? "/map" : "/"} className="mark">
-        NODE
+      <Link href={code ? "/my-node" : "/"} className="mark">
+        cyp3 grove
       </Link>
       {code ? (
         <div className="top-actions">
@@ -56,7 +60,7 @@ export function Header() {
             <Bell />
             {unread > 0 ? <i className="pip" /> : null}
           </Link>
-          <Link href="/map" className="me-code">
+          <Link href="/my-node" className="me-code">
             {code}
           </Link>
         </div>

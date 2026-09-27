@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { MapScreen } from "@/components/MapScreen";
-
+// 예전 하늘. 참가 경로는 /my-node 로만 간다.
 export default function MapPage() {
-  return <MapScreen />;
+  redirect("/my-node");
 }

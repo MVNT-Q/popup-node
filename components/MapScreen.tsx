@@ -302,8 +302,8 @@ export function MapScreen() {
                 </div>
               ))}
             </div>
-            <Link className="btn" href="/join" style={{ marginTop: 14 }}>
-              질문 고치기
+            <Link className="btn" href="/signals" style={{ marginTop: 14 }}>
+              내 시그널
             </Link>
           </>
         ) : pickedStar ? (

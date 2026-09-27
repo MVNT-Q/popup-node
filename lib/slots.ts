@@ -1,17 +1,22 @@
 import { composeImagine, imagineReady, parseImagine } from "./imagine";
-import { PROMPTS } from "./prompts";
+import { OFFER_TAGS, PROMPTS } from "./prompts";
 import type { Slot } from "./types";
 
 const SHORT = 180;
 
-function asRecord(item: unknown): { answer: string; selected?: string[]; words?: string } {
+function asRecord(item: unknown): { answer: string; selected?: string[]; words?: string; tags?: string[] } {
   if (typeof item === "string") return { answer: item };
   if (!item || typeof item !== "object") return { answer: "" };
-  const row = item as { answer?: unknown; selected?: unknown; words?: unknown };
+  const row = item as { answer?: unknown; selected?: unknown; words?: unknown; tags?: unknown };
+  const allowed = new Set<string>(OFFER_TAGS);
+  const tags = Array.isArray(row.tags)
+    ? row.tags.map((value) => String(value)).filter((tag, index, list) => allowed.has(tag) && list.indexOf(tag) === index).slice(0, 4)
+    : undefined;
   return {
     answer: String(row.answer ?? ""),
     selected: Array.isArray(row.selected) ? row.selected.map((value) => String(value)) : undefined,
     words: typeof row.words === "string" ? row.words : undefined,
+    tags,
   };
 }
 
@@ -35,9 +40,11 @@ export function cleanSlots(input: unknown): Slot[] | null {
       slots.push({ question: PROMPTS[index].key, answer });
       continue;
     }
-    const answer = asRecord(input[index]).answer.trim().slice(0, SHORT);
+    const row = asRecord(input[index]);
+    const answer = row.answer.trim().slice(0, SHORT);
     if (answer.length < 2) return null;
-    slots.push({ question: PROMPTS[index].key, answer });
+    const tags = index === 1 ? row.tags : undefined;
+    slots.push(tags && tags.length ? { question: PROMPTS[index].key, answer, tags } : { question: PROMPTS[index].key, answer });
   }
   return slots;
 }

@@ -12,7 +12,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "NODE",
+  title: "cyp3 grove",
   description: "질문 세 개로 맞는 노드만 밝히는 팝업 웹",
   manifest: "/manifest.json",
   icons: {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
-  appleWebApp: { capable: true, title: "NODE", statusBarStyle: "black" },
+  appleWebApp: { capable: true, title: "cyp3 grove", statusBarStyle: "black" },
 };
 
 export const viewport: Viewport = {

@@ -2,146 +2,151 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { subscribePush } from "@/components/alerts";
-import { BackButton } from "@/components/BackButton";
-import { InstallCard } from "@/components/InstallCard";
-import { parseImagine } from "@/lib/imagine";
-import { IMAGINE_COPY, IMAGINE_WORLDS, PROMPTS } from "@/lib/prompts";
+import { ExperimentKicker, GroveBackdrop, StepMark } from "@/components/GroveBackdrop";
+import { writeDraft } from "@/lib/draft";
+import { OFFER_EXAMPLES, OFFER_TAGS, SEEK_EXAMPLES } from "@/lib/prompts";
 
 export default function JoinPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [callsign, setCallsign] = useState("");
   const [seek, setSeek] = useState("");
   const [offer, setOffer] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [words, setWords] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [open, setOpen] = useState<"seek" | "offer" | null>(null);
+  const [exists, setExists] = useState(false);
   const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     fetch("/api/session", { cache: "no-store" })
       .then((response) => response.json())
-      .then((data: { me?: { name: string; slots: { answer: string }[] } | null }) => {
-        if (!data.me) return;
-        setEditing(true);
-        setName(data.me.name === "손님" ? "" : data.me.name);
-        const slots = data.me.slots ?? [];
-        setSeek(slots[0]?.answer ?? "");
-        setOffer(slots[1]?.answer ?? "");
-        const imagine = parseImagine(slots[2]?.answer ?? "");
-        setSelected(imagine.selected);
-        setWords(imagine.words);
-      })
+      .then((data: { me?: { id: string } | null }) => setExists(Boolean(data.me)))
       .catch(() => undefined);
   }, []);
 
-  function toggleWorld(world: string) {
-    setSelected((prev) => (prev.includes(world) ? prev.filter((item) => item !== world) : [...prev, world]));
+  function toggleTag(tag: string) {
+    setTags((prev) => {
+      if (prev.includes(tag)) return prev.filter((item) => item !== tag);
+      if (prev.length >= 4) return prev;
+      return [...prev, tag];
+    });
   }
 
-  async function submit() {
-    setError("");
-    setPending(true);
-    try {
-      const response = await fetch("/api/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          slots: [{ answer: seek }, { answer: offer }, { selected, words }],
-          update: editing,
-        }),
-      });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(data.error || "저장 실패");
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        await subscribePush();
-      }
-      router.push("/map");
-      router.refresh();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "저장 실패");
-      setPending(false);
+  function next() {
+    if (exists) return;
+    if (callsign.trim().length < 2 || seek.trim().length < 2 || offer.trim().length < 2) {
+      setError("콜사인, 찾고 있는 것, 줄 수 있는 것을 두 글자 이상 적어 주세요.");
+      return;
     }
+    writeDraft({ callsign: callsign.trim(), seek: seek.trim(), offer: offer.trim(), tags });
+    router.push("/join/imagine");
   }
-
-  const textSlots = [
-    { prompt: PROMPTS[0], value: seek, set: setSeek },
-    { prompt: PROMPTS[1], value: offer, set: setOffer },
-  ];
 
   return (
-    <main className="pad">
-      <BackButton fallback={editing ? "/map" : "/"} />
-      <h1 className="lede">{editing ? "문장 고치기" : "노드 만들기"}</h1>
-      <p className="sub">같은 결을 찾기 위한 말이다. SEEK와 OFFER는 짧게, IMAGINE은 세계를 고른다.</p>
+    <main className="cyp">
+      <GroveBackdrop />
+      <ExperimentKicker />
+      <h1 className="display form-title">FORM YOUR NODE</h1>
+      <p className="ko center">당신의 NODE를 만들어보세요.</p>
 
-      <label className="field" style={{ marginTop: 18 }}>
-        <span>이름</span>
-        <input value={name} maxLength={20} placeholder="비우면 손님" onChange={(event) => setName(event.target.value)} />
-      </label>
+      {exists ? (
+        <p className="ko center">
+          이 브라우저에는 이미 노드가 있습니다. <a href="/my-node">내 노드 보기</a>
+        </p>
+      ) : null}
 
-      {textSlots.map(({ prompt, value, set }) => (
-        <section key={prompt.key}>
-          <div className="slot-no">{prompt.title}</div>
-          <p className="hint">
-            {prompt.ko}. {prompt.guide}
-          </p>
-          <label className="field">
-            <textarea
-              rows={2}
-              maxLength={180}
-              value={value}
-              placeholder={prompt.placeholder}
-              onChange={(event) => set(event.target.value)}
-            />
-          </label>
-        </section>
-      ))}
+      <section className="block">
+        <h2>
+          <b>01</b> CALLSIGN
+        </h2>
+        <p>Choose a name to represent you in the Node Grove.</p>
+        <p className="ko">고유한 이름은 다른 NODE와의 첫 만남과 연대를 강화할 연동입니다.</p>
+        <input
+          className="cyp-input"
+          value={callsign}
+          maxLength={20}
+          placeholder="Enter your callsign..."
+          onChange={(event) => setCallsign(event.target.value)}
+        />
+        <p className="fine">e.g. HEX3 / LUNA / ORBIT / NULL</p>
+      </section>
 
-      <section>
-        <div className="slot-no">{PROMPTS[2].title}</div>
-        <p className="imagine-lead">{IMAGINE_COPY.question}</p>
-        <p className="hint">{IMAGINE_COPY.note}</p>
-        <div className="worlds">
-          {IMAGINE_WORLDS.map((world) => {
-            const on = selected.includes(world);
+      <section className="block">
+        <h2>
+          <b>02</b> I SEEK
+        </h2>
+        <p>What are you looking for right now?</p>
+        <p className="ko">지금 찾고 있는 것은 어떤 것인가요?</p>
+        <p>Be specific about what you want to do, and the people, skills, knowledge, or resources you need.</p>
+        <p className="ko">무엇을 하는지, 그리고 이를 향해 필요한 사람·기술·자원을 구체적으로 적어주세요.</p>
+        <textarea
+          className="cyp-input"
+          rows={4}
+          maxLength={180}
+          value={seek}
+          placeholder="I'm looking for someone or something that can help me..."
+          onChange={(event) => setSeek(event.target.value)}
+        />
+        <button className="ghost-line" type="button" onClick={() => setOpen(open === "seek" ? null : "seek")}>
+          {open === "seek" ? "HIDE EXAMPLES ↑" : "SEE EXAMPLES ↓"}
+        </button>
+        {open === "seek"
+          ? SEEK_EXAMPLES.map((example) => (
+              <button key={example.en} className="example" type="button" onClick={() => setSeek(example.en)}>
+                <span>{example.en}</span>
+                <small>{example.ko}</small>
+              </button>
+            ))
+          : null}
+      </section>
+
+      <section className="block">
+        <h2>
+          <b>03</b> I OFFER
+        </h2>
+        <p>What can you offer to others?</p>
+        <p className="ko">다른 사람들에게 어떤 도움을 줄 수 있나요?</p>
+        <p className="label">SELECT WHAT YOU CAN BRING</p>
+        <p className="ko">당신이 기여할 수 있는 것을 선택 해요. 최대 4개.</p>
+        <div className="chips">
+          {OFFER_TAGS.map((tag) => {
+            const on = tags.includes(tag);
             return (
-              <button
-                key={world}
-                type="button"
-                className={on ? "q on" : "q"}
-                aria-pressed={on}
-                onClick={() => toggleWorld(world)}
-              >
-                {world}
+              <button key={tag} type="button" className={on ? "chip on" : "chip"} aria-pressed={on} onClick={() => toggleTag(tag)}>
+                {tag}
               </button>
             );
           })}
         </div>
-        <label className="field">
-          <span>{IMAGINE_COPY.optional}</span>
-          <textarea
-            rows={3}
-            maxLength={500}
-            value={words}
-            placeholder={PROMPTS[2].placeholder}
-            onChange={(event) => setWords(event.target.value)}
-          />
-        </label>
+        <p>Tell us what this looks like in practice.</p>
+        <p className="ko">실제로 어떤 모습으로 기여할 수 있는지, 혹은 관련 경험을 구체적으로 적어보세요.</p>
+        <textarea
+          className="cyp-input"
+          rows={4}
+          maxLength={180}
+          value={offer}
+          placeholder="I can offer..."
+          onChange={(event) => setOffer(event.target.value)}
+        />
+        <button className="ghost-line" type="button" onClick={() => setOpen(open === "offer" ? null : "offer")}>
+          {open === "offer" ? "HIDE EXAMPLES ↑" : "SEE EXAMPLES ↓"}
+        </button>
+        {open === "offer"
+          ? OFFER_EXAMPLES.map((example) => (
+              <button key={example.en} className="example" type="button" onClick={() => setOffer(example.en)}>
+                <span>{example.en}</span>
+                <small>{example.ko}</small>
+              </button>
+            ))
+          : null}
       </section>
 
-      <InstallCard />
-
-      <button className="btn" type="button" disabled={pending} onClick={submit} style={{ marginTop: 8 }}>
-        {pending ? "…" : editing ? "저장" : "들어가기"}
+      {error ? <p className="cyp-error">{error}</p> : null}
+      <button className="cyp-btn" type="button" disabled={exists} onClick={next}>
+        <span>
+          CONTINUE <i aria-hidden>→</i>
+        </span>
       </button>
-      <p className="hint" style={{ marginTop: 10 }}>
-        알림은 위 순서대로입니다. 홈 화면에 넣은 뒤에 이 폰으로 연결됩니다. 거절해도 들어가고, 새 말은 상단 종에
-        쌓입니다.
-      </p>
-      {error ? <p className="error">{error}</p> : null}
+      <StepMark step={1} />
     </main>
   );
 }

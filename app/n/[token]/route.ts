@@ -17,6 +17,6 @@ export async function GET(request: Request, ctx: Ctx) {
   }
   const node = await claimTag(token);
   await setSessionId(node.id);
-  const next = isFilled(node.slots) ? "/map" : "/join";
+  const next = isFilled(node.slots) ? "/my-node" : "/join";
   return Response.redirect(new URL(next, request.url));
 }

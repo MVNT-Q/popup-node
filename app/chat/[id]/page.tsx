@@ -87,9 +87,9 @@ export default function ChatPage() {
   }
 
   return (
-    <main style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+    <main className="cyp-chat" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       <div className="subhead">
-        <BackButton fallback="/map" />
+        <BackButton fallback="/my-node" />
         <span className="me-code">{code ? `NODE ${code}` : "…"}</span>
       </div>
       <div

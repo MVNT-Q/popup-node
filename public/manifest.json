@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "NODE",
-  "short_name": "NODE",
+  "name": "cyp3 grove",
+  "short_name": "cyp3 grove",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

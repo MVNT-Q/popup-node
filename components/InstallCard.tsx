@@ -23,6 +23,10 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
         if (!stop) setPhase("off");
         return;
       }
+      if (window.location.pathname === "/show" || window.location.pathname.startsWith("/show/")) {
+        if (!stop) setPhase("off");
+        return;
+      }
       const permission = "Notification" in window ? Notification.permission : "denied";
       if (permission === "granted") {
         const saved = await subscribePush();
@@ -38,6 +42,10 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
           return;
         }
         if (saved === "no-push") {
+          if (place === "continue") {
+            setPhase("off");
+            return;
+          }
           setNote("이 브라우저에는 폰 푸시가 없습니다. 폰 크롬, 또는 아이폰은 홈 화면 아이콘으로 연 뒤에 허용해야 붙습니다.");
           if (!isStandalone() && place === "join") {
             setGuide(isIos() ? "ios" : "manual");

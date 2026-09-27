@@ -44,9 +44,10 @@ export async function POST(request: Request) {
 
   const slots = cleanSlots(body.slots);
   if (!slots) {
-    return fail("SEEK와 OFFER는 두 글자 이상 적어 주세요. IMAGINE은 세계를 고르거나, 두 글자 이상 적어도 됩니다.", 400);
+    return fail("콜사인, SEEK, OFFER, IMAGINE을 두 글자 이상 적어 주세요.", 400);
   }
-  const name = String(body.name ?? "").trim().slice(0, 20) || "손님";
+  const name = String(body.name ?? "").trim().slice(0, 20);
+  if (name.length < 2) return fail("콜사인을 두 글자 이상 적어 주세요.", 400);
 
   if (body.update) {
     const id = await readSessionId();
@@ -57,6 +58,10 @@ export async function POST(request: Request) {
     await saveNode(node);
     return Response.json({ me: publicNode(node) });
   }
+
+  const existingId = await readSessionId();
+  const existing = existingId ? await getNode(existingId) : null;
+  if (existing) return fail("이 브라우저에는 이미 노드가 있습니다.", 409);
 
   const node = await createGuest(name, slots);
   await setSessionId(node.id);

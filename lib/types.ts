@@ -1,6 +1,7 @@
 export type Slot = {
   question: string;
   answer: string;
+  tags?: string[];
 };
 
 export type NodeKind = "agent" | "guest" | "prop";
