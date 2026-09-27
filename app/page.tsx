@@ -93,6 +93,12 @@ export default function LandingPage() {
           <small>NODE가 되기</small>
         </a>
       )}
+      <a className="cyp-btn ghost" href="/usershow">
+        <span>
+          EXPLORE THE NODE GROVE <i aria-hidden>→</i>
+        </span>
+        <small>노드 그로브 탐색하기</small>
+      </a>
 
       <p className="fine">PSEUDONYMOUS · ~2 MIN · 4 DAY FIELD</p>
       <p className="status">

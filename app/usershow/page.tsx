@@ -2,7 +2,7 @@
 
 import { NodeGroveShow } from "@/components/NodeGroveShow";
 
-/** 유저용 그로브 보기 — 패드와 같고 뒤로·홈만 추가 */
+/** 참가자 일반 그로브 탐색 — 뒤로·홈 있음, 자동 교차 없음. 전시 패드는 /devshow(주소줄만). */
 export default function UserShowPage() {
   return <NodeGroveShow nav={true} />;
 }
