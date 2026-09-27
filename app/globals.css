@@ -15,6 +15,7 @@ html, body {
   width: 100%;
   height: 100%;
   min-height: 100%;
+  min-height: 100lvh;
   background: #020403;
   color: var(--ink);
   overflow: hidden;
@@ -39,9 +40,10 @@ p { margin: 0; }
 
 .column {
   width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
-  min-height: 0;
+  /* 100dvh는 갤럭시 크롬에서 보이는 창보다 짧아 아래에 body 검정이 남음 */
+  height: 100%;
+  min-height: 100%;
+  min-height: 100lvh;
   margin: 0;
   background: #020403;
   display: flex;
@@ -758,7 +760,11 @@ p { margin: 0; }
   opacity: 0.85;
 }
 
-.cyp > :not(.grove-bg) { position: relative; z-index: 1; }
+/* 모드바·시트·스크림은 fixed 유지 — 여기 relative가 특이도로 fixed를 덮으면 탭 아래 검은 띠 */
+.cyp > :not(.grove-bg):not(.cyp-mode-bar):not(.cyp-sheet):not(.cyp-sheet-scrim) {
+  position: relative;
+  z-index: 1;
+}
 
 .kicker {
   margin: 0 0 28px;
@@ -1357,15 +1363,21 @@ p { margin: 0; }
   z-index: 6;
 }
 
+/* 내 별만 청록 링+심 — SEEK/OFFER/IMAGINE RGB 분할 금지. 타인 별은 초록 유지 */
 .cyp-star.self .dot {
   width: 9px;
   height: 9px;
-  background: #fff;
+  background: #e8fffc;
   box-shadow:
-    0 0 2px 1px rgba(255, 255, 255, 1),
-    0 0 8px 3.5px rgba(28, 255, 138, 1),
-    0 0 20px 9px rgba(28, 255, 138, 0.55),
-    0 0 40px 18px rgba(28, 255, 138, 0.22);
+    0 0 0 2px rgba(64, 230, 220, 0.98),
+    0 0 2px 1px rgba(232, 255, 252, 1),
+    0 0 10px 4px rgba(48, 220, 210, 0.9),
+    0 0 22px 10px rgba(40, 200, 195, 0.45),
+    0 0 40px 16px rgba(30, 180, 175, 0.2);
+}
+
+.cyp-star.self .num {
+  color: #b8fff8;
 }
 
 .cyp-star.strong .dot {
@@ -1913,7 +1925,8 @@ p { margin: 0; }
   to { transform: translateX(-50%); }
 }
 
-/* POC_7·8 하단 토글 — 화면 맨 아래. safe-area는 여기 한 번만(컬럼과 이중 금지) */
+/* POC_7·8 하단 토글 — 보이는 창 맨 아래. safe-area는 여기 한 번만(컬럼과 이중 금지) */
+.cyp > .cyp-mode-bar,
 .cyp-mode-bar {
   display: flex;
   align-items: stretch;
