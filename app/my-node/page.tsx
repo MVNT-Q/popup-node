@@ -115,15 +115,20 @@ export default function MyNodePage() {
     return list;
   }, [me, stars, points, picked]);
 
+  // 중·강 겹침 줄만(API). 토글은 자리 고정, 줄만 밝기 조절.
   const skyEdges: SkyEdge[] = useMemo(() => {
-    return edgesRaw.map((edge) => {
-      const brightQs = edge.questions.filter((q) => on.includes(q));
-      return {
-        ...edge,
-        bright: brightQs.length > 0,
-      };
-    });
-  }, [edgesRaw, on]);
+    if (!me || !points) return [];
+    const ids = new Set(skyStars.map((star) => star.id));
+    return edgesRaw
+      .filter((edge) => ids.has(edge.a) && ids.has(edge.b))
+      .map((edge) => {
+        const brightQs = edge.questions.filter((q) => on.includes(q));
+        return {
+          ...edge,
+          bright: brightQs.length > 0,
+        };
+      });
+  }, [edgesRaw, on, me, points, skyStars]);
 
   const pickedStar = stars.find((star) => star.id === picked) ?? null;
   const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";

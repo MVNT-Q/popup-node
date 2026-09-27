@@ -197,6 +197,7 @@ export function ConstellationSky({
             const a = byId.get(edge.a);
             const b = byId.get(edge.b);
             if (!a || !b) return null;
+            // 별 중심끼리만 — 라벨(#·이름)은 선 밖 absolute
             return (
               <line
                 key={`${edge.a}-${edge.b}-${edge.questions.join(",")}`}

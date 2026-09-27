@@ -13,7 +13,14 @@ type Base = SphereWord & {
 
 type Dust = { x: number; y: number; z: number; size: number; glow: number };
 
-type Pair = { i: number; j: number; a: number; kind: "word" | "dust" };
+type Pair = {
+  i: number;
+  j: number;
+  a: number;
+  kind: "word" | "dust";
+  /** 1 = 구면 호, >1 = 구 밖으로 포물선처럼 나감 */
+  bulge: number;
+};
 
 function frac(seed: number) {
   const t = Math.sin(seed * 12.9898) * 43758.5453;
@@ -49,7 +56,6 @@ function basePlace(words: SphereWord[]): Base[] {
     const z = Math.sin(golden) * radius;
     const hub = !word.example && word.weight >= 2;
     const phrase = word.text.includes(" ");
-    // 목업처럼 숨 쉬는 간격 — 예전보다 한 단계 작게
     const sizeBase = word.example
       ? phrase
         ? 5 + r2 * 2.5
@@ -74,7 +80,6 @@ function makeDust(count: number): Dust[] {
     const r1 = frac(i * 2.17 + 9.1);
     const r2 = frac(i * 5.33 + 1.4);
     const r3 = frac(i * 11.7 + 3.8);
-    // 먼지도 피보나치에 가깝게 전면 분포
     const yi = i + 0.5;
     const y0 = 1 - (yi / count) * 2;
     const y = Math.max(-0.95, Math.min(0.95, y0 + (r1 - 0.5) * 0.1));
@@ -117,12 +122,20 @@ function linkPairs(base: Base[], dust: Dust[]): Pair[] {
   }
   scored.sort((a, b) => b.prefer - a.prefer || a.dist - b.dist);
   const maxLinks = Math.max(56, Math.min(260, Math.floor(points.length * 1.8)));
-  return scored.slice(0, maxLinks).map((row) => ({
-    i: row.i,
-    j: row.j,
-    a: 0.14 + (1 - row.dist / 0.48) * 0.32,
-    kind: row.i < base.length && row.j < base.length ? "word" : "dust",
-  }));
+  return scored.slice(0, maxLinks).map((row) => {
+    const roll = frac(row.i * 41 + row.j * 13 + 2.7);
+    // 일부만 구 반경 밖으로 포물선처럼. 나머지는 구면 호.
+    let bulge = 1.02 + roll * 0.12;
+    if (roll > 0.78) bulge = 1.22 + (roll - 0.78) * 1.4;
+    else if (roll > 0.62) bulge = 1.1 + (roll - 0.62) * 0.7;
+    return {
+      i: row.i,
+      j: row.j,
+      a: 0.14 + (1 - row.dist / 0.48) * 0.32,
+      kind: row.i < base.length && row.j < base.length ? "word" : "dust",
+      bulge,
+    };
+  });
 }
 
 function projectPoint(
@@ -143,12 +156,39 @@ function projectPoint(
   return { x: x1, y: y2, z: z2 };
 }
 
+/** 구면/외곽 곡선 제어점 — 직선·플라즈마 가닥 아님 */
+function curveControl(
+  a: { x: number; y: number; z: number },
+  b: { x: number; y: number; z: number },
+  bulge: number,
+) {
+  const mx = (a.x + b.x) * 0.5;
+  const my = (a.y + b.y) * 0.5;
+  const mz = (a.z + b.z) * 0.5;
+  const len = Math.hypot(mx, my, mz) || 1;
+  // 짧은 현은 살짝만, 긴 현·외곽은 더 밖으로
+  const chord = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  const lift = bulge * (0.92 + chord * 0.35);
+  return {
+    x: (mx / len) * lift,
+    y: (my / len) * lift,
+    z: (mz / len) * lift,
+  };
+}
+
 export function WordSphere({ imagines }: { imagines: string[] }) {
   const base = useMemo(() => basePlace(sphereWords(imagines)), [imagines]);
   const dust = useMemo(() => makeDust(Math.max(72, base.length * 1.6)), [base.length]);
   const pairs = useMemo(() => linkPairs(base, dust), [base, dust]);
   const rootRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const points3 = useMemo(
+    () => [
+      ...base.map((p) => ({ x: p.x, y: p.y, z: p.z })),
+      ...dust.map((p) => ({ x: p.x, y: p.y, z: p.z })),
+    ],
+    [base, dust],
+  );
 
   useEffect(() => {
     const root = rootRef.current;
@@ -157,7 +197,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
 
     const wordEls = Array.from(root.querySelectorAll<HTMLElement>(".cyp-word"));
     const dustEls = Array.from(root.querySelectorAll<HTMLElement>(".cyp-dust"));
-    const lineEls = Array.from(svg.querySelectorAll("line"));
+    const pathEls = Array.from(svg.querySelectorAll("path"));
     let yaw = 0;
     let pitch = 0.18;
     let raf = 0;
@@ -257,9 +297,9 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
         };
       });
 
-      const all = [
-        ...projWords.map((p) => ({ left: p.left, top: p.top, depth: p.depth })),
-        ...projDust.map((p) => ({ left: p.left, top: p.top, depth: p.depth })),
+      const depths = [
+        ...projWords.map((p) => p.depth),
+        ...projDust.map((p) => p.depth),
       ];
 
       for (let i = 0; i < wordEls.length; i++) {
@@ -287,19 +327,26 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       }
 
       for (let k = 0; k < pairs.length; k++) {
-        const line = lineEls[k];
+        const path = pathEls[k];
         const pair = pairs[k];
-        if (!line || !pair) continue;
-        const a = all[pair.i];
-        const b = all[pair.j];
-        if (!a || !b) continue;
-        const fade = 0.55 + ((a.depth + b.depth) / 2) * 0.55;
+        if (!path || !pair) continue;
+        const pa = points3[pair.i];
+        const pb = points3[pair.j];
+        if (!pa || !pb) continue;
+        const ra = projectPoint(pa, yaw, pitch);
+        const rb = projectPoint(pb, yaw, pitch);
+        const rc = projectPoint(curveControl(pa, pb, pair.bulge), yaw, pitch);
+        const x1 = 50 + ra.x * R;
+        const y1 = 50 - ra.y * R;
+        const x2 = 50 + rb.x * R;
+        const y2 = 50 - rb.y * R;
+        const cx = 50 + rc.x * R;
+        const cy = 50 - rc.y * R;
+        const depth = ((depths[pair.i] ?? 0.5) + (depths[pair.j] ?? 0.5)) / 2;
+        const fade = 0.55 + depth * 0.55;
         const alpha = Math.min(0.85, pair.a * fade * (pair.kind === "word" ? 1.15 : 0.85));
-        line.setAttribute("x1", String(a.left));
-        line.setAttribute("y1", String(a.top));
-        line.setAttribute("x2", String(b.left));
-        line.setAttribute("y2", String(b.top));
-        line.setAttribute("stroke", `rgba(28,255,138,${alpha})`);
+        path.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+        path.setAttribute("stroke", `rgba(28,255,138,${alpha})`);
       }
 
       raf = requestAnimationFrame(tick);
@@ -313,7 +360,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       root.removeEventListener("pointerup", onUp);
       root.removeEventListener("pointercancel", onUp);
     };
-  }, [base, dust, pairs]);
+  }, [base, dust, pairs, points3]);
 
   return (
     <div className="cyp-sphere" aria-hidden ref={rootRef}>
@@ -324,15 +371,14 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
         preserveAspectRatio="xMidYMid meet"
         ref={svgRef}
       >
-        {pairs.map((pair, index) => (
-          <line
+        {pairs.map((_, index) => (
+          <path
             key={index}
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="0"
+            d="M 0 0 Q 0 0 0 0"
+            fill="none"
             stroke="rgba(28,255,138,0.2)"
-            strokeWidth={pair.kind === "word" ? "0.12" : "0.08"}
+            strokeWidth="0.11"
+            strokeLinecap="round"
           />
         ))}
       </svg>

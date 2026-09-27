@@ -1254,27 +1254,30 @@ p { margin: 0; }
 
 .cyp-wires {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
   overflow: visible;
   pointer-events: none;
+  z-index: 1;
 }
 
 .cyp-line {
   stroke: #7dffb4;
-  /* 가는 선 유지 — 굵은 막대 금지. 콜렉티브처럼 선이 읽히게 */
-  stroke-width: 0.85;
+  /* 화면 기준 가는 선 — 줌해도 굵기 유지. 별 중심만 이음 */
+  stroke-width: 1.15px;
+  vector-effect: non-scaling-stroke;
   fill: none;
   filter: drop-shadow(0 0 1.6px rgba(28, 255, 138, 1))
     drop-shadow(0 0 4px rgba(28, 255, 138, 0.5));
   transition: opacity 0.35s ease, stroke-opacity 0.35s ease;
 }
 
-.cyp-line.strong { stroke-opacity: 0.92; }
-.cyp-line.mid { stroke-opacity: 0.72; }
-.cyp-line.weak { stroke-opacity: 0.52; }
-.cyp-line.dim { stroke-opacity: 0.28; }
+.cyp-line.strong { stroke-opacity: 0.95; }
+.cyp-line.mid { stroke-opacity: 0.78; }
+.cyp-line.weak { stroke-opacity: 0.55; }
+.cyp-line.dim { stroke-opacity: 0.22; }
 
-/* left/top = 별 중심. 라벨은 옆에 absolute — flex 박스가 선 앵커를 밀지 않음 */
+/* left/top = 별 중심. 라벨은 옆에 absolute — 선은 심을 지나고 번호는 밖 */
 .cyp-star {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -1289,6 +1292,7 @@ p { margin: 0; }
   z-index: 3;
   cursor: pointer;
   pointer-events: auto;
+  overflow: visible;
 }
 
 /* 흰 코어 + 넓게 번지는 초록 bloom — 중·강은 목업처럼 한눈에 */
@@ -1367,22 +1371,24 @@ p { margin: 0; }
 
 .cyp-star .num {
   position: absolute;
-  left: calc(50% + 16px);
+  left: calc(50% + 18px);
   top: 50%;
   transform: translateY(-50%);
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.08em;
   color: #e9fff3;
-  text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+  text-shadow:
+    0 0 6px rgba(2, 4, 3, 1),
+    0 0 10px rgba(2, 4, 3, 0.9);
   white-space: nowrap;
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
 }
 
 .cyp-star .call {
   position: absolute;
-  left: calc(50% + 16px);
+  left: calc(50% + 18px);
   top: calc(50% + 11px);
   font-size: 10px;
   color: #8d929c;
@@ -1391,14 +1397,15 @@ p { margin: 0; }
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 2;
+  z-index: 4;
+  text-shadow: 0 0 6px rgba(2, 4, 3, 1);
 }
 
 /* 라벨을 선 반대쪽으로 — 선은 별 중심, 번호·이름은 밖 */
 .cyp-star.label-left .num,
 .cyp-star.label-left .call {
   left: auto;
-  right: calc(50% + 16px);
+  right: calc(50% + 18px);
   text-align: right;
 }
 .cyp-star.label-left .call {
@@ -1646,6 +1653,13 @@ p { margin: 0; }
   overflow: visible;
   z-index: 2;
   filter: drop-shadow(0 0 1.2px rgba(28, 255, 138, 0.75));
+}
+
+/* 단어·먼지 크기와 무관 — 선 굵기 전부 동일. path 곡선 */
+.cyp-sphere-wires path {
+  fill: none;
+  stroke-width: 0.11;
+  stroke-linecap: round;
 }
 
 .cyp-word {
