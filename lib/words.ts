@@ -153,15 +153,16 @@ function tokens(text: string): string[] {
 /** IMAGINE 문장에서 영어 짧은 구절을 뽑아 구를 채운다. */
 function phrases(text: string): string[] {
   if (!/[A-Za-z]{3,}/.test(text)) return [];
-  const chunks = text.match(/[A-Za-z][A-Za-z0-9\s,'-]{5,42}/g) || [];
+  // 구 안 긴 문장 조각은 틱커처럼 보이므로 짧은 2~3어절만
+  const chunks = text.match(/[A-Za-z][A-Za-z0-9\s,'-]{5,28}/g) || [];
   const out: string[] = [];
   for (const raw of chunks) {
     const cleaned = raw.replace(/\s+/g, " ").trim();
-    if (cleaned.length < 6) continue;
+    if (cleaned.length < 6 || cleaned.length > 22) continue;
     if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(cleaned)) continue;
     const words = cleaned.split(/\s+/).filter((w) => !STOP.has(w.toLowerCase()));
-    if (words.length < 2) continue;
-    const display = words.join(" ").toUpperCase().slice(0, 28);
+    if (words.length < 2 || words.length > 3) continue;
+    const display = words.join(" ").toUpperCase().slice(0, 20);
     if (display.length >= 6) out.push(display);
   }
   return out;
@@ -206,14 +207,14 @@ export function sphereWords(imagines: string[]): SphereWord[] {
 
   const realTokens: SphereWord[] = [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, 72)
+    .slice(0, 48)
     .map(([text, weight]) => ({ text, weight, example: false }));
 
   const used = new Set(realTokens.map((w) => w.text.toUpperCase()));
   const realPhrases: SphereWord[] = [...phraseCounts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .filter(([text]) => !used.has(text))
-    .slice(0, 24)
+    .slice(0, 8)
     .map(([text, weight]) => {
       used.add(text);
       return { text, weight: weight + 1, example: false };
@@ -221,9 +222,9 @@ export function sphereWords(imagines: string[]): SphereWord[] {
 
   const real = [...realTokens, ...realPhrases];
 
-  // 목업처럼 구가 비지 않게 예시 단어를 넉넉히 깐다
+  // 키워드만 채움(원문 문장 조각 아님). 밀도는 숨 쉬게 낮춤
   const extras: SphereWord[] = [];
-  const target = Math.max(96, real.length + 36);
+  const target = Math.max(56, Math.min(72, real.length + 28));
   for (const word of EXAMPLE_WORDS) {
     if (used.has(word)) continue;
     extras.push({ text: word, weight: 1, example: true });

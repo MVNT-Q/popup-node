@@ -49,15 +49,16 @@ function basePlace(words: SphereWord[]): Base[] {
     const z = Math.sin(golden) * radius;
     const hub = !word.example && word.weight >= 2;
     const phrase = word.text.includes(" ");
+    // 목업처럼 숨 쉬는 간격 — 예전보다 한 단계 작게
     const sizeBase = word.example
       ? phrase
-        ? 6 + r2 * 4
-        : 7 + r2 * 6
+        ? 5 + r2 * 2.5
+        : 5.5 + r2 * 3.5
       : hub
-        ? 16 + Math.min(16, word.weight * 3.2) + r1 * 7
+        ? 10 + Math.min(8, word.weight * 1.6) + r1 * 3.5
         : phrase
-          ? 8 + Math.min(8, word.weight * 1.8) + r3 * 5
-          : 9 + Math.min(12, word.weight * 2.4) + r3 * 7;
+          ? 5.5 + Math.min(4, word.weight * 0.9) + r3 * 2.5
+          : 6.5 + Math.min(6, word.weight * 1.2) + r3 * 3.5;
     const glow = word.example
       ? 0.55 + r1 * 0.4
       : hub
@@ -144,7 +145,7 @@ function projectPoint(
 
 export function WordSphere({ imagines }: { imagines: string[] }) {
   const base = useMemo(() => basePlace(sphereWords(imagines)), [imagines]);
-  const dust = useMemo(() => makeDust(Math.max(110, base.length * 2.2)), [base.length]);
+  const dust = useMemo(() => makeDust(Math.max(72, base.length * 1.6)), [base.length]);
   const pairs = useMemo(() => linkPairs(base, dust), [base, dust]);
   const rootRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -165,6 +166,14 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
     let lastX = 0;
     let lastY = 0;
     let activeId: number | null = null;
+    // 좁은 화면일수록 글자·깊이 가산을 더 줄여 겹침을 막는다
+    const sizeScale = () => {
+      const w = root.clientWidth || window.innerWidth;
+      if (w < 380) return 0.62;
+      if (w < 520) return 0.74;
+      if (w < 720) return 0.86;
+      return 1;
+    };
 
     const onDown = (event: PointerEvent) => {
       dragging = true;
@@ -217,13 +226,14 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       }
 
       const R = 46;
+      const scale = sizeScale();
       const projWords = base.map((p) => {
         const r = projectPoint(p, yaw, pitch);
         const depth = (r.z + 1) / 2;
         return {
           left: 50 + r.x * R,
           top: 50 - r.y * R,
-          size: p.sizeBase + depth * (p.example ? 2.2 : 5.5),
+          size: (p.sizeBase + depth * (p.example ? 1.2 : 2.8)) * scale,
           opacity: Math.min(
             1,
             (p.example ? 0.38 + depth * 0.42 : 0.45 + depth * 0.55) * p.glow,
@@ -332,7 +342,7 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       {base.map((word, index) => (
         <span
           key={`${word.example ? "ex" : "real"}-${word.text}-${index}`}
-          className={word.example ? "cyp-word example" : "cyp-word"}
+          className={word.example ? "cyp-word cyp-word-soft" : "cyp-word"}
           style={{
             left: "50%",
             top: "50%",
