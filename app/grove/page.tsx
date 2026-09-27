@@ -133,6 +133,8 @@ export default function GrovePage() {
                   router.push("/my-node");
                   return;
                 }
+                // 관계 시트 읽는 동안 그로브에 머물기 — 콜렉티브로 넘기지 않음
+                setMode("grove");
                 setPicked(id);
               }}
             />

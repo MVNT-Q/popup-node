@@ -32,8 +32,10 @@ export default function ShowPage() {
   const laid = useRef(false);
   const touching = useRef(false);
   const collectiveSince = useRef(0);
+  const pickedRef = useRef<string | null>(null);
   const modeRef = useRef(mode);
   modeRef.current = mode;
+  pickedRef.current = picked;
 
   useEffect(() => {
     let stop = false;
@@ -76,10 +78,11 @@ export default function ShowPage() {
     };
   }, []);
 
-  // 전시: 12초 교차. 만지는 동안 멈춤. 컬렉티브에 오래 머물면 그로브로.
+  // 전시: 12초 교차. 만지는 동안·관계 시트 읽는 동안 멈춤. 컬렉티브에 오래 머물면 그로브로.
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (touching.current) return;
+      if (pickedRef.current) return;
       if (modeRef.current === "collective") {
         const stayed = Date.now() - collectiveSince.current;
         if (stayed > 24000) {
@@ -157,6 +160,8 @@ export default function ShowPage() {
                   router.push("/my-node");
                   return;
                 }
+                // 시트 읽는 중엔 그로브 고정 — 자동 교차로 콜렉티브 안 넘김
+                setMode("grove");
                 setPicked(id);
               }}
             />

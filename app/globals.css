@@ -1029,10 +1029,14 @@ p { margin: 0; }
   flex: 1 1 auto;
   min-height: 0;
   height: auto;
-  /* 목업처럼 위 숨 — 하단 safe-area는 .column 셸이 담당 */
   padding: max(28px, env(safe-area-inset-top, 0px) + 20px) 0 10px;
   overflow: hidden;
   background: transparent;
+}
+
+/* 그로브·전시만 하단 고정 모드바 높이만큼 여백 */
+.cyp-sky-page.cyp-grove {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 제목·틱커만 읽기 폭. 하늘·스테이지는 가로 100% */
@@ -1273,24 +1277,25 @@ p { margin: 0; }
   top: 0;
   overflow: visible;
   pointer-events: none;
-  z-index: 1;
+  /* 선이 라벨 위를 지나가게 — 글자가 줄을 가리지 않음. 클릭은 통과 */
+  z-index: 6;
 }
 
 .cyp-line {
-  stroke: #7dffb4;
+  stroke: #1cff8a;
   /* 화면 기준 가는 선 — 줌해도 굵기 유지. 별 중심만 이음 */
-  stroke-width: 1.15px;
+  stroke-width: 1px;
   vector-effect: non-scaling-stroke;
   fill: none;
-  filter: drop-shadow(0 0 1.6px rgba(28, 255, 138, 1))
-    drop-shadow(0 0 4px rgba(28, 255, 138, 0.5));
+  filter: drop-shadow(0 0 0.7px rgba(28, 255, 138, 0.95))
+    drop-shadow(0 0 2.2px rgba(28, 255, 138, 0.4));
   transition: opacity 0.35s ease, stroke-opacity 0.35s ease;
 }
 
-.cyp-line.strong { stroke-opacity: 0.95; }
-.cyp-line.mid { stroke-opacity: 0.78; }
-.cyp-line.weak { stroke-opacity: 0.55; }
-.cyp-line.dim { stroke-opacity: 0.22; }
+.cyp-line.strong { stroke-opacity: 0.92; }
+.cyp-line.mid { stroke-opacity: 0.72; }
+.cyp-line.weak { stroke-opacity: 0.48; }
+.cyp-line.dim { stroke-opacity: 0.2; }
 
 /* left/top = 별 중심. 라벨은 옆에 absolute — 선은 심을 지나고 번호는 밖 */
 .cyp-star {
@@ -1304,89 +1309,86 @@ p { margin: 0; }
   height: 44px;
   padding: 0;
   margin: 0;
-  z-index: 3;
+  z-index: 5;
   cursor: pointer;
   pointer-events: auto;
   overflow: visible;
 }
 
-/* 흰 코어 + 넓게 번지는 초록 bloom — 중·강은 목업처럼 한눈에 */
+/* 흰 심 + 초록 bloom — 십자/플라즈마 없이 POC처럼 또렷하게 */
 .cyp-star .dot {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #fff;
   box-shadow:
-    0 0 4px 2px rgba(255, 255, 255, 1),
-    0 0 14px 5px rgba(28, 255, 138, 0.98),
-    0 0 36px 14px rgba(28, 255, 138, 0.55),
-    0 0 72px 28px rgba(28, 255, 138, 0.24),
-    0 0 110px 42px rgba(28, 255, 138, 0.1);
+    0 0 1.5px 0.5px rgba(255, 255, 255, 1),
+    0 0 6px 2.5px rgba(28, 255, 138, 0.95),
+    0 0 16px 7px rgba(28, 255, 138, 0.5),
+    0 0 32px 14px rgba(28, 255, 138, 0.2);
   pointer-events: none;
+  z-index: 6;
 }
 
 .cyp-star.self .dot {
-  width: 14px;
-  height: 14px;
+  width: 9px;
+  height: 9px;
   background: #fff;
   box-shadow:
-    0 0 5px 2px rgba(255, 255, 255, 1),
-    0 0 18px 7px rgba(28, 255, 138, 1),
-    0 0 44px 18px rgba(28, 255, 138, 0.62),
-    0 0 90px 36px rgba(28, 255, 138, 0.28),
-    0 0 140px 52px rgba(28, 255, 138, 0.12);
+    0 0 2px 1px rgba(255, 255, 255, 1),
+    0 0 8px 3.5px rgba(28, 255, 138, 1),
+    0 0 20px 9px rgba(28, 255, 138, 0.55),
+    0 0 40px 18px rgba(28, 255, 138, 0.22);
 }
 
 .cyp-star.strong .dot {
-  width: 13px;
-  height: 13px;
+  width: 8px;
+  height: 8px;
   box-shadow:
-    0 0 5px 2px rgba(255, 255, 255, 1),
-    0 0 18px 7px rgba(28, 255, 138, 1),
-    0 0 44px 18px rgba(28, 255, 138, 0.6),
-    0 0 88px 34px rgba(28, 255, 138, 0.26),
-    0 0 130px 48px rgba(28, 255, 138, 0.1);
+    0 0 2px 1px rgba(255, 255, 255, 1),
+    0 0 8px 3.5px rgba(28, 255, 138, 1),
+    0 0 20px 9px rgba(28, 255, 138, 0.52),
+    0 0 38px 16px rgba(28, 255, 138, 0.2);
 }
 
 .cyp-star.mid .dot {
-  width: 11px;
-  height: 11px;
+  width: 7px;
+  height: 7px;
   box-shadow:
-    0 0 4px 2px rgba(255, 255, 255, 1),
-    0 0 16px 6px rgba(28, 255, 138, 0.95),
-    0 0 38px 15px rgba(28, 255, 138, 0.5),
-    0 0 72px 28px rgba(28, 255, 138, 0.2),
-    0 0 100px 38px rgba(28, 255, 138, 0.08);
+    0 0 1.5px 0.5px rgba(255, 255, 255, 1),
+    0 0 7px 3px rgba(28, 255, 138, 0.95),
+    0 0 18px 8px rgba(28, 255, 138, 0.45),
+    0 0 34px 14px rgba(28, 255, 138, 0.16);
 }
 
 .cyp-star.weak .dot {
-  width: 8px;
-  height: 8px;
-  background: #f2fff8;
+  width: 5px;
+  height: 5px;
+  background: #f6fffa;
   box-shadow:
-    0 0 3px 1px rgba(255, 255, 255, 0.92),
-    0 0 14px 5px rgba(28, 255, 138, 0.7),
-    0 0 30px 12px rgba(28, 255, 138, 0.3),
-    0 0 52px 20px rgba(28, 255, 138, 0.12);
+    0 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
+    0 0 6px 2.5px rgba(28, 255, 138, 0.75),
+    0 0 14px 6px rgba(28, 255, 138, 0.32),
+    0 0 26px 11px rgba(28, 255, 138, 0.12);
 }
 
 .cyp-star.dim .dot {
-  width: 6px;
-  height: 6px;
-  background: rgba(220, 255, 235, 0.92);
+  width: 4px;
+  height: 4px;
+  background: rgba(230, 255, 240, 0.95);
   box-shadow:
-    0 0 3px 1px rgba(255, 255, 255, 0.55),
-    0 0 10px 3px rgba(28, 255, 138, 0.42),
-    0 0 22px 9px rgba(28, 255, 138, 0.16);
+    0 0 1px 0.5px rgba(255, 255, 255, 0.7),
+    0 0 5px 2px rgba(28, 255, 138, 0.45),
+    0 0 12px 5px rgba(28, 255, 138, 0.16);
 }
 
 .cyp-star .num {
   position: absolute;
-  left: calc(50% + 18px);
+  left: calc(50% + 14px);
   top: 50%;
   transform: translateY(-50%);
   font-family: var(--mono);
@@ -1394,16 +1396,16 @@ p { margin: 0; }
   letter-spacing: 0.08em;
   color: #e9fff3;
   text-shadow:
-    0 0 6px rgba(2, 4, 3, 1),
-    0 0 10px rgba(2, 4, 3, 0.9);
+    0 0 5px rgba(2, 4, 3, 1),
+    0 0 8px rgba(2, 4, 3, 0.95);
   white-space: nowrap;
   pointer-events: none;
-  z-index: 4;
+  z-index: 2;
 }
 
 .cyp-star .call {
   position: absolute;
-  left: calc(50% + 18px);
+  left: calc(50% + 14px);
   top: calc(50% + 11px);
   font-size: 10px;
   color: #8d929c;
@@ -1412,15 +1414,15 @@ p { margin: 0; }
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 4;
-  text-shadow: 0 0 6px rgba(2, 4, 3, 1);
+  z-index: 2;
+  text-shadow: 0 0 5px rgba(2, 4, 3, 1);
 }
 
 /* 라벨을 선 반대쪽으로 — 선은 별 중심, 번호·이름은 밖 */
 .cyp-star.label-left .num,
 .cyp-star.label-left .call {
   left: auto;
-  right: calc(50% + 18px);
+  right: calc(50% + 14px);
   text-align: right;
 }
 .cyp-star.label-left .call {
@@ -1429,36 +1431,36 @@ p { margin: 0; }
 .cyp-star.label-above .num {
   left: 50%;
   top: auto;
-  bottom: calc(50% + 14px);
+  bottom: calc(50% + 12px);
   transform: translateX(-50%);
 }
 .cyp-star.label-above .call {
   left: 50%;
   top: auto;
-  bottom: calc(50% + 26px);
+  bottom: calc(50% + 24px);
   transform: translateX(-50%);
   text-align: center;
 }
 .cyp-star.label-below .num {
   left: 50%;
-  top: calc(50% + 14px);
+  top: calc(50% + 12px);
   transform: translateX(-50%);
 }
 .cyp-star.label-below .call {
   left: 50%;
-  top: calc(50% + 26px);
+  top: calc(50% + 24px);
   transform: translateX(-50%);
   text-align: center;
 }
 
 .cyp-star.on .dot {
   box-shadow:
-    0 0 0 2px #020403,
-    0 0 0 3px #fff,
-    0 0 5px 2px rgba(255, 255, 255, 1),
-    0 0 20px 8px rgba(28, 255, 138, 1),
-    0 0 48px 20px rgba(28, 255, 138, 0.55),
-    0 0 90px 36px rgba(28, 255, 138, 0.22);
+    0 0 0 1.5px #020403,
+    0 0 0 2.5px #fff,
+    0 0 2px 1px rgba(255, 255, 255, 1),
+    0 0 10px 4px rgba(28, 255, 138, 1),
+    0 0 24px 10px rgba(28, 255, 138, 0.5),
+    0 0 44px 18px rgba(28, 255, 138, 0.2);
 }
 
 .cyp-zoom {
@@ -1515,7 +1517,7 @@ p { margin: 0; }
   border: 0;
   padding: 0;
   margin: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
 
@@ -1525,14 +1527,23 @@ p { margin: 0; }
   bottom: 0;
   transform: translateX(-50%);
   width: min(400px, 100%);
-  max-height: min(72dvh, 560px);
+  max-height: min(34dvh, 280px);
   overflow: auto;
   z-index: 40;
-  padding: 18px 18px 28px;
-  border-radius: 22px 22px 0 0;
+  padding: 14px 16px 16px;
+  border-radius: 18px 18px 0 0;
   border: 1px solid rgba(28, 255, 138, 0.35);
   background: rgba(2, 6, 4, 0.96);
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5);
+}
+
+/* 그로브·전시: 시트는 하단 모드바 위에만 짧게. 바는 고정이라 같이 안 올라감 */
+.cyp-grove .cyp-sheet-scrim {
+  inset: 0 0 calc(52px + env(safe-area-inset-bottom, 0px)) 0;
+}
+
+.cyp-grove .cyp-sheet {
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
 }
 
 .cyp-sheet-close {
@@ -1667,11 +1678,11 @@ p { margin: 0; }
   pointer-events: none;
   overflow: visible;
   z-index: 2;
-  filter: drop-shadow(0 0 1.2px rgba(28, 255, 138, 0.75));
+  filter: drop-shadow(0 0 0.9px rgba(28, 255, 138, 0.7));
 }
 
-/* 단어·먼지 크기와 무관 — 선 굵기 전부 동일. path 곡선 */
-.cyp-sphere-wires path {
+/* 단어·먼지 크기와 무관 — 선 굵기 전부 동일. 직선만 */
+.cyp-sphere-wires line {
   fill: none;
   stroke-width: 0.11;
   stroke-linecap: round;
@@ -1684,12 +1695,9 @@ p { margin: 0; }
   color: #b8ffd4;
   white-space: nowrap;
   --word-glow: 0.7;
-  text-shadow:
-    0 0 8px rgba(28, 255, 138, calc(var(--word-glow) * 1.05)),
-    0 0 18px rgba(28, 255, 138, calc(var(--word-glow) * 0.45));
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  /* 점이 노드 좌표 — 글자는 옆으로 빠져 선을 안 가림 */
+  transform: translate(0, -50%);
+  display: block;
   pointer-events: none;
   /* 전역 .example 캡슐(border/padding)과 절대 섞지 않음 */
   border: 0 !important;
@@ -1703,22 +1711,39 @@ p { margin: 0; }
 }
 
 .cyp-word-dot {
-  width: 2.5px;
-  height: 2.5px;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
   background: #fff;
+  transform: translate(-50%, -50%);
   box-shadow:
-    0 0 3px 1px rgba(255, 255, 255, 0.9),
-    0 0 8px 3px rgba(28, 255, 138, calc(var(--word-glow) * 1.1)),
-    0 0 18px 6px rgba(28, 255, 138, calc(var(--word-glow) * 0.4));
-  flex: none;
+    0 0 2px 0.5px rgba(255, 255, 255, 1),
+    0 0 7px 2.5px rgba(28, 255, 138, calc(var(--word-glow) * 1.05)),
+    0 0 16px 6px rgba(28, 255, 138, calc(var(--word-glow) * 0.38));
+}
+
+.cyp-word-label {
+  display: block;
+  margin: 0 0 0 7px;
+  font-style: normal;
+  font-weight: inherit;
+  text-shadow:
+    0 0 6px rgba(2, 4, 3, 0.95),
+    0 0 8px rgba(28, 255, 138, calc(var(--word-glow) * 0.9)),
+    0 0 16px rgba(28, 255, 138, calc(var(--word-glow) * 0.35));
 }
 
 /* 예시 키워드 — 테두리·캡슐 없음, 글자만 옅게 */
 .cyp-word-soft {
   color: #6a9478;
   letter-spacing: 0.16em;
-  text-shadow: 0 0 6px rgba(28, 255, 138, 0.28);
+}
+
+.cyp-word-soft .cyp-word-label {
+  text-shadow: 0 0 5px rgba(2, 4, 3, 0.9), 0 0 6px rgba(28, 255, 138, 0.22);
 }
 
 /* 구 안 먼지점 — 라벨 없이 밀도만 */
@@ -1785,18 +1810,25 @@ p { margin: 0; }
   to { transform: translateX(-50%); }
 }
 
-/* POC_7·8 하단 토글 — 구와 겹치지 않게 스테이지 밖 */
+/* POC_7·8 하단 토글 — 항상 화면 맨 아래 고정. 시트가 열어도 같이 안 올라감 */
 .cyp-mode-bar {
   display: flex;
   align-items: stretch;
   justify-content: center;
   gap: 0;
   flex: none;
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin: 0;
   border-top: 1px solid rgba(28, 255, 138, 0.16);
-  position: relative;
-  z-index: 4;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 18px env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
+  background: rgba(2, 4, 3, 0.94);
 }
 
 .cyp-mode-bar button {
