@@ -205,6 +205,7 @@ export default function ShowPage() {
           className={mode === "grove" ? "on" : ""}
           onClick={() => {
             touching.current = true;
+            setPicked(null);
             setMode("grove");
           }}
         >
@@ -218,6 +219,7 @@ export default function ShowPage() {
           className={mode === "collective" ? "on" : ""}
           onClick={() => {
             touching.current = true;
+            setPicked(null);
             collectiveSince.current = Date.now();
             setMode("collective");
           }}

@@ -171,7 +171,10 @@ export default function GrovePage() {
           role="tab"
           aria-selected={mode === "grove"}
           className={mode === "grove" ? "on" : ""}
-          onClick={() => setMode("grove")}
+          onClick={() => {
+            setPicked(null);
+            setMode("grove");
+          }}
         >
           <i aria-hidden />
           GROVE
@@ -181,7 +184,10 @@ export default function GrovePage() {
           role="tab"
           aria-selected={mode === "collective"}
           className={mode === "collective" ? "on" : ""}
-          onClick={() => setMode("collective")}
+          onClick={() => {
+            setPicked(null);
+            setMode("collective");
+          }}
         >
           <i aria-hidden />
           COLLECTIVE IMAGINATION
