@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { themeHits } from "@/lib/match";
 import {
   midStrongHits,
@@ -12,6 +12,9 @@ import {
 } from "@/lib/relation";
 import { translateQuote } from "@/lib/translate";
 import type { Slot } from "@/lib/types";
+
+/** 별을 연 그 손가락의 합성 click이 스크림을 바로 닫지 않게 */
+const SCRIM_ARM_MS = 700;
 
 function TranslatedQuote({ quote, lang }: { quote: string; lang: SheetLang }) {
   const [text, setText] = useState(quote);
@@ -76,10 +79,42 @@ export function RelationSheet({
   );
   const blocks = relationBlocks(meSlots, theirSlots, effectiveHits);
   const label = `#${String(code).padStart(3, "0")} ${name}`;
+  // 카드가 뜬 직후 같은 좌표로 오는 호환 click을 흡수 — 포커스·카드가 바로 닫히던 원인
+  const scrimArmedAt = useRef(0);
+  useEffect(() => {
+    scrimArmedAt.current = performance.now() + SCRIM_ARM_MS;
+  }, [id]);
+
+  function closeFromScrim(event: { preventDefault: () => void; stopPropagation: () => void }) {
+    // 별을 연 그 손가락의 호환 click이 스크림에 떨어져 바로 닫히던 경로
+    if (performance.now() < scrimArmedAt.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    onClose();
+  }
 
   return (
     <>
-      <button className="cyp-sheet-scrim" type="button" aria-label={chrome.close} onClick={onClose} />
+      <button
+        className="cyp-sheet-scrim"
+        type="button"
+        aria-label={chrome.close}
+        onClick={closeFromScrim}
+        onPointerDown={(event) => {
+          if (performance.now() < scrimArmedAt.current) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}
+        onPointerUp={(event) => {
+          if (performance.now() < scrimArmedAt.current) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}
+      />
       <div className="cyp-sheet cyp-sheet-float" role="dialog" aria-label={label} lang={lang}>
         <button className="cyp-sheet-close" type="button" onClick={onClose} aria-label={chrome.close}>
           ×

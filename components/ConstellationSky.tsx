@@ -23,10 +23,12 @@ export type SkyEdge = {
 const WORLD = 1000;
 /** 화면 픽셀 기준 별 히트 반경 — 줌·태블릿 데스크톱 모드에서도 손가락이 먹게 */
 const HIT_PX = 44;
-/** 이 안이면 짧은 탭 — 손가락 떨림은 허용, 길게 누를 필요 없음 */
-const TAP_SLOP_PX = 12;
-/** 터치 직후 따라오는 호환 mouse 클릭이 선택을 다시 토글하지 않게 */
-const MOUSE_SUPPRESS_MS = 700;
+/** 빈 하늘 팬 — 이보다 작으면 팬 안 함 */
+const PAN_SLOP_PX = 12;
+/** 별 위 탭 — 갤탭·폰 떨림이 커서 팬용보다 넉넉히 (너무 작으면 moved로 픽이 죽음) */
+const STAR_TAP_SLOP_PX = 36;
+/** 한 제스처·합성 mouse로 onPick이 두 번 토글되지 않게 */
+const PICK_LOCK_MS = 700;
 
 function lineClass(bright: boolean, a: SkyPoint["band"], b: SkyPoint["band"]) {
   if (!bright) return "cyp-line dim";
@@ -132,11 +134,21 @@ export function ConstellationSky({
   } | null>(null);
   const pinch = useRef<{ dist: number; cam: Cam } | null>(null);
   const ignoreMouseUntil = useRef(0);
+  /** pointerup + cancel / 합성 mouse가 같은 탭을 두 번 토글하지 않게 */
+  const pickLockUntil = useRef(0);
   const starsRef = useRef(stars);
   starsRef.current = stars;
   const focusRef = useRef(focusId);
   focusRef.current = focusId;
   const hadFocus = useRef(false);
+
+  function emitPick(id: string) {
+    const now = performance.now();
+    if (now < pickLockUntil.current) return;
+    pickLockUntil.current = now + PICK_LOCK_MS;
+    ignoreMouseUntil.current = now + PICK_LOCK_MS;
+    onPick(id);
+  }
   // 자리만 키로. 밝기·선택 바뀌어도 카메라를 다시 맞추지 않는다.
   const layoutKey = stars.map((star) => `${star.id}:${Math.round(star.x)}:${Math.round(star.y)}`).join("|");
   const byId = useMemo(() => new Map(stars.map((star) => [star.id, star])), [stars]);
@@ -218,7 +230,7 @@ export function ConstellationSky({
       className={`cyp-sky${focusId ? " is-focus" : ""}`}
       ref={viewportRef}
       onPointerDown={(event) => {
-        // 터치 직후 합성 mouse는 무시 — 짧은 탭이 열렸다 바로 닫히던 원인
+        // 터치 직후 합성 mouse는 무시 — 같은 탭이 다시 토글되는 경로
         if (event.pointerType === "mouse" && performance.now() < ignoreMouseUntil.current) {
           return;
         }
@@ -271,8 +283,9 @@ export function ConstellationSky({
         if (!current || current.id !== event.pointerId) return;
         const dx = event.clientX - current.x;
         const dy = event.clientY - current.y;
-        // 약 12px까지는 탭 — 떨림만으로 선택이 죽지 않게
-        if (Math.hypot(dx, dy) > TAP_SLOP_PX) current.moved = true;
+        // 별 탭은 떨림 허용을 크게 — 12px면 모바일에서 moved로 픽이 자주 죽음
+        const slop = current.starId ? STAR_TAP_SLOP_PX : PAN_SLOP_PX;
+        if (Math.hypot(dx, dy) > slop) current.moved = true;
         // 별 위에서 시작한 제스처는 팬하지 않음 — 탭으로 시트 열기
         if (current.starId) return;
         setCamEase(false);
@@ -286,7 +299,7 @@ export function ConstellationSky({
         if (pointers.current.size < 2) pinch.current = null;
         if (drag.current?.id === event.pointerId) drag.current = null;
         if (event.pointerType === "touch" || event.pointerType === "pen") {
-          ignoreMouseUntil.current = performance.now() + MOUSE_SUPPRESS_MS;
+          ignoreMouseUntil.current = performance.now() + PICK_LOCK_MS;
         }
         if (dragged || pinched || !current) return;
         const el = viewportRef.current;
@@ -295,7 +308,8 @@ export function ConstellationSky({
           ? nearestStarId(el, event.clientX, event.clientY, camRef.current, starsRef.current)
           : undefined;
         const id = again || current.starId;
-        if (id) onPick(id);
+        // emitPick — up+cancel·합성 mouse가 토글 두 번 하지 않게
+        if (id) emitPick(id);
       }}
       onPointerCancel={(event) => {
         const current = drag.current?.id === event.pointerId ? drag.current : null;
@@ -305,11 +319,12 @@ export function ConstellationSky({
         if (pointers.current.size < 2) pinch.current = null;
         if (drag.current?.id === event.pointerId) drag.current = null;
         if (event.pointerType === "touch" || event.pointerType === "pen") {
-          ignoreMouseUntil.current = performance.now() + MOUSE_SUPPRESS_MS;
+          ignoreMouseUntil.current = performance.now() + PICK_LOCK_MS;
         }
         // cancel만 오고 up이 없는 폰 — 짧은 탭이면 down에서 잡은 별로 선택
+        // up이 이미 emit했으면 pickLock이 막아 토글이 두 번 안 됨
         if (dragged || pinched || !current?.starId) return;
-        onPick(current.starId);
+        emitPick(current.starId);
       }}
     >
       <div

@@ -287,6 +287,30 @@ export async function saveNode(node: NodeRecord): Promise<NodeRecord> {
   return node;
 }
 
+/** 노드와 그 노드가 엮인 메시지·읽음 표시를 지운다. 벡터 키는 남겨 둬도 무방. */
+export async function deleteNode(id: string): Promise<boolean> {
+  await requireStorage();
+  if (!usePg()) {
+    return withFile((bag, dirty) => {
+      const before = bag.nodes.length;
+      bag.nodes = bag.nodes.filter((node) => node.id !== id);
+      if (bag.nodes.length === before) return false;
+      bag.messages = bag.messages.filter((message) => message.from !== id && message.to !== id);
+      for (const key of Object.keys(bag.reads)) {
+        if (key.startsWith(`${id}:`) || key.endsWith(`:${id}`)) delete bag.reads[key];
+      }
+      dirty();
+      return true;
+    });
+  }
+  const sql = sqlClient();
+  const gone = await sql`delete from node_person where id = ${id} returning id`;
+  if (!gone.length) return false;
+  await sql`delete from node_message where from_id = ${id} or to_id = ${id}`;
+  await sql`delete from node_read where reader = ${id} or other = ${id}`;
+  return true;
+}
+
 export async function createGuest(name: string, slots: Slot[]): Promise<NodeRecord> {
   await requireStorage();
   if (!usePg()) {

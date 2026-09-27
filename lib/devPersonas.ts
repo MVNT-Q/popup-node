@@ -1,6 +1,6 @@
 import type { Slot } from "./types";
 
-/** /dev 전용. 운영 시드·저장소에 넣지 않는다. tess·tess2 형식으로 15명. */
+/** 15인 페르소나. /dev 슬라이더·운영 그로브 시드가 같은 목록을 쓴다. */
 export type DevPersona = {
   id: string;
   code: number;
