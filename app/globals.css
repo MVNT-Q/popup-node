@@ -751,7 +751,8 @@ p { margin: 0; }
 }
 
 .mark-lock {
-  width: 118px;
+  width: 78px;
+  max-width: 78px;
   margin: 14px auto 22px;
 }
 
