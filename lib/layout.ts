@@ -73,7 +73,7 @@ export function focusCam(star: Point, width: number, height: number): Cam {
   if (width < 10 || height < 10) return { x: 0, y: 0, s: 1 };
   const s = Math.min(2.35, Math.max(1.35, Math.min(width, height) / 280));
   const fx = width * 0.5;
-  // 세로 가운데(0.5)보다 위. 카드(하단~36dvh)에 가리지 않게 하늘 상단부
-  const fy = height * 0.22;
+  // 세로 가운데(0.5)보다 위. 제목 아래·카드 위 — 하늘 상단 ~11%
+  const fy = height * 0.11;
   return { s, x: fx - star.x * s, y: fy - star.y * s };
 }
