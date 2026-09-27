@@ -733,14 +733,14 @@ p { margin: 0; }
   width: 100%;
   height: 100%;
   pointer-events: none;
-  /* 옅은 초록 기운만 — JPG 통째 배경 금지, svg는 아주 약하게 */
+  /* 아주 옅은 초록 성운만 — 노드로 헷갈리는 가장자리 큰 점 금지 */
   background:
-    radial-gradient(ellipse 60% 42% at 22% 24%, rgba(28, 255, 138, 0.07), transparent 72%),
-    radial-gradient(ellipse 48% 38% at 78% 20%, rgba(40, 255, 150, 0.05), transparent 70%),
-    radial-gradient(ellipse 70% 52% at 50% 58%, rgba(10, 70, 36, 0.06), transparent 74%),
-    radial-gradient(ellipse 42% 34% at 32% 78%, rgba(28, 255, 138, 0.05), transparent 72%),
+    radial-gradient(ellipse 62% 44% at 22% 24%, rgba(28, 255, 138, 0.1), transparent 74%),
+    radial-gradient(ellipse 50% 40% at 78% 20%, rgba(40, 255, 150, 0.07), transparent 72%),
+    radial-gradient(ellipse 72% 54% at 50% 58%, rgba(10, 70, 36, 0.08), transparent 76%),
+    radial-gradient(ellipse 44% 36% at 32% 78%, rgba(28, 255, 138, 0.07), transparent 74%),
     url("/sky-nebula.svg") center / cover no-repeat;
-  opacity: 0.35;
+  opacity: 0.48;
 }
 
 .grove-bg-canvas {
@@ -1036,7 +1036,8 @@ p { margin: 0; }
 
 /* 그로브·전시만 하단 고정 모드바 높이만큼 여백 */
 .cyp-sky-page.cyp-grove {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  --cyp-mode-bar-h: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--cyp-mode-bar-h);
 }
 
 /* 제목·틱커만 읽기 폭. 하늘·스테이지는 가로 100% */
@@ -1527,23 +1528,23 @@ p { margin: 0; }
   bottom: 0;
   transform: translateX(-50%);
   width: min(400px, 100%);
-  max-height: min(34dvh, 280px);
+  max-height: min(38dvh, 300px);
   overflow: auto;
   z-index: 40;
-  padding: 14px 16px 16px;
+  padding: 12px 14px 12px;
   border-radius: 18px 18px 0 0;
   border: 1px solid rgba(28, 255, 138, 0.35);
   background: rgba(2, 6, 4, 0.96);
   box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5);
 }
 
-/* 그로브·전시: 시트는 하단 모드바 위에만 짧게. 바는 고정이라 같이 안 올라감 */
+/* 그로브·전시: 시트·스크림은 모드바 높이 위까지만. 바는 z 더 높고 같이 안 올라감 */
 .cyp-grove .cyp-sheet-scrim {
-  inset: 0 0 calc(52px + env(safe-area-inset-bottom, 0px)) 0;
+  inset: 0 0 var(--cyp-mode-bar-h, 56px) 0;
 }
 
 .cyp-grove .cyp-sheet {
-  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  bottom: var(--cyp-mode-bar-h, 56px);
 }
 
 .cyp-sheet-close {
@@ -1565,8 +1566,8 @@ p { margin: 0; }
 }
 
 .cyp-sheet-title {
-  margin: 6px 0 14px;
-  font-size: 22px;
+  margin: 6px 0 10px;
+  font-size: 20px;
   letter-spacing: 0.08em;
   font-weight: 500;
 }
@@ -1574,15 +1575,63 @@ p { margin: 0; }
 .cyp-sheet-blocks {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
-.cyp-sheet-blocks .fine { margin-top: 0; text-align: left; }
-.cyp-sheet-blocks .ko { text-align: left; margin-top: 2px; }
+/* 칸마다 긴 나열 금지 — 한 줄 라벨 + 한 줄 설명 */
+.cyp-sheet-row {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(28, 255, 138, 0.18);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.cyp-sheet-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cyp-sheet-row-label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #8d929c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cyp-sheet-lang {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(28, 255, 138, 0.35);
+  border-radius: 8px;
+  background: rgba(28, 255, 138, 0.08);
+  color: #c8ffe0;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cyp-sheet-lang:hover {
+  background: rgba(28, 255, 138, 0.16);
+}
+
 .cyp-sheet-line {
-  margin-top: 6px;
+  margin: 4px 0 0;
   color: #d8ffe8;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cyp-read {
@@ -1710,19 +1759,21 @@ p { margin: 0; }
   box-shadow: none;
 }
 
+/* POC_8: 플라즈마 = 점의 흰 심 + 초록 bloom (구 전체 가닥 아님) */
 .cyp-word-dot {
   position: absolute;
   left: 0;
   top: 50%;
-  width: 3px;
-  height: 3px;
+  width: 3.5px;
+  height: 3.5px;
   border-radius: 50%;
   background: #fff;
   transform: translate(-50%, -50%);
   box-shadow:
-    0 0 2px 0.5px rgba(255, 255, 255, 1),
-    0 0 7px 2.5px rgba(28, 255, 138, calc(var(--word-glow) * 1.05)),
-    0 0 16px 6px rgba(28, 255, 138, calc(var(--word-glow) * 0.38));
+    0 0 1.5px 0.6px rgba(255, 255, 255, 1),
+    0 0 6px 2.5px rgba(28, 255, 138, calc(var(--word-glow) * 1.15)),
+    0 0 14px 6px rgba(28, 255, 138, calc(var(--word-glow) * 0.55)),
+    0 0 28px 12px rgba(28, 255, 138, calc(var(--word-glow) * 0.22));
 }
 
 .cyp-word-label {
@@ -1746,15 +1797,18 @@ p { margin: 0; }
   text-shadow: 0 0 5px rgba(2, 4, 3, 0.9), 0 0 6px rgba(28, 255, 138, 0.22);
 }
 
-/* 구 안 먼지점 — 라벨 없이 밀도만 */
+/* 구 안 먼지점 — 흰 심 + 초록 bloom, 크기 차이(인라인 width/height) */
 .cyp-dust {
   position: absolute;
   width: 2px;
   height: 2px;
   margin: 0;
   border-radius: 50%;
-  background: #9dffc4;
-  box-shadow: 0 0 6px 2px rgba(28, 255, 138, 0.55);
+  background: #fff;
+  box-shadow:
+    0 0 1.2px 0.4px rgba(255, 255, 255, 0.95),
+    0 0 5px 2px rgba(28, 255, 138, 0.75),
+    0 0 12px 5px rgba(28, 255, 138, 0.28);
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
@@ -1810,7 +1864,7 @@ p { margin: 0; }
   to { transform: translateX(-50%); }
 }
 
-/* POC_7·8 하단 토글 — 항상 화면 맨 아래 고정. 시트가 열어도 같이 안 올라감 */
+/* POC_7·8 하단 토글 — 항상 화면 맨 아래 고정. 시트(z40)보다 위, 같이 안 올라감 */
 .cyp-mode-bar {
   display: flex;
   align-items: stretch;
@@ -1823,12 +1877,12 @@ p { margin: 0; }
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
+  z-index: 80;
   width: 100% !important;
   max-width: none !important;
   padding: 0 18px env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
-  background: rgba(2, 4, 3, 0.94);
+  background: rgba(2, 4, 3, 0.96);
 }
 
 .cyp-mode-bar button {

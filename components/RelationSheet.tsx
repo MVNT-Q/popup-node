@@ -1,8 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { relationBlocks, type HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
+
+type Lang = "en" | "ko";
+
+function pickLine(line: string, lang: Lang) {
+  const parts = line
+    .split(" / ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    return lang === "ko" ? parts[parts.length - 1]! : parts[0]!;
+  }
+  return line;
+}
 
 export function RelationSheet({
   meSlots,
@@ -23,6 +37,7 @@ export function RelationSheet({
 }) {
   const blocks = relationBlocks(meSlots, theirSlots, hits);
   const label = `#${String(code).padStart(3, "0")} ${name}`;
+  const [langs, setLangs] = useState<Partial<Record<string, Lang>>>({});
 
   return (
     <>
@@ -34,13 +49,30 @@ export function RelationSheet({
         <p className="cyp-sheet-kicker">CONNECTED NODE</p>
         <h2 className="cyp-sheet-title">{label}</h2>
         <div className="cyp-sheet-blocks">
-          {blocks.map((block) => (
-            <section key={block.key}>
-              <p className="fine">{block.en}</p>
-              <p className="ko">{block.ko}</p>
-              <p className="cyp-sheet-line">{block.line}</p>
-            </section>
-          ))}
+          {blocks.map((block) => {
+            const lang = langs[block.key] ?? "en";
+            return (
+              <section key={block.key} className="cyp-sheet-row">
+                <div className="cyp-sheet-row-head">
+                  <p className="cyp-sheet-row-label">{lang === "ko" ? block.ko : block.en}</p>
+                  <button
+                    type="button"
+                    className="cyp-sheet-lang"
+                    aria-label={lang === "en" ? "한국어로 보기" : "Show in English"}
+                    onClick={() =>
+                      setLangs((prev) => ({
+                        ...prev,
+                        [block.key]: lang === "en" ? "ko" : "en",
+                      }))
+                    }
+                  >
+                    <span aria-hidden>{lang === "en" ? "文" : "A"}</span>
+                  </button>
+                </div>
+                <p className="cyp-sheet-line">{pickLine(block.line, lang)}</p>
+              </section>
+            );
+          })}
         </div>
         <Link className="cyp-btn" href={`/chat/${id}`}>
           <span>

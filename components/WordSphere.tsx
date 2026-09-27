@@ -85,8 +85,9 @@ function makeDust(count: number): Dust[] {
       x: Math.cos(ang) * radius,
       y,
       z: Math.sin(ang) * radius,
-      size: 1.1 + r1 * 1.8,
-      glow: 0.4 + r2 * 0.5,
+      // POC_8처럼 점 크기 차이 — 선/가닥이 아니라 점 빛만
+      size: 0.9 + r1 * 2.8,
+      glow: 0.45 + r2 * 0.65,
     });
   }
   return out;

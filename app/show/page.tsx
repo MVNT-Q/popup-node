@@ -178,6 +178,19 @@ export default function ShowPage() {
 
       <ImagineTicker lines={imagines} />
 
+      {pickedNode ? (
+        <RelationSheet
+          meSlots={me?.slots ?? emptySlots}
+          theirSlots={pickedNode.slots}
+          code={pickedNode.code}
+          name={pickedNode.name}
+          id={pickedNode.id}
+          hits={pickedHits}
+          onClose={() => setPicked(null)}
+        />
+      ) : null}
+
+      {/* 모드바는 시트보다 아래 DOM·더 높은 z — 홈 탭처럼 항상 맨 아래 */}
       <div
         className="cyp-mode-bar"
         role="tablist"
@@ -212,18 +225,6 @@ export default function ShowPage() {
           COLLECTIVE IMAGINATION
         </button>
       </div>
-
-      {pickedNode ? (
-        <RelationSheet
-          meSlots={me?.slots ?? emptySlots}
-          theirSlots={pickedNode.slots}
-          code={pickedNode.code}
-          name={pickedNode.name}
-          id={pickedNode.id}
-          hits={pickedHits}
-          onClose={() => setPicked(null)}
-        />
-      ) : null}
     </main>
   );
 }
