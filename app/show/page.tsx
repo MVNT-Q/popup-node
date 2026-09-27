@@ -27,6 +27,7 @@ export default function ShowPage() {
   const [counts, setCounts] = useState({ nodes: 0, connections: 0 });
   const [mode, setMode] = useState<Mode>("grove");
   const [picked, setPicked] = useState<string | null>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
   const laid = useRef(false);
@@ -155,13 +156,14 @@ export default function ShowPage() {
             <ConstellationSky
               stars={skyStars}
               edges={skyEdges}
-              onPick={(id) => {
+              onPick={(id, nextAnchor) => {
                 if (me && id === me.id) {
                   router.push("/my-node");
                   return;
                 }
-                // 시트 읽는 중엔 그로브 고정 — 자동 교차로 콜렉티브 안 넘김
+                // 시트 열 때 콜렉티브로 자동 전환 금지 — 그로브 유지
                 setMode("grove");
+                setAnchor(nextAnchor);
                 setPicked(id);
               }}
             />
@@ -176,7 +178,7 @@ export default function ShowPage() {
         </div>
       </div>
 
-      <ImagineTicker lines={imagines} />
+      {!pickedNode ? <ImagineTicker lines={imagines} /> : null}
 
       {pickedNode ? (
         <RelationSheet
@@ -186,7 +188,11 @@ export default function ShowPage() {
           name={pickedNode.name}
           id={pickedNode.id}
           hits={pickedHits}
-          onClose={() => setPicked(null)}
+          anchor={anchor}
+          onClose={() => {
+            setPicked(null);
+            setAnchor(null);
+          }}
         />
       ) : null}
 

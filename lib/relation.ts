@@ -10,9 +10,14 @@ export type HitLite = {
 
 export type RelationBlock = {
   key: "theyHelp" | "youHelp" | "shared";
+  /** 관계 한 줄 — 토글 시 en/ko가 반드시 바뀜 */
   en: string;
   ko: string;
-  line: string;
+  /** 안내 한 줄 — 토글이 죽은 것처럼 보이지 않게 */
+  hintEn: string;
+  hintKo: string;
+  /** 상대가 적은 원문. 번역 키 없으면 언어 그대로 */
+  quote: string;
 };
 
 function clip(text: string, max = 96) {
@@ -25,7 +30,7 @@ function slotAnswer(slots: Slot[], index: number) {
   return slots[index]?.answer?.trim() ?? "";
 }
 
-// 퍼센트 없이 세 줄. 키가 없어도 겹친 구절을 그대로 둔다.
+// 퍼센트 없이 세 줄. API 번역 없이 우리가 쓴 en/ko 쌍만 토글.
 export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): RelationBlock[] {
   const byQ = new Map(hits.map((hit) => [hit.questionIndex, hit]));
 
@@ -46,45 +51,50 @@ export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLit
     ? clip(slotAnswer(theirSlots, imagine.theirIndex) || imagine.answer || slotAnswer(theirSlots, 2))
     : clip(slotAnswer(theirSlots, 2));
 
-  // 모델 키 없이: 겹친 구절을 그대로 한 줄로. 비우지 않는다.
-  const theyHelpLine =
+  const theyHelpQuote =
     seek && theyOffer
       ? mySeek && mySeek !== theyOffer
         ? `${theyOffer} · ${mySeek}`
         : theyOffer
-      : theyOffer || "No overlapping offer for your seek. / 찾는 것과 맞닿는 제안이 없다.";
+      : theyOffer;
 
-  const youHelpLine =
+  const youHelpQuote =
     offer && myOffer
       ? theirSeek && theirSeek !== myOffer
         ? `${myOffer} · ${theirSeek}`
         : myOffer
-      : myOffer || "No overlapping seek for your offer. / 제안과 맞닿는 찾음이 없다.";
+      : myOffer;
 
-  const sharedLine = imagine
+  const sharedQuote = imagine
     ? myImagine && theirImagine && myImagine !== theirImagine
       ? `${myImagine} · ${theirImagine}`
       : myImagine || theirImagine
-    : "No shared imagination yet. / 아직 겹치는 상상이 없다.";
+    : "";
 
   return [
     {
       key: "theyHelp",
-      en: "THEY CAN HELP YOU",
-      ko: "그들이 당신을 도울 수 있다",
-      line: theyHelpLine,
+      en: seek && theyOffer ? "They can give what you seek" : "No matching offer for your seek",
+      ko: seek && theyOffer ? "이 사람이 내가 찾는 걸 줄 수 있다" : "찾는 것과 맞닿는 제안이 없다",
+      hintEn: "their offer · your seek",
+      hintKo: "상대 제안 · 내가 찾는 것",
+      quote: theyHelpQuote,
     },
     {
       key: "youHelp",
-      en: "YOU CAN HELP THEM",
-      ko: "당신이 그들을 도울 수 있다",
-      line: youHelpLine,
+      en: offer && myOffer ? "They want what you can give" : "No matching seek for your offer",
+      ko: offer && myOffer ? "내가 줄 수 있는 걸 이 사람이 원한다" : "제안과 맞닿는 찾음이 없다",
+      hintEn: "your offer · their seek",
+      hintKo: "내가 줄 수 있는 것 · 상대가 찾는 것",
+      quote: youHelpQuote,
     },
     {
       key: "shared",
-      en: "SHARED VISION",
-      ko: "공통의 비전",
-      line: sharedLine || "No shared imagination yet. / 아직 겹치는 상상이 없다.",
+      en: imagine && sharedQuote ? "Our imaginations overlap" : "No shared imagination yet",
+      ko: imagine && sharedQuote ? "상상이 겹친다" : "아직 겹치는 상상이 없다",
+      hintEn: "shared imagining",
+      hintKo: "겹치는 상상",
+      quote: sharedQuote,
     },
   ];
 }

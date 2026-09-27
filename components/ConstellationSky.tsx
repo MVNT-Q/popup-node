@@ -64,7 +64,7 @@ export function ConstellationSky({
 }: {
   stars: SkyPoint[];
   edges: SkyEdge[];
-  onPick: (id: string) => void;
+  onPick: (id: string, anchor: { x: number; y: number }) => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
@@ -176,7 +176,14 @@ export function ConstellationSky({
         pointers.current.delete(event.pointerId);
         if (pointers.current.size < 2) pinch.current = null;
         if (drag.current?.id === event.pointerId) drag.current = null;
-        if (!dragged && !pinched && id) onPick(id);
+        if (!dragged && !pinched && id) {
+          const el = viewportRef.current?.querySelector(`[data-star="${id}"]`);
+          const rect = el?.getBoundingClientRect();
+          onPick(id, {
+            x: rect ? rect.left + rect.width / 2 : event.clientX,
+            y: rect ? rect.top + rect.height / 2 : event.clientY,
+          });
+        }
       }}
       onPointerCancel={(event) => {
         pointers.current.delete(event.pointerId);

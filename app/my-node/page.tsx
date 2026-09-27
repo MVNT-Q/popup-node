@@ -35,6 +35,7 @@ export default function MyNodePage() {
   const [edgesRaw, setEdgesRaw] = useState<{ a: string; b: string; questions: number[] }[]>([]);
   const [on, setOn] = useState<number[]>([0, 1, 2]);
   const [picked, setPicked] = useState<string | null>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
 
@@ -185,11 +186,13 @@ export default function MyNodePage() {
         <ConstellationSky
           stars={skyStars}
           edges={skyEdges}
-          onPick={(id) => {
+          onPick={(id, nextAnchor) => {
             if (me && id === me.id) {
               setPicked(null);
+              setAnchor(null);
               return;
             }
+            setAnchor(nextAnchor);
             setPicked(id);
           }}
         />
@@ -217,7 +220,11 @@ export default function MyNodePage() {
           name={pickedStar.name}
           id={pickedStar.id}
           hits={pickedStar.hits}
-          onClose={() => setPicked(null)}
+          anchor={anchor}
+          onClose={() => {
+            setPicked(null);
+            setAnchor(null);
+          }}
         />
       ) : null}
     </main>
