@@ -83,17 +83,19 @@ export function focusCam(star: Point, width: number, height: number, focusY?: nu
   return { s, x: fx - star.x * s, y: fy - star.y * s };
 }
 
-/** 제목 블록 하단과 정보 카드(없으면 틱커) 상단 사이 중앙 → 하늘 로컬 Y */
+/** 제목 블록 하단과 정보 카드(없으면 틱커·액션) 상단 사이 중앙 → 하늘 로컬 Y */
 export function focusBandY(skyEl: HTMLElement): number {
   const sky = skyEl.getBoundingClientRect();
   const page = skyEl.closest(".cyp-sky-page");
   const head = page?.querySelector(".cyp-sky-head");
   const sheet = page?.querySelector(".cyp-sheet") ?? document.querySelector(".cyp-sheet");
   const ticker = page?.querySelector(".cyp-ticker");
+  const actions = page?.querySelector(".cyp-sky-actions");
   const topBound = head ? head.getBoundingClientRect().bottom : sky.top;
   let bottomBound = sky.bottom;
   if (sheet) bottomBound = sheet.getBoundingClientRect().top;
   else if (ticker) bottomBound = ticker.getBoundingClientRect().top;
+  else if (actions) bottomBound = actions.getBoundingClientRect().top;
   if (bottomBound <= topBound + 16) return sky.height * 0.5;
   return (topBound + bottomBound) / 2 - sky.top;
 }

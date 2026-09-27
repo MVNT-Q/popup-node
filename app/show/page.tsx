@@ -14,7 +14,11 @@ import type { Slot } from "@/lib/types";
 
 type AllNode = { id: string; code: number; name: string; slots: Slot[] };
 type Me = { id: string; code: number; name: string; slots: Slot[] };
-type Star = { id: string; hits: HitLite[] };
+type Star = {
+  id: string;
+  hits: HitLite[];
+  band?: "dim" | "weak" | "mid" | "strong";
+};
 type Mode = "grove" | "collective";
 
 export default function ShowPage() {
@@ -99,22 +103,24 @@ export default function ShowPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  // 공개 그로브와 같은 노드·줄·밝기
   const skyStars: SkyPoint[] = useMemo(() => {
     if (!layout) return [];
     return all.map((node) => {
       const point = layout.get(node.id) ?? { x: 500, y: 500 };
-      const self = me && node.id === me.id;
+      const against = stars.find((star) => star.id === node.id);
+      const self = Boolean(me && node.id === me.id);
       return {
         id: node.id,
         code: node.code,
         name: node.name,
         x: point.x,
         y: point.y,
-        band: self ? ("self" as const) : node.code % 5 === 0 ? ("mid" as const) : ("weak" as const),
+        band: self ? "self" : against?.band && against.band !== "dim" ? against.band : "weak",
         selected: picked === node.id,
       };
     });
-  }, [all, layout, me, picked]);
+  }, [all, layout, me, picked, stars]);
 
   const skyEdges: SkyEdge[] = useMemo(
     () => edges.map((edge) => ({ ...edge, bright: true })),

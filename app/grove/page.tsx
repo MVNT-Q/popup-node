@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/ConstellationSky";
@@ -113,11 +112,6 @@ export default function GrovePage() {
       <GroveBackdrop />
       <header className="cyp-sky-head">
         <SkyTitle mode={mode} nodes={counts.nodes} connections={counts.connections} />
-        <div className="cyp-sky-head-right">
-          <Link className="cyp-mini" href="/my-node">
-            MY NODE
-          </Link>
-        </div>
       </header>
 
       {error ? <p className="cyp-error">{error}</p> : null}
