@@ -1,4 +1,4 @@
-/** POC_7·8 헤더 — Orbitron 디스플레이 */
+/** POC_7·8 헤더 — grove는 Orbitron, collective는 타이틀 PNG */
 
 export function SkyTitle({
   mode,
@@ -21,9 +21,13 @@ export function SkyTitle({
           </p>
         </>
       ) : (
-        <h1 className="cyp-sky-hero cyp-display cyp-display-collective" aria-label="COLLECTIVE IMAGINATION">
-          <span className="cyp-display-line">COLLECTIVE</span>
-          <span className="cyp-display-line">IMAGINATION</span>
+        <h1 className="cyp-sky-hero cyp-display-collective" aria-label="COLLECTIVE IMAGINATION">
+          <img
+            className="cyp-collective-title-img"
+            src="/collective-imagination-title.png"
+            alt="COLLECTIVE IMAGINATION"
+            draggable={false}
+          />
         </h1>
       )}
     </div>

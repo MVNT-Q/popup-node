@@ -1103,10 +1103,22 @@ p { margin: 0; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.08em;
-  letter-spacing: 0.38em;
+  justify-content: center;
+  letter-spacing: 0;
   text-indent: 0;
-  font-size: clamp(26px, 5.2vw, 46px);
+  text-shadow: none;
+  background: transparent;
+}
+
+.cyp-collective-title-img {
+  display: block;
+  width: min(92vw, 520px);
+  height: auto;
+  margin: 0 auto;
+  background: transparent;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .cyp-display-line {
@@ -1838,8 +1850,8 @@ p { margin: 0; }
   .cyp-sky-hero {
     font-size: clamp(18px, 3.6vw, 28px);
   }
-  .cyp-display-collective {
-    font-size: clamp(16px, 3.4vw, 26px);
+  .cyp-collective-title-img {
+    width: min(88vw, 360px);
   }
   .cyp-sky-kicker {
     margin-bottom: 4px;
