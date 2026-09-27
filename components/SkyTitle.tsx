@@ -1,16 +1,4 @@
-/** POC_7·8 헤더 — Orbitron 디스플레이, 콜렉티브 O는 링 */
-
-function withRingO(text: string) {
-  return text.split("").map((ch, index) =>
-    ch === "O" || ch === "o" ? (
-      <span key={index} className="cyp-ring-o">
-        O
-      </span>
-    ) : (
-      <span key={index}>{ch === " " ? "\u00a0" : ch}</span>
-    ),
-  );
-}
+/** POC_7·8 헤더 — Orbitron 디스플레이 */
 
 export function SkyTitle({
   mode,
@@ -34,8 +22,8 @@ export function SkyTitle({
         </>
       ) : (
         <h1 className="cyp-sky-hero cyp-display cyp-display-collective" aria-label="COLLECTIVE IMAGINATION">
-          <span className="cyp-display-line">{withRingO("COLLECTIVE")}</span>
-          <span className="cyp-display-line">{withRingO("IMAGINATION")}</span>
+          <span className="cyp-display-line">COLLECTIVE</span>
+          <span className="cyp-display-line">IMAGINATION</span>
         </h1>
       )}
     </div>

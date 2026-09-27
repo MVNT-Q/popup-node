@@ -1115,26 +1115,6 @@ p { margin: 0; }
   text-indent: 0.38em;
 }
 
-.cyp-ring-o {
-  display: inline-block;
-  width: 0.72em;
-  height: 0.72em;
-  margin: 0 0.06em;
-  border-radius: 50%;
-  border: 0.08em solid #1cff8a;
-  box-sizing: border-box;
-  color: transparent;
-  vertical-align: 0.06em;
-  box-shadow:
-    0 0 8px rgba(28, 255, 138, 0.85),
-    0 0 18px rgba(28, 255, 138, 0.45),
-    inset 0 0 8px rgba(28, 255, 138, 0.35);
-  text-shadow: none;
-  overflow: hidden;
-  font-size: 1em;
-  line-height: 0;
-}
-
 .cyp-sky-ko {
   margin: 6px 0 0;
   font-family: var(--sans);
