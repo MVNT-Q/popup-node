@@ -1041,8 +1041,7 @@ p { margin: 0; }
 
 /* 그로브·전시만 하단 고정 모드바 높이만큼 여백. safe-area는 모드바 padding 한 번만 */
 .cyp-sky-page.cyp-grove {
-  --cyp-mode-bar-safe: max(8px, env(safe-area-inset-bottom, 0px));
-  --cyp-mode-bar-h: calc(52px + var(--cyp-mode-bar-safe));
+  --cyp-mode-bar-h: calc(56px + env(safe-area-inset-bottom, 0px));
   padding-bottom: var(--cyp-mode-bar-h);
 }
 
@@ -1930,7 +1929,7 @@ p { margin: 0; }
   z-index: 80;
   width: 100% !important;
   max-width: none !important;
-  padding: 0 18px var(--cyp-mode-bar-safe, max(8px, env(safe-area-inset-bottom, 0px)));
+  padding: 0 18px env(safe-area-inset-bottom, 0px);
   box-sizing: border-box;
   background: rgba(2, 4, 3, 0.96);
 }
