@@ -1,0 +1,46 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1400" viewBox="0 0 800 1400" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="a" cx="22%" cy="24%" r="48%">
+      <stop offset="0%" stop-color="#1cff8a" stop-opacity="0.28"/>
+      <stop offset="45%" stop-color="#0a4024" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#020403" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b" cx="78%" cy="20%" r="42%">
+      <stop offset="0%" stop-color="#28ff96" stop-opacity="0.2"/>
+      <stop offset="55%" stop-color="#062816" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#020403" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="c" cx="48%" cy="55%" r="58%">
+      <stop offset="0%" stop-color="#14c868" stop-opacity="0.16"/>
+      <stop offset="60%" stop-color="#041810" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#020403" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="d" cx="30%" cy="78%" r="44%">
+      <stop offset="0%" stop-color="#1cff8a" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#083020" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#020403" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="e" cx="82%" cy="72%" r="40%">
+      <stop offset="0%" stop-color="#3dff9a" stop-opacity="0.18"/>
+      <stop offset="55%" stop-color="#052014" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#020403" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.2  0 0 0 0 0.08  0 0 0 0.08 0"/>
+    </filter>
+    <filter id="dust" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035 0.05" numOctaves="3" seed="7" result="t"/>
+      <feColorMatrix in="t" type="matrix" values="0 0 0 0 0.02  0 0 0 0 0.28  0 0 0 0 0.1  0 0 0 0.35 0"/>
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+  <rect width="800" height="1400" fill="#020403"/>
+  <rect width="800" height="1400" fill="url(#a)"/>
+  <rect width="800" height="1400" fill="url(#b)"/>
+  <rect width="800" height="1400" fill="url(#c)"/>
+  <rect width="800" height="1400" fill="url(#d)"/>
+  <rect width="800" height="1400" fill="url(#e)"/>
+  <rect width="800" height="1400" filter="url(#dust)" opacity="0.65"/>
+  <rect width="800" height="1400" filter="url(#grain)" opacity="0.55"/>
+</svg>

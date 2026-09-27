@@ -92,7 +92,8 @@ export default function ShowPage() {
         name: node.name,
         x: point.x,
         y: point.y,
-        band: "weak" as const,
+        // 전시는 개인 공명 없이 전부 비슷한 밝기. 일부만 플레어용 mid.
+        band: node.code % 5 === 0 ? ("mid" as const) : ("weak" as const),
         selected: false,
       };
     });

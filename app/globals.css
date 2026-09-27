@@ -678,15 +678,51 @@ p { margin: 0; }
   color: #e9fff3;
 }
 
+/* 랜딩·가입: 별하늘은 유지하되 글 읽기용 살짝 어둡게 */
+.cyp:not(.cyp-sky-page) .grove-bg-canvas { opacity: 0.85; }
+.cyp:not(.cyp-sky-page) .grove-bg-nebula { opacity: 0.75; }
+.cyp:not(.cyp-sky-page)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(2, 4, 3, 0.35) 0%, rgba(2, 4, 3, 0.55) 45%, rgba(2, 4, 3, 0.7) 100%);
+}
+
 .grove-bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  background: #020403;
 }
 
-.cyp > :not(.grove-bg) { position: relative; }
+.grove-bg-nebula {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 22%, rgba(28, 255, 138, 0.2), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 78% 18%, rgba(40, 255, 150, 0.14), transparent 68%),
+    radial-gradient(ellipse 80% 60% at 50% 55%, rgba(10, 80, 40, 0.18), transparent 72%),
+    radial-gradient(ellipse 50% 40% at 30% 78%, rgba(28, 255, 138, 0.16), transparent 70%),
+    radial-gradient(ellipse 45% 38% at 85% 70%, rgba(20, 200, 100, 0.12), transparent 68%),
+    url("/sky-nebula.svg") center / cover no-repeat;
+  opacity: 0.95;
+}
+
+.grove-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cyp > :not(.grove-bg) { position: relative; z-index: 1; }
 
 .kicker {
   margin: 0 0 28px;
@@ -892,14 +928,32 @@ p { margin: 0; }
 .column:has(.cyp-sky-page) {
   width: min(720px, 100%);
   background: #020403;
+  box-shadow: none;
+}
+
+.column:has(.cyp-show) {
+  width: min(1100px, 100%);
 }
 
 .cyp-sky-page {
   display: flex;
   flex-direction: column;
   min-height: calc(100dvh - 48px);
-  padding-bottom: 24px;
+  padding: 16px 0 20px;
   overflow: hidden;
+  background: transparent;
+}
+
+.cyp-sky-page > .cyp-sky-head,
+.cyp-sky-page > .cyp-qrow,
+.cyp-sky-page > .cyp-sky-actions,
+.cyp-sky-page > .cyp-mode-toggle,
+.cyp-sky-page > .cyp-ticker,
+.cyp-sky-page > .cyp-error,
+.cyp-sky-page > .cyp-empty,
+.cyp-sky-page > .hint {
+  padding-left: 18px;
+  padding-right: 18px;
 }
 
 .cyp-sky-head {
@@ -974,11 +1028,11 @@ p { margin: 0; }
 .cyp-sky {
   position: relative;
   flex: 1;
-  min-height: 320px;
+  min-height: min(62dvh, 560px);
   overflow: hidden;
-  border: 1px solid rgba(28, 255, 138, 0.18);
-  border-radius: 18px;
-  background: radial-gradient(ellipse at center, rgba(28, 255, 138, 0.05), transparent 55%);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   touch-action: none;
 }
 
@@ -996,16 +1050,16 @@ p { margin: 0; }
 }
 
 .cyp-line {
-  stroke: #1cff8a;
-  stroke-width: 1.1;
+  stroke: #5cff9f;
+  stroke-width: 0.65;
   fill: none;
   transition: opacity 0.35s ease, stroke-opacity 0.35s ease;
 }
 
-.cyp-line.strong { stroke-opacity: 0.85; }
-.cyp-line.mid { stroke-opacity: 0.55; }
-.cyp-line.weak { stroke-opacity: 0.28; }
-.cyp-line.dim { stroke-opacity: 0.08; }
+.cyp-line.strong { stroke-opacity: 0.42; }
+.cyp-line.mid { stroke-opacity: 0.28; }
+.cyp-line.weak { stroke-opacity: 0.16; }
+.cyp-line.dim { stroke-opacity: 0.06; }
 
 .cyp-star {
   position: absolute;
@@ -1021,31 +1075,117 @@ p { margin: 0; }
   min-width: 44px;
 }
 
+/* 흰 코어 + 넓게 번지는 초록 bloom */
 .cyp-star .dot {
-  width: 10px;
-  height: 10px;
+  position: relative;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: #1cff8a;
-  box-shadow: 0 0 10px rgba(28, 255, 138, 0.55);
+  background: #fff;
+  box-shadow:
+    0 0 3px 1px rgba(255, 255, 255, 0.95),
+    0 0 10px 3px rgba(28, 255, 138, 0.85),
+    0 0 28px 10px rgba(28, 255, 138, 0.4),
+    0 0 56px 22px rgba(28, 255, 138, 0.14);
+}
+
+.cyp-star .dot .cross {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 46%,
+      rgba(220, 255, 235, 0.95) 50%,
+      transparent 54%,
+      transparent 100%
+    ),
+    linear-gradient(
+      0deg,
+      transparent 0%,
+      transparent 46%,
+      rgba(160, 255, 200, 0.85) 50%,
+      transparent 54%,
+      transparent 100%
+    );
+  opacity: 0.85;
+  mix-blend-mode: screen;
 }
 
 .cyp-star.self .dot {
-  width: 14px;
-  height: 14px;
-  background: #7dffb4;
-  box-shadow: 0 0 0 2px #020403, 0 0 0 3px #1cff8a, 0 0 18px rgba(28, 255, 138, 0.7);
+  width: 13px;
+  height: 13px;
+  background: #fff;
+  box-shadow:
+    0 0 4px 1px rgba(255, 255, 255, 1),
+    0 0 14px 5px rgba(28, 255, 138, 0.95),
+    0 0 36px 14px rgba(28, 255, 138, 0.5),
+    0 0 72px 28px rgba(28, 255, 138, 0.18);
 }
 
-.cyp-star.strong .dot { box-shadow: 0 0 16px rgba(28, 255, 138, 0.9); }
-.cyp-star.mid .dot { opacity: 0.9; }
-.cyp-star.weak .dot { opacity: 0.55; box-shadow: none; }
-.cyp-star.dim .dot { opacity: 0.28; box-shadow: none; width: 7px; height: 7px; }
+.cyp-star.self .dot .cross {
+  width: 56px;
+  height: 56px;
+  opacity: 1;
+}
+
+.cyp-star.strong .dot {
+  width: 11px;
+  height: 11px;
+  box-shadow:
+    0 0 4px 1px rgba(255, 255, 255, 1),
+    0 0 14px 5px rgba(28, 255, 138, 0.95),
+    0 0 34px 14px rgba(28, 255, 138, 0.48),
+    0 0 68px 26px rgba(28, 255, 138, 0.16);
+}
+
+.cyp-star.mid .dot {
+  box-shadow:
+    0 0 3px 1px rgba(255, 255, 255, 0.9),
+    0 0 12px 4px rgba(28, 255, 138, 0.75),
+    0 0 28px 11px rgba(28, 255, 138, 0.32),
+    0 0 52px 20px rgba(28, 255, 138, 0.1);
+}
+
+.cyp-star.mid .dot .cross {
+  width: 32px;
+  height: 32px;
+  opacity: 0.55;
+}
+
+.cyp-star.weak .dot {
+  width: 7px;
+  height: 7px;
+  background: #e8fff2;
+  box-shadow:
+    0 0 2px 0.5px rgba(255, 255, 255, 0.7),
+    0 0 10px 3px rgba(28, 255, 138, 0.45),
+    0 0 22px 8px rgba(28, 255, 138, 0.16);
+}
+
+.cyp-star.dim .dot {
+  width: 5px;
+  height: 5px;
+  background: rgba(200, 255, 220, 0.75);
+  box-shadow:
+    0 0 6px 2px rgba(28, 255, 138, 0.22),
+    0 0 14px 5px rgba(28, 255, 138, 0.08);
+}
 
 .cyp-star .num {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.08em;
-  color: #b8ffd8;
+  color: #e9fff3;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
 }
 
 .cyp-star .call {
@@ -1058,7 +1198,12 @@ p { margin: 0; }
 }
 
 .cyp-star.on .dot {
-  box-shadow: 0 0 0 2px #020403, 0 0 0 3px #fff, 0 0 18px rgba(28, 255, 138, 0.8);
+  box-shadow:
+    0 0 0 2px #020403,
+    0 0 0 3px #fff,
+    0 0 4px 1px rgba(255, 255, 255, 1),
+    0 0 16px 6px rgba(28, 255, 138, 0.95),
+    0 0 40px 16px rgba(28, 255, 138, 0.45);
 }
 
 .cyp-zoom {
@@ -1180,7 +1325,7 @@ p { margin: 0; }
 .cyp-grove-stage {
   position: relative;
   flex: 1;
-  min-height: 340px;
+  min-height: min(62dvh, 560px);
 }
 
 .cyp-fade {
@@ -1205,8 +1350,8 @@ p { margin: 0; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(2, 4, 3, 0.92);
-  border-radius: 18px;
+  background: rgba(2, 4, 3, 0.55);
+  border-radius: 0;
 }
 
 .cyp-sphere {
