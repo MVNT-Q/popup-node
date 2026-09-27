@@ -182,9 +182,6 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
 
   const showButton = phase === "install" || phase === "notify";
 
-  // off일 때 빈 섹션+마진이 하늘 셸 높이를 훔치지 않게
-  if (phase === "off") return null;
-
   return (
     <section className={place === "continue" ? "install banner" : "install"}>
       {phase === "install" ? (
