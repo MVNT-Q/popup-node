@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { askNotification, subscribePush } from "@/components/alerts";
+import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { MarkLock } from "@/components/MarkLock";
 
 type Me = { id: string; code: number; name: string } | null;
@@ -48,10 +49,7 @@ export default function LandingPage() {
 
   return (
     <main className="cyp cyp-landing">
-      {/* 목업 배경 잠상 — 가짜 번호 없음 */}
-      <div className="landing-lock-bg" aria-hidden>
-        <img src="/poc-landing.jpg" alt="" />
-      </div>
+      <GroveBackdrop />
       <p className="landing-brand">CYP3</p>
       <h1 className="display landing-title">
         PROOF OF

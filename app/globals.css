@@ -741,34 +741,6 @@ p { margin: 0; }
   filter: saturate(1.2) brightness(0.9);
 }
 
-.landing-lock-bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-.landing-lock-bg img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
-  opacity: 0.55;
-  filter: brightness(0.55) saturate(1.1);
-}
-.cyp-landing::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(2, 4, 3, 0.35) 0%, rgba(2, 4, 3, 0.72) 55%, rgba(2, 4, 3, 0.88) 100%);
-}
-.cyp-landing > :not(.landing-lock-bg) {
-  position: relative;
-  z-index: 1;
-}
-
 .grove-bg-canvas {
   position: absolute;
   inset: 0;
@@ -791,35 +763,38 @@ p { margin: 0; }
 }
 
 .mark-lock {
-  width: 110px;
-  margin: 8px auto 18px;
+  width: 118px;
+  margin: 14px auto 22px;
 }
 
-.mark-lock.born { width: 128px; }
+.mark-lock.born { width: 132px; }
 
-.mark-lock img {
+.mark-lock svg {
   width: 100%;
   height: auto;
   display: block;
-  filter: drop-shadow(0 0 12px rgba(28, 255, 138, 0.55));
+  filter:
+    drop-shadow(0 0 10px rgba(28, 255, 138, 0.65))
+    drop-shadow(0 0 28px rgba(28, 255, 138, 0.35));
 }
 
 .landing-brand {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   text-align: center;
   font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.55em;
-  text-indent: 0.55em;
+  font-size: 12px;
+  letter-spacing: 0.62em;
+  text-indent: 0.62em;
   color: #e9fff3;
+  text-shadow: 0 0 18px rgba(28, 255, 138, 0.28);
 }
 
 .landing-title {
-  font-size: clamp(28px, 7vw, 40px);
-  letter-spacing: 0.16em;
-  line-height: 1.05;
+  font-size: clamp(30px, 7.5vw, 42px);
+  letter-spacing: 0.18em;
+  line-height: 1.02;
   color: #f2fff7;
-  text-shadow: 0 0 24px rgba(28, 255, 138, 0.35);
+  text-shadow: 0 0 28px rgba(28, 255, 138, 0.4);
 }
 
 .lead-line em {
@@ -837,11 +812,17 @@ p { margin: 0; }
 }
 
 .display-sub {
-  margin: 14px 0 10px;
+  margin: 16px 0 6px;
   text-align: center;
-  letter-spacing: 0.28em;
-  font-size: 12px;
-  color: #d8ffe8;
+  letter-spacing: 0.32em;
+  font-size: 13px;
+  color: #e4fff0;
+  text-shadow: 0 0 16px rgba(28, 255, 138, 0.25);
+}
+
+.cyp-landing .copy {
+  margin-top: 6px;
+  gap: 12px;
 }
 
 .form-title { font-size: 28px; letter-spacing: 0.06em; margin-bottom: 8px; }
