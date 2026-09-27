@@ -924,6 +924,19 @@ p { margin: 0; }
   border-radius: 16px;
   padding: 12px 14px;
   text-align: left;
+  overflow: visible;
+  white-space: normal;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+.example span,
+.example small {
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
 }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
@@ -950,9 +963,18 @@ p { margin: 0; }
   display: block;
   grid-template-columns: none;
   padding: 12px 14px;
+  overflow: visible;
 }
 .imagine-card svg { width: 88px; height: 72px; }
-.imagine-card p { margin: 0; text-align: left; }
+.imagine-card p {
+  margin: 0;
+  text-align: left;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
 .imagine-card .ko { margin-top: 6px; }
 
 .step-mark {

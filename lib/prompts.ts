@@ -71,23 +71,23 @@ export const OFFER_TAGS = [
   "GOOD ENERGY / SPIRIT",
 ] as const;
 
-// OFFER 예시 — 목업 POC_2 원문
+// OFFER 예시 — 원문 그대로 (자르지 않음)
 export const OFFER_EXAMPLES = [
   {
-    en: "I run a small photo zine print studio in Seoul and can offer space for workshops, product shoots, or gatherings of up to 15 people.",
-    ko: "서울에서 소규모 사진집 출력소 스튜디오를 운영하고 있으며, 최대 15인 규모의 워크숍, 제품 촬영, 모임 공간을 제공할 수 있습니다.",
+    en: "I run a small photo and event studio in Seoul and can offer space for workshops, product shoots, or gatherings of up to 15 people.",
+    ko: "서울에서 소규모 촬영·이벤트 스튜디오를 운영하며, 최대 15명 규모의 워크숍·제품 촬영·모임 공간을 제공할 수 있습니다.",
   },
   {
-    en: "I work in strategy and can help early-stage teams with market research, user analysis, and positioning, so you can focus on building without getting overwhelmed by the business side.",
-    ko: "전략 분야에서 일하고 있으며, 초기 단계팀의 시장 리서치, 사용자 분석, 포지셔닝을 도와드릴 수 있습니다. 여러분은 비즈니스적인 부분에 대한 부담 없이 개발에 집중할 수 있도록.",
+    en: "I work on AI agents and decentralized infrastructure, with experience in multi-agent systems and peer-to-peer protocols, and can help prototype experimental technical concepts.",
+    ko: "AI 에이전트와 탈중앙화 인프라를 다루며, 멀티에이전트 시스템과 P2P 프로토콜 경험을 바탕으로 실험적인 기술 아이디어의 프로토타이핑을 도울 수 있습니다.",
   },
   {
-    en: "I have an experimental background in sound and spatial media, and I can help with technical setup, software, or creative direction for audio-visual projects and installations.",
-    ko: "사운드와 공간 미디어를 실험적으로 연구해 왔으며, 오디오-비주얼 프로젝트와 설치 작업을 위한 기술적인 세팅, 소프트웨어, 혹은 창의적 방향성을 도와드릴 수 있습니다.",
+    en: "I work with apparel factories and material suppliers in Korea and can help with technical development, sourcing, sampling, and small-batch fashion production.",
+    ko: "한국의 의류 공장과 소재 업체들과 일하고 있으며, 기술 개발·소재 소싱·샘플 제작·소량 패션 생산을 도울 수 있습니다.",
   },
   {
-    en: "I have experience in policy and cultural research, and can help you find relevant people or resources within institutions, developers, and organisers for collaborations or exhibitions.",
-    ko: "정책 및 문화 연구 경험이 있으며, 협업이나 전시를 위해 관련 기관, 개발자, 기획자들과 연결될 수 있는 사람이나 리소스를 찾아드릴 수 있습니다.",
+    en: "I run a creative-coding and digital-art community in Seoul and can introduce generative artists, creative technologists, developers, and organizers for collaborations or events.",
+    ko: "서울에서 크리에이티브 코딩·디지털 아트 커뮤니티를 운영하며, 협업이나 이벤트를 위해 제너러티브 아티스트·크리에이티브 테크놀로지스트·개발자·기획자를 연결해줄 수 있습니다.",
   },
 ] as const;
 
