@@ -16,16 +16,11 @@ export type RelationBlock = {
   /** 안내 한 줄 — 토글이 죽은 것처럼 보이지 않게 */
   hintEn: string;
   hintKo: string;
-  /** 상대가 적은 원문. 번역 키 없으면 언어 그대로 */
+  /** 노드가 적은 SEEK/OFFER/IMAGINE 원문 — 시트에서 목표 언어로 번역 */
   quote: string;
 };
 
 export type SheetLang = "en" | "ko";
-
-export type QuoteView = {
-  text: string;
-  note: string;
-};
 
 function clip(text: string, max = 96) {
   const t = text.trim().replace(/\s+/g, " ");
@@ -37,7 +32,7 @@ function slotAnswer(slots: Slot[], index: number) {
   return slots[index]?.answer?.trim() ?? "";
 }
 
-/** 원문 언어 추정. 번역 API 없을 때 같은 언어만 보여 주기용 */
+/** 원문 언어 추정 — 이미 목표 언어면 번역 호출 생략 */
 export function guessTextLang(text: string): SheetLang | "mixed" | "empty" {
   const t = text.trim();
   if (!t) return "empty";
@@ -46,54 +41,6 @@ export function guessTextLang(text: string): SheetLang | "mixed" | "empty" {
   if (hangul === 0 && latin === 0) return "empty";
   if (hangul > 0 && latin > 0) return "mixed";
   return hangul > 0 ? "ko" : "en";
-}
-
-/**
- * 선택 언어와 같으면 원문만. 다르면 원문을 남기고 짧은 안내.
- * 번역 API 없음 — 임의 문장을 바꿔 쓰지 않음.
- */
-export function quoteForLang(quote: string, lang: SheetLang): QuoteView {
-  const raw = quote.trim();
-  if (!raw) return { text: "", note: "" };
-  const parts = raw.split(/\s*·\s*/).map((part) => part.trim()).filter(Boolean);
-  if (parts.length <= 1) {
-    const guessed = guessTextLang(raw);
-    if (guessed === "empty" || guessed === lang || guessed === "mixed") {
-      return { text: raw, note: "" };
-    }
-    return {
-      text: raw,
-      note:
-        lang === "ko"
-          ? "원문은 영어입니다. 번역 키 없이 그대로 둡니다."
-          : "Original is in Korean. Shown as written — no translate key.",
-    };
-  }
-
-  const same: string[] = [];
-  const other: string[] = [];
-  for (const part of parts) {
-    const guessed = guessTextLang(part);
-    if (guessed === "empty" || guessed === lang || guessed === "mixed") same.push(part);
-    else other.push(part);
-  }
-  if (!other.length) return { text: same.join(" · "), note: "" };
-  if (!same.length) {
-    return {
-      text: other.join(" · "),
-      note:
-        lang === "ko"
-          ? "원문은 영어입니다. 번역 키 없이 그대로 둡니다."
-          : "Original is in Korean. Shown as written — no translate key.",
-    };
-  }
-  return {
-    text: [...same, ...other].join(" · "),
-    note:
-      lang === "ko"
-        ? "일부 원문은 영어입니다. 번역 키 없이 그대로 둡니다."
-        : "Some lines are in Korean. Shown as written — no translate key.",
-  };
 }
 
 /** 카드 크롬 — en/ko 토글이 여기만 보면 됨 */

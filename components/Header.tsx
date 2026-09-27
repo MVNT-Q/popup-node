@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { InstallCard } from "@/components/InstallCard";
 
 function Bell() {
   return (
@@ -23,7 +22,6 @@ export function Header() {
   const pathname = usePathname();
   const [code, setCode] = useState<number | null>(null);
   const [unread, setUnread] = useState(0);
-  const [notifyOpen, setNotifyOpen] = useState(false);
 
   useEffect(() => {
     let stop = false;
@@ -47,11 +45,6 @@ export function Header() {
     return () => window.removeEventListener("node-inbox", onInbox);
   }, []);
 
-  // 경로 바뀌면 알림 패널 접기
-  useEffect(() => {
-    setNotifyOpen(false);
-  }, [pathname]);
-
   const bare =
     pathname === "/" || pathname.startsWith("/join") || pathname === "/born" || pathname === "/show";
   if (bare) return null;
@@ -63,16 +56,14 @@ export function Header() {
       </Link>
       {code ? (
         <div className="top-actions">
-          <button
-            type="button"
+          <Link
+            href="/inbox"
             className="bell"
-            aria-label={unread > 0 ? `알림 설정, 안 읽은 ${unread}` : "알림 설정"}
-            aria-expanded={notifyOpen}
-            onClick={() => setNotifyOpen((open) => !open)}
+            aria-label={unread > 0 ? `받은 메시지, 안 읽은 ${unread}` : "받은 메시지"}
           >
             <Bell />
             {unread > 0 ? <i className="pip" /> : null}
-          </button>
+          </Link>
           <Link href="/my-node" className="me-code">
             {code}
           </Link>
@@ -80,19 +71,6 @@ export function Header() {
       ) : (
         <span />
       )}
-      {code && notifyOpen ? (
-        <div className="top-notify" role="dialog" aria-label="알림 받기">
-          <p className="top-notify-lead">
-            Add this to your home screen, then allow notifications on this phone.
-          </p>
-          <p className="ko">먼저 홈 화면에 넣고, 이어서 이 폰 알림을 켭니다. 텔레그램·이메일은 없습니다.</p>
-          {/* 노드가 있을 때만 종 아이콘이 뜸 — 401 전에 권한 안 물음 */}
-          <InstallCard place="join" />
-          <Link className="top-notify-inbox" href="/inbox" onClick={() => setNotifyOpen(false)}>
-            받은 메시지 보기
-          </Link>
-        </div>
-      ) : null}
     </header>
   );
 }

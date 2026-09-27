@@ -1,15 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  quoteForLang,
   relationBlocks,
   sheetChrome,
   type HitLite,
   type SheetLang,
 } from "@/lib/relation";
+import { translateQuote } from "@/lib/translate";
 import type { Slot } from "@/lib/types";
+
+function TranslatedQuote({ quote, lang }: { quote: string; lang: SheetLang }) {
+  const [text, setText] = useState(quote);
+
+  useEffect(() => {
+    let stop = false;
+    setText(quote);
+    if (!quote.trim()) return;
+    void translateQuote(quote, lang).then((next) => {
+      if (!stop) setText(next);
+    });
+    return () => {
+      stop = true;
+    };
+  }, [quote, lang]);
+
+  if (!text) return null;
+  return <p className="cyp-sheet-line">{text}</p>;
+}
 
 export function RelationSheet({
   meSlots,
@@ -57,15 +76,13 @@ export function RelationSheet({
         </div>
         <div className="cyp-sheet-blocks" key={lang}>
           {blocks.map((block) => {
-            const quote = quoteForLang(block.quote, lang);
             const line = lang === "ko" ? block.ko : block.en;
             const hint = lang === "ko" ? block.hintKo : block.hintEn;
             return (
               <section key={block.key} className="cyp-sheet-row">
                 <p className="cyp-sheet-row-label">{line}</p>
                 <p className="cyp-sheet-hint">{hint}</p>
-                {quote.note ? <p className="cyp-sheet-quote-note">{quote.note}</p> : null}
-                {quote.text ? <p className="cyp-sheet-line">{quote.text}</p> : null}
+                <TranslatedQuote quote={block.quote} lang={lang} />
               </section>
             );
           })}
