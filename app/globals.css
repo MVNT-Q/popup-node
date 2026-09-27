@@ -107,6 +107,43 @@ p { margin: 0; }
   color: #8d929c;
 }
 
+.born-notify-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.born-notify {
+  width: min(320px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid rgba(28, 255, 138, 0.28);
+  border-radius: 14px;
+  background: rgba(2, 6, 4, 0.97);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.born-notify .ko {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #8d929c;
+}
+
+.born-notify .install {
+  margin: 8px 0 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.born-notify .text-btn {
+  margin-top: 10px;
+}
+
 .mark {
   font-family: var(--mono);
   font-size: 12px;

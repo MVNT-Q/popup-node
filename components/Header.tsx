@@ -4,16 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-function Bell() {
+function MessageIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
       <path
-        d="M8 1.6a3.2 3.2 0 0 0-3.2 3.2v1.1c0 .7-.2 1.4-.7 2L3.2 9.2c-.5.6-.1 1.5.7 1.5h8.2c.8 0 1.2-.9.7-1.5l-.9-1.3c-.5-.6-.7-1.3-.7-2V4.8A3.2 3.2 0 0 0 8 1.6Z"
+        d="M2.2 3.2h11.6v7.4H8.1L5.2 13v-2.4H2.2V3.2Z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.2"
+        strokeLinejoin="round"
       />
-      <path d="M6.4 12.2a1.6 1.6 0 0 0 3.2 0" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -54,23 +54,25 @@ export function Header() {
     pathname === "/usershow";
   if (bare) return null;
 
+  const nodeLabel = code != null ? `#${String(code).padStart(3, "0")}` : null;
+
   return (
     <header className="top">
       <Link href={code ? "/my-node" : "/"} className="mark">
         cyp3 grove
       </Link>
-      {code ? (
+      {code != null && nodeLabel ? (
         <div className="top-actions">
           <Link
             href="/inbox"
             className="bell"
             aria-label={unread > 0 ? `받은 메시지, 안 읽은 ${unread}` : "받은 메시지"}
           >
-            <Bell />
+            <MessageIcon />
             {unread > 0 ? <i className="pip" /> : null}
           </Link>
           <Link href="/my-node" className="me-code">
-            {code}
+            {nodeLabel}
           </Link>
         </div>
       ) : (

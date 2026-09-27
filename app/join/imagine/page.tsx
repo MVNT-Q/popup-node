@@ -40,9 +40,12 @@ export default function ImaginePage() {
           slots: [{ answer: draft.seek }, { answer: draft.offer, tags: draft.tags }, { words, selected: [] }],
         }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; me?: { id?: string } };
       if (!response.ok) throw new Error(data.error || "저장 실패");
+      if (!data.me?.id) throw new Error("노드가 만들어지지 않았습니다.");
       clearDraft();
+      // 노드 id가 생긴 뒤에만 알림 팝업 — 권한은 InstallCard 버튼에서
+      sessionStorage.setItem("node-open-notify", "1");
       router.push("/born");
       router.refresh();
     } catch (reason) {

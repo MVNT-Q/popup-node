@@ -10,7 +10,7 @@ type Place = "join" | "continue" | "inbox";
 
 /**
  * Galaxy에서 쓰이던 그 경로 — 홈 화면(beforeinstallprompt / __nodeInstall) 다음 알림 권한.
- * inbox 활성화 버튼과 InstallCard 버튼이 둘 다 이걸 부른다.
+ * 노드 생성 직후 born 팝업·InstallCard 버튼이 이걸 부른다.
  */
 export async function runInstallNotifyNext(
   mode: "install" | "notify" = "install",
@@ -154,7 +154,7 @@ export function InstallCard({ place = "join" }: { place?: Place }) {
       return;
     }
     if (link === "denied") {
-      setNote("알림을 거절하면 상단 종으로만 확인할 수 있습니다.");
+      setNote("알림을 거절하면 상단 메시지로만 확인할 수 있습니다.");
       return;
     }
     if (link === "default") {
