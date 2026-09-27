@@ -765,7 +765,6 @@ p { margin: 0; }
 .mark-lock {
   width: 118px;
   margin: 14px auto 22px;
-  background: #000;
 }
 
 .mark-lock.born { width: 132px; }
@@ -775,7 +774,6 @@ p { margin: 0; }
   height: auto;
   display: block;
   object-fit: contain;
-  background: #000;
 }
 
 .landing-brand {
