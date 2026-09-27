@@ -13,8 +13,6 @@ export function RelationSheet({
   id,
   hits,
   onClose,
-  /** 그로브/쇼에서 내 별을 열 때만. /my-node 안에서는 넣지 않음 */
-  showGoMyNode = false,
 }: {
   meSlots: Slot[];
   theirSlots: Slot[];
@@ -23,7 +21,6 @@ export function RelationSheet({
   id: string;
   hits: HitLite[];
   onClose: () => void;
-  showGoMyNode?: boolean;
 }) {
   const blocks = relationBlocks(meSlots, theirSlots, hits);
   const label = `#${String(code).padStart(3, "0")} ${name}`;
@@ -38,15 +35,7 @@ export function RelationSheet({
         </button>
         <div className="cyp-sheet-head">
           <div>
-            <p className="cyp-sheet-kicker">
-              {showGoMyNode
-                ? lang === "ko"
-                  ? "나의 노드"
-                  : "MY NODE"
-                : lang === "ko"
-                  ? "연결된 노드"
-                  : "CONNECTED NODE"}
-            </p>
+            <p className="cyp-sheet-kicker">{lang === "ko" ? "연결된 노드" : "CONNECTED NODE"}</p>
             <h2 className="cyp-sheet-title">{label}</h2>
           </div>
           <button
@@ -71,31 +60,17 @@ export function RelationSheet({
             );
           })}
         </div>
-        {showGoMyNode ? (
-          <Link className="cyp-btn" href="/my-node">
-            {lang === "ko" ? (
-              <span>
-                내 노드로 가기 <i aria-hidden>→</i>
-              </span>
-            ) : (
-              <span>
-                GO TO MY NODE <i aria-hidden>→</i>
-              </span>
-            )}
-          </Link>
-        ) : (
-          <Link className="cyp-btn" href={`/chat/${id}`}>
-            {lang === "ko" ? (
-              <span>
-                프라이빗 채널 열기 <i aria-hidden>→</i>
-              </span>
-            ) : (
-              <span>
-                OPEN PRIVATE CHANNEL <i aria-hidden>→</i>
-              </span>
-            )}
-          </Link>
-        )}
+        <Link className="cyp-btn" href={`/chat/${id}`}>
+          {lang === "ko" ? (
+            <span>
+              프라이빗 채널 열기 <i aria-hidden>→</i>
+            </span>
+          ) : (
+            <span>
+              OPEN PRIVATE CHANNEL <i aria-hidden>→</i>
+            </span>
+          )}
+        </Link>
       </div>
     </>
   );

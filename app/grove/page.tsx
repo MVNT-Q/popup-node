@@ -41,12 +41,6 @@ export default function GrovePage() {
   const laid = useRef(false);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("mode") === "collective") {
-      setMode("collective");
-    }
-  }, []);
-
-  useEffect(() => {
     let stop = false;
     async function load() {
       const response = await fetch("/api/sky?view=grove", { cache: "no-store" });
@@ -136,7 +130,11 @@ export default function GrovePage() {
               edges={skyEdges}
               focusId={picked}
               onPick={(id) => {
-                // 시트 열 때 콜렉티브로 자동 전환 금지 — 그로브 유지. 내 별도 정보창.
+                if (me && id === me.id) {
+                  router.push("/my-node");
+                  return;
+                }
+                // 시트 열 때 콜렉티브로 자동 전환 금지 — 그로브 유지
                 setMode("grove");
                 setPicked(id);
               }}
@@ -163,7 +161,6 @@ export default function GrovePage() {
           id={pickedNode.id}
           hits={pickedHits}
           onClose={() => setPicked(null)}
-          showGoMyNode={pickedNode.id === me.id}
         />
       ) : null}
 
