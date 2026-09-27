@@ -69,7 +69,8 @@ export async function GET(request: Request) {
       const ranked = await pairHits(me, node);
       mode = ranked.mode;
       const hits = ranked.hits;
-      if (view === "my" && hits.length === 0) continue;
+      // /my-node: 중·강 겹침 있는 별만 (줄 없는 고독 별 숨김)
+      if (view === "my" && midStrongHits(hits).length === 0) continue;
       againstMe.push({
         id: node.id,
         code: node.code,

@@ -6,8 +6,33 @@ import { allowPhonePush, subscribePush, type PushLink } from "@/components/alert
 import { isIos, isStandalone, listenInstall, promptInstall } from "@/components/install";
 
 type Phase = "off" | "install" | "guide" | "notify" | "pending" | "linked";
+type Place = "join" | "continue" | "inbox";
 
-export function InstallCard({ place = "join" }: { place?: "join" | "continue" }) {
+/**
+ * Galaxy에서 쓰이던 그 경로 — 홈 화면(beforeinstallprompt / __nodeInstall) 다음 알림 권한.
+ * inbox 활성화 버튼과 InstallCard 버튼이 둘 다 이걸 부른다.
+ */
+export async function runInstallNotifyNext(
+  mode: "install" | "notify" = "install",
+): Promise<
+  | { stage: "install"; result: "dismissed" | "ios" | "manual" }
+  | { stage: "push"; link: PushLink }
+> {
+  listenInstall();
+  if (mode === "install" && !isStandalone()) {
+    const result = await promptInstall();
+    if (result === "dismissed" || result === "ios" || result === "manual") {
+      return { stage: "install", result };
+    }
+  }
+  const link =
+    "Notification" in window && Notification.permission === "granted"
+      ? await subscribePush()
+      : await allowPhonePush();
+  return { stage: "push", link };
+}
+
+export function InstallCard({ place = "join" }: { place?: Place }) {
   const pathname = usePathname();
   const [phase, setPhase] = useState<Phase>("off");
   const [guide, setGuide] = useState<"ios" | "manual">("ios");
@@ -32,12 +57,12 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
         const saved = await subscribePush();
         if (stop) return;
         if (saved === "push") {
-          setPhase(place === "join" ? "linked" : "off");
+          setPhase(place === "join" || place === "inbox" ? "linked" : "off");
           setNote("이 폰으로 알림이 연결됐습니다. 탭을 닫아도 옵니다.");
           return;
         }
         if (saved === "unauthorized") {
-          setPhase(place === "join" ? "pending" : "off");
+          setPhase(place === "join" || place === "inbox" ? "pending" : "off");
           setNote("알림 권한은 이 폰에 받았습니다. 노드로 들어가면 저장됩니다.");
           return;
         }
@@ -47,7 +72,7 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
             return;
           }
           setNote("이 브라우저에는 폰 푸시가 없습니다. 폰 크롬, 또는 아이폰은 홈 화면 아이콘으로 연 뒤에 허용해야 붙습니다.");
-          if (!isStandalone() && place === "join") {
+          if (!isStandalone() && (place === "join" || place === "inbox")) {
             setGuide(isIos() ? "ios" : "manual");
             setPhase(isIos() ? "guide" : "install");
             return;
@@ -64,7 +89,7 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
         return;
       }
       if (isStandalone()) {
-        if (sessionStorage.getItem("node-push-later") === "1") {
+        if (sessionStorage.getItem("node-push-later") === "1" && place !== "inbox") {
           if (!stop) setPhase("off");
           return;
         }
@@ -82,6 +107,7 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
         if (!stop) setPhase("off");
         return;
       }
+      // join·inbox — 홈 화면 설치부터
       if (!stop) {
         setGuide(isIos() ? "ios" : "manual");
         setPhase(isIos() ? "guide" : "install");
@@ -108,16 +134,14 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
     };
   }, [place, pathname]);
 
-  if (phase === "off") return null;
-
   function apply(link: PushLink) {
     if (link === "push") {
-      setPhase(place === "join" ? "linked" : "off");
+      setPhase(place === "join" || place === "inbox" ? "linked" : "off");
       setNote("이 폰으로 알림이 연결됐습니다. 탭을 닫아도 옵니다.");
       return;
     }
     if (link === "unauthorized") {
-      setPhase(place === "join" ? "pending" : "notify");
+      setPhase(place === "join" || place === "inbox" ? "pending" : "notify");
       setNote("알림 권한은 이 폰에 받았습니다. 노드로 들어가면 저장됩니다.");
       return;
     }
@@ -132,7 +156,7 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
     }
     if (link === "no-push") {
       setNote("이 브라우저에는 폰 푸시가 없습니다. 폰 크롬, 또는 아이폰은 홈 화면 아이콘으로 연 뒤에 허용해야 붙습니다.");
-      if (!isStandalone() && place === "join") {
+      if (!isStandalone() && (place === "join" || place === "inbox")) {
         setGuide(isIos() ? "ios" : "manual");
         setPhase(isIos() ? "guide" : "install");
         return;
@@ -141,7 +165,7 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
       return;
     }
     if (link === "local") {
-      setPhase(place === "join" ? "linked" : "off");
+      setPhase(place === "join" || place === "inbox" ? "linked" : "off");
       setNote("권한은 켜졌습니다. 이 서버에 푸시 키가 없어, 탭이 열려 있을 때만 옵니다.");
       return;
     }
@@ -154,30 +178,45 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
     setBusy(true);
     setNote("");
     try {
-      if (phase === "install") {
-        const result = await promptInstall();
-        if (result === "dismissed") {
+      const mode = phase === "notify" ? "notify" : "install";
+      const out = await runInstallNotifyNext(mode);
+      if (out.stage === "install") {
+        if (out.result === "dismissed") {
           setNote("홈 화면에 추가해야 알림 연결로 넘어갑니다.");
+          setPhase("install");
           return;
         }
-        if (result === "ios") {
+        if (out.result === "ios") {
           setGuide("ios");
           setPhase("guide");
           return;
         }
-        if (result === "manual") {
+        if (out.result === "manual") {
           setGuide("manual");
           setPhase("guide");
           return;
         }
-        setPhase("notify");
       }
-      const link =
-        "Notification" in window && Notification.permission === "granted" ? await subscribePush() : await allowPhonePush();
-      apply(link);
+      if (out.stage === "push") {
+        if (phase === "install") setPhase("notify");
+        apply(out.link);
+      }
     } finally {
       setBusy(false);
     }
+  }
+
+  // inbox는 off여도 활성화 버튼을 남긴다. off 분기 뒤에 phase==="off" UI를 다시 두지 말 것.
+  if (phase === "off") {
+    if (place !== "inbox") return null;
+    return (
+      <section className="install">
+        <button className="btn-ghost" type="button" disabled={busy} onClick={() => void next()} style={{ marginTop: 10 }}>
+          {busy ? "…" : isStandalone() ? "알림 허용" : "홈 화면에 추가"}
+        </button>
+        {note ? <p className="hint">{note}</p> : null}
+      </section>
+    );
   }
 
   const showButton = phase === "install" || phase === "notify";

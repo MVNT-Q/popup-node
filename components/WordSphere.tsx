@@ -126,6 +126,20 @@ function linkPairs(base: Base[], dust: Dust[]): Pair[] {
   }));
 }
 
+function vvListen(handler: () => void) {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  vv.addEventListener("resize", handler);
+  vv.addEventListener("scroll", handler);
+}
+
+function vvUnlisten(handler: () => void) {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  vv.removeEventListener("resize", handler);
+  vv.removeEventListener("scroll", handler);
+}
+
 function projectPoint(
   p: { x: number; y: number; z: number },
   yaw: number,
@@ -151,6 +165,42 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
   const pairs = useMemo(() => linkPairs(base, dust), [base, dust]);
   const rootRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // 번역바·브라우저 크롬이 레이아웃 vh를 안 줄여도 visualViewport로 정사각 유지
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const parent = root.parentElement;
+
+    const fitSquare = () => {
+      const vv = window.visualViewport;
+      const pad = 8;
+      const pw = Math.max(0, (parent?.clientWidth || window.innerWidth) - pad);
+      const phRaw = parent?.clientHeight || 0;
+      const visualH = vv?.height ?? window.innerHeight;
+      const layoutH = window.innerHeight;
+      // 번역바 등으로 visual만 줄어든 만큼 부모 높이에서도 빼 줌
+      const chromeLoss = Math.max(0, layoutH - visualH);
+      const ph = Math.max(0, (phRaw > 40 ? phRaw : visualH * 0.72) - chromeLoss * 0.35);
+      const size = Math.max(140, Math.floor(Math.min(pw, ph, 760)));
+      root.style.width = `${size}px`;
+      root.style.height = `${size}px`;
+      root.style.maxWidth = "100%";
+      root.style.maxHeight = "100%";
+      root.style.aspectRatio = "1 / 1";
+    };
+
+    fitSquare();
+    const ro = parent ? new ResizeObserver(fitSquare) : null;
+    if (parent && ro) ro.observe(parent);
+    window.addEventListener("resize", fitSquare);
+    vvListen(fitSquare);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", fitSquare);
+      vvUnlisten(fitSquare);
+    };
+  }, []);
 
   useEffect(() => {
     const root = rootRef.current;

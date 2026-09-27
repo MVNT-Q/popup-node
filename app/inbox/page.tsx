@@ -48,8 +48,8 @@ export default function InboxPage() {
           Add this to your home screen, then allow notifications on this phone.
         </p>
         <p className="ko">먼저 홈 화면에 넣고, 이어서 이 폰 알림을 켭니다.</p>
-        {/* 노드 있는 세션에서만 이 페이지 — 홈화면 설치 후 웹푸시. 종 아이콘에서는 여기로만 옴 */}
-        <InstallCard place="join" />
+        {/* Galaxy와 같은 runInstallNotifyNext → next(). 종은 /inbox만, 여기서 설치·알림 */}
+        <InstallCard place="inbox" />
       </section>
 
       {threads.length === 0 ? <p className="hint">아직 대화가 없다.</p> : null}

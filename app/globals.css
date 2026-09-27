@@ -1620,10 +1620,12 @@ p { margin: 0; }
 .cyp-sheet {
   position: fixed;
   z-index: 40;
-  width: min(300px, calc(100vw - 24px));
-  max-height: min(36dvh, 280px);
-  overflow: auto;
-  padding: 10px 12px 12px;
+  width: min(320px, calc(100vw - 24px));
+  max-height: min(52dvh, 420px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(28, 255, 138, 0.35);
   background: rgba(2, 6, 4, 0.96);
@@ -1710,8 +1712,12 @@ p { margin: 0; }
   font-size: 11px;
   letter-spacing: 0.04em;
   color: #e9fff3;
-  line-height: 1.35;
+  line-height: 1.4;
   white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
 }
 
 .cyp-sheet-hint {
@@ -1757,11 +1763,13 @@ p { margin: 0; }
   margin: 4px 0 0;
   color: #a8c4b4;
   font-size: 12px;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.4;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
 }
 
 /* /my-node 만 — 별 키우고 내 별은 더 크게. 청록 링 유지 */
@@ -1872,6 +1880,7 @@ p { margin: 0; }
 
 .cyp-collective {
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1886,19 +1895,21 @@ p { margin: 0; }
 }
 
 .cyp-sphere {
-  /* 목업처럼 더 크게. 가로·세로 같은 길이 */
+  /* 한 변만 정하고 높이는 aspect-ratio — max-height만 줄어 타원 되는 것 방지 */
   --sphere: min(760px, 96vw, 72dvh, 100%);
   position: relative;
-  width: var(--sphere);
-  height: var(--sphere);
+  width: min(var(--sphere), 100%);
+  height: auto;
   aspect-ratio: 1 / 1;
   margin: 0 auto;
   flex: none;
+  flex-shrink: 1;
   max-width: 100%;
   max-height: 100%;
   cursor: grab;
   touch-action: none;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .cyp-sphere.dragging {

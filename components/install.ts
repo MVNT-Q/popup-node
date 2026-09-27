@@ -18,17 +18,19 @@ export function listenInstall() {
   listening = true;
   const waiting = parked();
   if (waiting) {
+    // inbox 리마운트해도 쓰게 — window와 모듈 둘 다 유지
     deferred = waiting;
-    (window as InstallWindow).__nodeInstall = undefined;
+    (window as InstallWindow).__nodeInstall = waiting;
   }
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     deferred = event as InstallEvent;
-    (window as InstallWindow).__nodeInstall = undefined;
+    (window as InstallWindow).__nodeInstall = deferred;
     window.dispatchEvent(new Event("node-install-ready"));
   });
   window.addEventListener("appinstalled", () => {
     deferred = null;
+    (window as InstallWindow).__nodeInstall = undefined;
     window.dispatchEvent(new Event("node-installed"));
   });
   if ("serviceWorker" in navigator) {
@@ -51,12 +53,13 @@ export function isIos() {
 export async function promptInstall(): Promise<"accepted" | "dismissed" | "ios" | "manual"> {
   listenInstall();
   if (isStandalone()) return "accepted";
+  // 모듈 deferred가 비어도 beforeInteractive로 받아 둔 window.__nodeInstall 사용
   const event = deferred || parked();
   if (event) {
-    deferred = null;
-    (window as InstallWindow).__nodeInstall = undefined;
     await event.prompt();
     const choice = await event.userChoice;
+    deferred = null;
+    (window as InstallWindow).__nodeInstall = undefined;
     return choice.outcome === "accepted" ? "accepted" : "dismissed";
   }
   if (isIos()) return "ios";

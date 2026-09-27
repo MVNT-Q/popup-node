@@ -10,7 +10,7 @@ export type HitLite = {
 
 export type RelationBlock = {
   key: "theyHelp" | "youHelp" | "shared";
-  /** 관계 한 줄 — 토글 시 en/ko가 반드시 바뀜 */
+  /** 관계 한 줄 — 고정 카피(번역 API 금지). 토글 시 en/ko가 바뀜 */
   en: string;
   ko: string;
   /** 안내 한 줄 — 토글이 죽은 것처럼 보이지 않게 */
@@ -22,10 +22,8 @@ export type RelationBlock = {
 
 export type SheetLang = "en" | "ko";
 
-function clip(text: string, max = 96) {
-  const t = text.trim().replace(/\s+/g, " ");
-  if (t.length <= max) return t;
-  return `${t.slice(0, max - 1)}…`;
+function tidy(text: string) {
+  return text.trim().replace(/\s+/g, " ");
 }
 
 function slotAnswer(slots: Slot[], index: number) {
@@ -61,7 +59,7 @@ export function sheetChrome(lang: SheetLang) {
   };
 }
 
-// 퍼센트 없이 세 줄. API 번역 없이 우리가 쓴 en/ko 쌍만 토글.
+// 퍼센트 없이 세 줄. API 번역 없이 손으로 쓴 en/ko 쌍만 토글.
 export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): RelationBlock[] {
   const byQ = new Map(hits.map((hit) => [hit.questionIndex, hit]));
 
@@ -69,18 +67,24 @@ export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLit
   const offer = byQ.get(1);
   const imagine = byQ.get(2);
 
-  const theyOffer = seek
-    ? clip(slotAnswer(theirSlots, seek.theirIndex) || seek.answer || slotAnswer(theirSlots, 1))
-    : clip(slotAnswer(theirSlots, 1));
-  const mySeek = clip(slotAnswer(meSlots, 0));
-  const myOffer = clip(slotAnswer(meSlots, 1));
-  const theirSeek = offer
-    ? clip(slotAnswer(theirSlots, offer.theirIndex) || offer.answer || slotAnswer(theirSlots, 0))
-    : clip(slotAnswer(theirSlots, 0));
-  const myImagine = clip(slotAnswer(meSlots, 2));
-  const theirImagine = imagine
-    ? clip(slotAnswer(theirSlots, imagine.theirIndex) || imagine.answer || slotAnswer(theirSlots, 2))
-    : clip(slotAnswer(theirSlots, 2));
+  const theyOffer = tidy(
+    seek
+      ? slotAnswer(theirSlots, seek.theirIndex) || seek.answer || slotAnswer(theirSlots, 1)
+      : slotAnswer(theirSlots, 1),
+  );
+  const mySeek = tidy(slotAnswer(meSlots, 0));
+  const myOffer = tidy(slotAnswer(meSlots, 1));
+  const theirSeek = tidy(
+    offer
+      ? slotAnswer(theirSlots, offer.theirIndex) || offer.answer || slotAnswer(theirSlots, 0)
+      : slotAnswer(theirSlots, 0),
+  );
+  const myImagine = tidy(slotAnswer(meSlots, 2));
+  const theirImagine = tidy(
+    imagine
+      ? slotAnswer(theirSlots, imagine.theirIndex) || imagine.answer || slotAnswer(theirSlots, 2)
+      : slotAnswer(theirSlots, 2),
+  );
 
   const theyHelpQuote =
     seek && theyOffer
@@ -105,24 +109,24 @@ export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLit
   return [
     {
       key: "theyHelp",
-      en: seek && theyOffer ? "They can give what you seek" : "No matching offer for your seek",
-      ko: seek && theyOffer ? "이 사람이 내가 찾는 걸 줄 수 있다" : "찾는 걸 줄 제안이 없다",
+      en: seek && theyOffer ? "They can give what you are looking for" : "No overlap on what you seek",
+      ko: seek && theyOffer ? "내가 찾는 걸 이 사람이 갖고 있어" : "내가 찾는 걸과는 아직 안 겹쳐",
       hintEn: "their offer · your seek",
       hintKo: "상대 제안 · 내가 찾는 것",
       quote: theyHelpQuote,
     },
     {
       key: "youHelp",
-      en: offer && myOffer ? "They want what you can give" : "No matching seek for your offer",
-      ko: offer && myOffer ? "내가 줄 수 있는 걸 이 사람이 원한다" : "내 제안을 원하는 이가 없다",
+      en: offer && myOffer ? "You can give what they are looking for" : "No overlap on what you offer",
+      ko: offer && myOffer ? "이 사람이 찾는 걸 내가 줄 수 있어" : "내가 줄 수 있는 걸과는 아직 안 겹쳐",
       hintEn: "your offer · their seek",
       hintKo: "내가 줄 수 있는 것 · 상대가 찾는 것",
       quote: youHelpQuote,
     },
     {
       key: "shared",
-      en: imagine && sharedQuote ? "Our imaginations overlap" : "No shared imagination yet",
-      ko: imagine && sharedQuote ? "상상이 겹친다" : "아직 겹치는 문장 없음",
+      en: imagine && sharedQuote ? "Your imaginations meet" : "Imaginations do not meet yet",
+      ko: imagine && sharedQuote ? "상상하는 게 겹쳐" : "상상은 아직 안 겹쳐",
       hintEn: "shared imagining",
       hintKo: "겹치는 상상",
       quote: sharedQuote,

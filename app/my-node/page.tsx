@@ -84,6 +84,21 @@ export default function MyNodePage() {
 
   const points = layout;
 
+  // 켜진 질문에 mid/strong 히트가 있는 별만 (합집합). 자리 고정, 보이기만 바꿈.
+  const visibleStars = useMemo(() => {
+    return stars.filter((star) => {
+      const solid = midStrongHits(star.hits);
+      if (!solid.length) return false;
+      return solid.some((hit) => on.includes(hit.questionIndex));
+    });
+  }, [stars, on]);
+
+  useEffect(() => {
+    if (!picked || !me) return;
+    if (picked === me.id) return;
+    if (!visibleStars.some((star) => star.id === picked)) setPicked(null);
+  }, [picked, me, visibleStars]);
+
   const skyStars: SkyPoint[] = useMemo(() => {
     if (!me || !points) return [];
     const list: SkyPoint[] = [
@@ -97,10 +112,9 @@ export default function MyNodePage() {
         selected: picked === me.id,
       },
     ];
-    for (const star of stars) {
+    for (const star of visibleStars) {
       const point = points.get(star.id);
       if (!point) continue;
-      // 밝기는 유지. 토글은 줄만 끄고 켠다.
       list.push({
         id: star.id,
         code: star.code,
@@ -112,21 +126,18 @@ export default function MyNodePage() {
       });
     }
     return list;
-  }, [me, stars, points, picked]);
+  }, [me, visibleStars, points, picked]);
 
-  // 중·강 겹침 줄만(API). 토글은 자리 고정, 줄만 밝기 조절.
+  // 켜진 슬롯의 줄만. 안 켠 질문만으로 묶인 별·줄은 숨김.
   const skyEdges: SkyEdge[] = useMemo(() => {
     if (!me || !points) return [];
     const ids = new Set(skyStars.map((star) => star.id));
     return edgesRaw
-      .filter((edge) => ids.has(edge.a) && ids.has(edge.b))
       .map((edge) => {
-        const brightQs = edge.questions.filter((q) => on.includes(q));
-        return {
-          ...edge,
-          bright: brightQs.length > 0,
-        };
-      });
+        const qs = edge.questions.filter((q) => on.includes(q));
+        return { ...edge, questions: qs, bright: qs.length > 0 };
+      })
+      .filter((edge) => edge.bright && ids.has(edge.a) && ids.has(edge.b));
   }, [edgesRaw, on, me, points, skyStars]);
 
   // 보이는 별은 전부 시트 — 내 별·약·고독 포함. 줄 유무와 클릭을 묶지 않음.
