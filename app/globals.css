@@ -5,6 +5,7 @@
   --line: rgba(255, 255, 255, 0.1);
   --sans: "IBM Plex Sans KR", sans-serif;
   --mono: "JetBrains Mono", "IBM Plex Sans KR", ui-monospace, monospace;
+  --display: "Orbitron", "JetBrains Mono", ui-monospace, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -1024,7 +1025,6 @@ p { margin: 0; }
 .cyp-sky-page > .cyp-sky-actions,
 .cyp-sky-page > .cyp-ticker,
 .cyp-sky-page > .cyp-mode-bar,
-.cyp-sky-page > .cyp-dev-table-wrap,
 .cyp-sky-page > .cyp-error,
 .cyp-sky-page > .cyp-empty,
 .cyp-sky-page > .hint {
@@ -1070,24 +1070,77 @@ p { margin: 0; }
   pointer-events: auto;
 }
 
+.cyp-sky-kicker {
+  margin: 0 0 8px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #9dffc4;
+  text-shadow: 0 0 10px rgba(28, 255, 138, 0.22);
+}
+
 .cyp-sky-hero {
   margin: 0;
-  font-family: var(--mono);
-  font-size: clamp(22px, 4.2vw, 34px);
-  letter-spacing: 0.16em;
-  text-indent: 0.08em;
+  font-family: var(--display);
+  font-size: clamp(28px, 5.6vw, 48px);
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
   font-weight: 500;
   color: #e9fff3;
-  text-shadow: 0 0 22px rgba(28, 255, 138, 0.28);
-  line-height: 1.15;
+  text-shadow:
+    0 0 8px rgba(28, 255, 138, 0.55),
+    0 0 28px rgba(28, 255, 138, 0.35),
+    0 0 56px rgba(28, 255, 138, 0.18);
+  line-height: 1.05;
+}
+
+.cyp-sky-hero.cyp-display {
+  font-family: var(--display);
+}
+
+.cyp-display-collective {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08em;
+  letter-spacing: 0.38em;
+  text-indent: 0;
+  font-size: clamp(26px, 5.2vw, 46px);
+}
+
+.cyp-display-line {
+  display: block;
+  letter-spacing: 0.38em;
+  text-indent: 0.38em;
+}
+
+.cyp-ring-o {
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  margin: 0 0.06em;
+  border-radius: 50%;
+  border: 0.08em solid #1cff8a;
+  box-sizing: border-box;
+  color: transparent;
+  vertical-align: 0.06em;
+  box-shadow:
+    0 0 8px rgba(28, 255, 138, 0.85),
+    0 0 18px rgba(28, 255, 138, 0.45),
+    inset 0 0 8px rgba(28, 255, 138, 0.35);
+  text-shadow: none;
+  overflow: hidden;
+  font-size: 1em;
+  line-height: 0;
 }
 
 .cyp-sky-ko {
-  margin: 4px 0 0;
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
+  margin: 6px 0 0;
+  font-family: var(--sans);
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
   color: #8d929c;
 }
 
@@ -1513,8 +1566,8 @@ p { margin: 0; }
 }
 
 .cyp-sphere {
-  /* 가로·세로 같은 길이 — flex로 납작해지지 않게 */
-  --sphere: min(560px, 86vw, 52dvh, 100%);
+  /* 목업처럼 더 크게. 가로·세로 같은 길이 */
+  --sphere: min(720px, 94vw, 68dvh, 100%);
   position: relative;
   width: var(--sphere);
   height: var(--sphere);
@@ -1527,12 +1580,12 @@ p { margin: 0; }
 
 .cyp-sphere-core {
   position: absolute;
-  inset: 8%;
+  inset: 4%;
   border-radius: 50%;
-  border: 1px solid rgba(28, 255, 138, 0.14);
+  border: 1px solid rgba(28, 255, 138, 0.12);
   box-shadow:
-    inset 0 0 60px rgba(28, 255, 138, 0.1),
-    0 0 50px rgba(28, 255, 138, 0.08);
+    inset 0 0 80px rgba(28, 255, 138, 0.12),
+    0 0 70px rgba(28, 255, 138, 0.1);
   pointer-events: none;
 }
 
@@ -1551,7 +1604,8 @@ p { margin: 0; }
   letter-spacing: 0.14em;
   color: #9dffc4;
   white-space: nowrap;
-  text-shadow: 0 0 8px rgba(28, 255, 138, 0.3);
+  --word-glow: 0.45;
+  text-shadow: 0 0 10px rgba(28, 255, 138, calc(var(--word-glow) * 0.9));
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1562,7 +1616,7 @@ p { margin: 0; }
   height: 3px;
   border-radius: 50%;
   background: #1cff8a;
-  box-shadow: 0 0 6px rgba(28, 255, 138, 0.8);
+  box-shadow: 0 0 8px rgba(28, 255, 138, calc(var(--word-glow) * 1.1));
   flex: none;
 }
 
@@ -1573,26 +1627,26 @@ p { margin: 0; }
 }
 
 .cyp-ticker {
-  margin-top: 8px;
-  margin-bottom: 6px;
+  margin-top: 4px;
+  margin-bottom: 4px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   overflow: hidden;
   flex: none;
   position: relative;
   z-index: 3;
-  min-height: 72px;
-  background: linear-gradient(180deg, rgba(2, 4, 3, 0.55), rgba(2, 4, 3, 0.82));
+  min-height: 56px;
+  background: transparent;
   mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
 }
 
 .cyp-ticker-row {
   overflow: hidden;
   white-space: nowrap;
-  border-top: 1px solid rgba(28, 255, 138, 0.18);
-  border-bottom: 1px solid rgba(28, 255, 138, 0.18);
-  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
 }
 
 .cyp-ticker-track {
@@ -1707,52 +1761,42 @@ p { margin: 0; }
 }
 
 .cyp-dev {
-  overflow: auto;
-  height: auto;
+  overflow: hidden;
+  height: calc(100dvh - 48px);
   min-height: calc(100dvh - 48px);
 }
 
 .cyp-dev .cyp-grove-stage {
-  min-height: min(42dvh, 420px);
-  flex: none;
-  height: min(42dvh, 420px);
+  min-height: 0;
+  flex: 1 1 auto;
+  height: auto;
 }
 
-.cyp-dev-table-wrap {
-  margin-top: 14px;
-  margin-bottom: 24px;
-  overflow: auto;
-  flex: none;
-  max-height: none;
-}
-
-.cyp-dev-table {
-  width: 100%;
-  border-collapse: collapse;
+.cyp-dev-slider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.02em;
-  color: #d0e4d8;
+  letter-spacing: 0.1em;
+  color: #c8ddd0;
 }
 
-.cyp-dev-table th,
-.cyp-dev-table td {
-  border: 1px solid rgba(28, 255, 138, 0.18);
-  padding: 8px 10px;
-  text-align: left;
-  vertical-align: top;
-  line-height: 1.4;
+.cyp-dev-slider input[type="range"] {
+  width: min(220px, 42vw);
+  accent-color: #1cff8a;
 }
 
-.cyp-dev-table th {
-  color: #1cff8a;
-  background: rgba(28, 255, 138, 0.06);
-  white-space: nowrap;
-}
-
-.cyp-dev-table td:first-child {
+.cyp-dev-slider input[type="number"] {
+  width: 52px;
+  border: 1px solid rgba(28, 255, 138, 0.35);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
   color: #e9fff3;
-  white-space: nowrap;
+  text-align: center;
+  padding: 4px 6px;
 }
 
 .cyp-notify-lead {
@@ -1768,7 +1812,14 @@ p { margin: 0; }
     padding-bottom: 4px;
   }
   .cyp-sky-hero {
-    font-size: clamp(16px, 3.2vw, 22px);
+    font-size: clamp(18px, 3.6vw, 28px);
+  }
+  .cyp-display-collective {
+    font-size: clamp(16px, 3.4vw, 26px);
+  }
+  .cyp-sky-kicker {
+    margin-bottom: 4px;
+    font-size: 9px;
   }
   .cyp-sky-ko,
   .cyp-sky-subbrand {
@@ -1782,18 +1833,18 @@ p { margin: 0; }
     min-height: 0;
   }
   .cyp-sphere {
-    --sphere: min(420px, 48dvh, 70vw);
+    --sphere: min(520px, 58dvh, 78vw);
   }
   .cyp-ticker {
-    min-height: 56px;
+    min-height: 44px;
     gap: 4px;
-    margin-top: 4px;
+    margin-top: 2px;
   }
   .cyp-ticker-track {
     font-size: 14px;
   }
   .cyp-ticker-row {
-    padding: 3px 0;
+    padding: 2px 0;
   }
   .cyp-mode-bar button {
     font-size: 9px;

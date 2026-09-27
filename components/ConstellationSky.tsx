@@ -81,18 +81,6 @@ export function ConstellationSky({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  function zoomBy(factor: number) {
-    const el = viewportRef.current;
-    if (!el) return;
-    setCam(zoomCam(camRef.current, el.clientWidth / 2, el.clientHeight / 2, factor));
-  }
-
-  function refit() {
-    const el = viewportRef.current;
-    if (!el) return;
-    setCam(fitCam(stars, el.clientWidth, el.clientHeight));
-  }
-
   return (
     <div
       className="cyp-sky"
@@ -207,17 +195,6 @@ export function ConstellationSky({
             </button>
           );
         })}
-      </div>
-      <div className="cyp-zoom">
-        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomBy(1.2)}>
-          +
-        </button>
-        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomBy(1 / 1.2)}>
-          −
-        </button>
-        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={refit}>
-          fit
-        </button>
       </div>
     </div>
   );

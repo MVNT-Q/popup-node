@@ -7,6 +7,7 @@ import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/Cons
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { ImagineTicker } from "@/components/ImagineTicker";
 import { RelationSheet } from "@/components/RelationSheet";
+import { SkyTitle } from "@/components/SkyTitle";
 import { WordSphere } from "@/components/WordSphere";
 import { layoutGrove } from "@/lib/constellation";
 import type { HitLite } from "@/lib/relation";
@@ -111,25 +112,7 @@ export default function GrovePage() {
     <main className={`cyp cyp-sky-page cyp-grove mode-${mode}`}>
       <GroveBackdrop />
       <header className="cyp-sky-head">
-        <div className="cyp-sky-head-main">
-          {mode === "grove" ? (
-            <>
-              <h1 className="cyp-sky-hero">NODE GROVE</h1>
-              <p className="cyp-sky-ko">노드 그로브</p>
-              <p className="cyp-sky-meta">
-                {counts.nodes} NODES · {counts.connections} CONNECTIONS
-              </p>
-            </>
-          ) : (
-            <>
-              <h1 className="cyp-sky-hero">COLLECTIVE IMAGINATION</h1>
-              <p className="fine cyp-sky-subbrand">NODE GROVE</p>
-              <p className="cyp-sky-meta">
-                {counts.nodes} NODES · {counts.connections} CONNECTIONS
-              </p>
-            </>
-          )}
-        </div>
+        <SkyTitle mode={mode} nodes={counts.nodes} connections={counts.connections} />
         <div className="cyp-sky-head-right">
           <Link className="cyp-mini" href="/my-node">
             MY NODE
