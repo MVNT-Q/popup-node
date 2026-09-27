@@ -20,6 +20,8 @@ export type RelationBlock = {
   quote: string;
 };
 
+export type SheetLang = "en" | "ko";
+
 function clip(text: string, max = 96) {
   const t = text.trim().replace(/\s+/g, " ");
   if (t.length <= max) return t;
@@ -28,6 +30,37 @@ function clip(text: string, max = 96) {
 
 function slotAnswer(slots: Slot[], index: number) {
   return slots[index]?.answer?.trim() ?? "";
+}
+
+/** 원문 언어 추정. 번역 API 없을 때 같은 언어만 보여 주기용 */
+export function guessTextLang(text: string): SheetLang | "mixed" | "empty" {
+  const t = text.trim();
+  if (!t) return "empty";
+  const hangul = (t.match(/[ㄱ-ㅎㅏ-ㅣ가-힣]/g) || []).length;
+  const latin = (t.match(/[A-Za-z]/g) || []).length;
+  if (hangul === 0 && latin === 0) return "empty";
+  if (hangul > 0 && latin > 0) return "mixed";
+  return hangul > 0 ? "ko" : "en";
+}
+
+/**
+ * 선택 언어와 같은 원문만 남긴다. 번역 API 없음 — 반대 언어는 숨김.
+ * `a · b`처럼 섞인 줄은 맞는 쪽만 남긴다.
+ */
+export function quoteForLang(quote: string, lang: SheetLang): string {
+  const raw = quote.trim();
+  if (!raw) return "";
+  const parts = raw.split(/\s*·\s*/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length <= 1) {
+    const guessed = guessTextLang(raw);
+    if (guessed === "empty" || guessed === lang || guessed === "mixed") return raw;
+    return "";
+  }
+  const kept = parts.filter((part) => {
+    const guessed = guessTextLang(part);
+    return guessed === "empty" || guessed === lang || guessed === "mixed";
+  });
+  return kept.join(" · ");
 }
 
 // 퍼센트 없이 세 줄. API 번역 없이 우리가 쓴 en/ko 쌍만 토글.
@@ -75,7 +108,7 @@ export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLit
     {
       key: "theyHelp",
       en: seek && theyOffer ? "They can give what you seek" : "No matching offer for your seek",
-      ko: seek && theyOffer ? "이 사람이 내가 찾는 걸 줄 수 있다" : "찾는 것과 맞닿는 제안이 없다",
+      ko: seek && theyOffer ? "이 사람이 내가 찾는 걸 줄 수 있다" : "찾는 걸 줄 제안이 없다",
       hintEn: "their offer · your seek",
       hintKo: "상대 제안 · 내가 찾는 것",
       quote: theyHelpQuote,
@@ -83,7 +116,7 @@ export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLit
     {
       key: "youHelp",
       en: offer && myOffer ? "They want what you can give" : "No matching seek for your offer",
-      ko: offer && myOffer ? "내가 줄 수 있는 걸 이 사람이 원한다" : "제안과 맞닿는 찾음이 없다",
+      ko: offer && myOffer ? "내가 줄 수 있는 걸 이 사람이 원한다" : "내 제안을 원하는 이가 없다",
       hintEn: "your offer · their seek",
       hintKo: "내가 줄 수 있는 것 · 상대가 찾는 것",
       quote: youHelpQuote,
@@ -91,7 +124,7 @@ export function relationBlocks(meSlots: Slot[], theirSlots: Slot[], hits: HitLit
     {
       key: "shared",
       en: imagine && sharedQuote ? "Our imaginations overlap" : "No shared imagination yet",
-      ko: imagine && sharedQuote ? "상상이 겹친다" : "아직 겹치는 상상이 없다",
+      ko: imagine && sharedQuote ? "상상이 겹친다" : "아직 겹치는 문장 없음",
       hintEn: "shared imagining",
       hintKo: "겹치는 상상",
       quote: sharedQuote,

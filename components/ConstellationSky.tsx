@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fitCam, zoomCam, type Cam } from "@/lib/layout";
+import { fitCam, focusCam, zoomCam, type Cam } from "@/lib/layout";
 
 export type SkyPoint = {
   id: string;
@@ -60,14 +60,18 @@ function labelPlacement(
 export function ConstellationSky({
   stars,
   edges,
+  focusId = null,
   onPick,
 }: {
   stars: SkyPoint[];
   edges: SkyEdge[];
-  onPick: (id: string, anchor: { x: number; y: number }) => void;
+  /** 선택된 별 — 카메라가 그쪽으로 이동·줌, 나머지는 흐리게 */
+  focusId?: string | null;
+  onPick: (id: string) => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [cam, setCam] = useState<Cam>({ x: 0, y: 0, s: 1 });
+  const [camEase, setCamEase] = useState(false);
   const camRef = useRef(cam);
   camRef.current = cam;
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -83,6 +87,9 @@ export function ConstellationSky({
   const pinch = useRef<{ dist: number; cam: Cam } | null>(null);
   const starsRef = useRef(stars);
   starsRef.current = stars;
+  const focusRef = useRef(focusId);
+  focusRef.current = focusId;
+  const hadFocus = useRef(false);
   // 자리만 키로. 밝기·선택 바뀌어도 카메라를 다시 맞추지 않는다.
   const layoutKey = stars.map((star) => `${star.id}:${Math.round(star.x)}:${Math.round(star.y)}`).join("|");
   const byId = useMemo(() => new Map(stars.map((star) => [star.id, star])), [stars]);
@@ -102,15 +109,35 @@ export function ConstellationSky({
 
   useEffect(() => {
     const el = viewportRef.current;
-    if (!el) return;
+    if (!el || focusRef.current) return;
+    setCamEase(false);
     setCam(fitCam(starsRef.current, el.clientWidth, el.clientHeight));
   }, [layoutKey]);
 
   useEffect(() => {
     const el = viewportRef.current;
     if (!el) return;
+    if (!focusId) {
+      if (hadFocus.current) {
+        setCamEase(true);
+        setCam(fitCam(starsRef.current, el.clientWidth, el.clientHeight));
+        hadFocus.current = false;
+      }
+      return;
+    }
+    const star = starsRef.current.find((item) => item.id === focusId);
+    if (!star) return;
+    hadFocus.current = true;
+    setCamEase(true);
+    setCam(focusCam(star, el.clientWidth, el.clientHeight));
+  }, [focusId]);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
+      setCamEase(false);
       const rect = el.getBoundingClientRect();
       const factor = event.deltaY < 0 ? 1.08 : 0.92;
       setCam(zoomCam(camRef.current, event.clientX - rect.left, event.clientY - rect.top, factor));
@@ -121,7 +148,7 @@ export function ConstellationSky({
 
   return (
     <div
-      className="cyp-sky"
+      className={`cyp-sky${focusId ? " is-focus" : ""}`}
       ref={viewportRef}
       onPointerDown={(event) => {
         const el = event.currentTarget;
@@ -152,6 +179,7 @@ export function ConstellationSky({
         pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
         const el = viewportRef.current;
         if (pointers.current.size >= 2 && pinch.current && el) {
+          setCamEase(false);
           const pts = [...pointers.current.values()];
           const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
           const rect = el.getBoundingClientRect();
@@ -167,6 +195,7 @@ export function ConstellationSky({
         if (Math.hypot(dx, dy) > 10) current.moved = true;
         // 별 위에서 시작한 제스처는 팬하지 않음 — 탭으로 시트 열기
         if (current.starId) return;
+        setCamEase(false);
         setCam({ x: current.ox + dx, y: current.oy + dy, s: camRef.current.s });
       }}
       onPointerUp={(event) => {
@@ -176,14 +205,7 @@ export function ConstellationSky({
         pointers.current.delete(event.pointerId);
         if (pointers.current.size < 2) pinch.current = null;
         if (drag.current?.id === event.pointerId) drag.current = null;
-        if (!dragged && !pinched && id) {
-          const el = viewportRef.current?.querySelector(`[data-star="${id}"]`);
-          const rect = el?.getBoundingClientRect();
-          onPick(id, {
-            x: rect ? rect.left + rect.width / 2 : event.clientX,
-            y: rect ? rect.top + rect.height / 2 : event.clientY,
-          });
-        }
+        if (!dragged && !pinched && id) onPick(id);
       }}
       onPointerCancel={(event) => {
         pointers.current.delete(event.pointerId);
@@ -192,7 +214,7 @@ export function ConstellationSky({
       }}
     >
       <div
-        className="cyp-world"
+        className={`cyp-world${camEase ? " ease" : ""}`}
         style={{
           width: WORLD,
           height: WORLD,
@@ -204,6 +226,7 @@ export function ConstellationSky({
             const a = byId.get(edge.a);
             const b = byId.get(edge.b);
             if (!a || !b) return null;
+            const tied = Boolean(focusId && (edge.a === focusId || edge.b === focusId));
             // 별 중심끼리만 — 라벨(#·이름)은 선 밖 absolute
             return (
               <line
@@ -212,7 +235,7 @@ export function ConstellationSky({
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                className={lineClass(edge.bright, a.band, b.band)}
+                className={`${lineClass(edge.bright, a.band, b.band)}${focusId && !tied ? " fade" : ""}`}
               />
             );
           })}
@@ -223,7 +246,7 @@ export function ConstellationSky({
             <button
               key={star.id}
               type="button"
-              className={`cyp-star ${star.band}${star.selected ? " on" : ""} label-${place.side}`}
+              className={`cyp-star ${star.band}${star.selected ? " on" : ""}${focusId && !star.selected ? " fade" : ""} label-${place.side}`}
               style={{ left: star.x, top: star.y }}
               data-star={star.id}
               aria-label={star.name ? `#${String(star.code).padStart(3, "0")} ${star.name}` : `NODE ${star.code}`}

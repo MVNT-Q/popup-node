@@ -67,3 +67,12 @@ export function zoomCam(cam: Cam, px: number, py: number, factor: number): Cam {
   const wy = (py - cam.y) / cam.s;
   return { s, x: px - wx * s, y: py - wy * s };
 }
+
+/** 선택한 별을 화면 위쪽에 두고 살짝 줌 — 하단 고정 정보칸과 안 겹치게 */
+export function focusCam(star: Point, width: number, height: number): Cam {
+  if (width < 10 || height < 10) return { x: 0, y: 0, s: 1 };
+  const s = Math.min(2.35, Math.max(1.35, Math.min(width, height) / 280));
+  const fx = width * 0.5;
+  const fy = height * 0.34;
+  return { s, x: fx - star.x * s, y: fy - star.y * s };
+}

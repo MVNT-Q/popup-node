@@ -35,7 +35,6 @@ export default function GrovePage() {
   const [imagines, setImagines] = useState<string[]>([]);
   const [counts, setCounts] = useState({ nodes: 0, connections: 0 });
   const [picked, setPicked] = useState<string | null>(null);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const [mode, setMode] = useState<Mode>("grove");
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
@@ -129,14 +128,14 @@ export default function GrovePage() {
             <ConstellationSky
               stars={skyStars}
               edges={skyEdges}
-              onPick={(id, nextAnchor) => {
+              focusId={picked}
+              onPick={(id) => {
                 if (me && id === me.id) {
                   router.push("/my-node");
                   return;
                 }
                 // 시트 열 때 콜렉티브로 자동 전환 금지 — 그로브 유지
                 setMode("grove");
-                setAnchor(nextAnchor);
                 setPicked(id);
               }}
             />
@@ -161,11 +160,7 @@ export default function GrovePage() {
           name={pickedNode.name}
           id={pickedNode.id}
           hits={pickedHits}
-          anchor={anchor}
-          onClose={() => {
-            setPicked(null);
-            setAnchor(null);
-          }}
+          onClose={() => setPicked(null)}
         />
       ) : null}
 

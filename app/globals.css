@@ -52,6 +52,11 @@ p { margin: 0; }
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* 그로브·전시는 모드바가 safe-area를 담당 — 컬럼과 겹치면 탭 아래 검은 띠 */
+.column:has(> .cyp-grove) {
+  padding-bottom: 0;
+}
+
 .top {
   display: flex;
   align-items: center;
@@ -1034,9 +1039,10 @@ p { margin: 0; }
   background: transparent;
 }
 
-/* 그로브·전시만 하단 고정 모드바 높이만큼 여백 */
+/* 그로브·전시만 하단 고정 모드바 높이만큼 여백. safe-area는 모드바 padding 한 번만 */
 .cyp-sky-page.cyp-grove {
-  --cyp-mode-bar-h: calc(56px + env(safe-area-inset-bottom, 0px));
+  --cyp-mode-bar-safe: max(8px, env(safe-area-inset-bottom, 0px));
+  --cyp-mode-bar-h: calc(52px + var(--cyp-mode-bar-safe));
   padding-bottom: var(--cyp-mode-bar-h);
 }
 
@@ -1270,6 +1276,23 @@ p { margin: 0; }
   left: 0;
   top: 0;
   transform-origin: 0 0;
+}
+
+.cyp-world.ease {
+  transition: transform 0.45s cubic-bezier(0.22, 0.82, 0.28, 1);
+}
+
+.cyp-sky.is-focus .cyp-star.fade {
+  opacity: 0.22;
+}
+
+.cyp-sky.is-focus .cyp-star.on {
+  opacity: 1;
+  z-index: 9;
+}
+
+.cyp-line.fade {
+  opacity: 0.12;
 }
 
 .cyp-wires {
@@ -1522,12 +1545,12 @@ p { margin: 0; }
   cursor: pointer;
 }
 
-/* 별 옆 작은 정보 카드. 하단 절반 시트 금지. 모드바(z80)보다 아래 */
+/* 작은 정보 카드. 하단 절반 시트 금지. 모드바(z80)보다 아래. 노드마다 좌우 이동 금지 */
 .cyp-sheet {
   position: fixed;
   z-index: 40;
-  width: min(268px, calc(100vw - 20px));
-  max-height: min(42dvh, 320px);
+  width: min(300px, calc(100vw - 24px));
+  max-height: min(36dvh, 280px);
   overflow: auto;
   padding: 10px 12px 12px;
   border-radius: 14px;
@@ -1538,15 +1561,26 @@ p { margin: 0; }
 }
 
 .cyp-sheet-float {
-  left: 12px;
-  top: 80px;
-  bottom: auto;
-  transform: none;
+  left: 50%;
+  top: auto;
+  right: auto;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px) + 8px);
+  transform: translateX(-50%);
 }
 
-/* 그로브·전시: 스크림·카드는 모드바 위까지만. 바는 항상 맨 아래 */
+/* 그로브·전시: 카드·스크림은 모드바 바로 위 고정. 바를 가리지 않음 */
+.cyp-grove .cyp-sheet-float {
+  bottom: calc(var(--cyp-mode-bar-h, 60px) + 8px);
+}
+
 .cyp-grove .cyp-sheet-scrim {
-  inset: 0 0 var(--cyp-mode-bar-h, 56px) 0;
+  inset: 0 0 var(--cyp-mode-bar-h, 60px) 0;
+}
+
+.cyp-sheet .cyp-btn {
+  min-height: 44px;
+  margin-top: 8px;
+  letter-spacing: 0.08em;
 }
 
 .cyp-sheet-close {
@@ -1648,10 +1682,6 @@ p { margin: 0; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.cyp-sheet .cyp-btn {
-  margin-top: 8px;
 }
 
 .cyp-read {
@@ -1884,7 +1914,7 @@ p { margin: 0; }
   to { transform: translateX(-50%); }
 }
 
-/* POC_7·8 하단 토글 — 항상 화면 맨 아래 고정. 시트(z40)보다 위, 같이 안 올라감 */
+/* POC_7·8 하단 토글 — 화면 맨 아래. safe-area는 여기 한 번만(컬럼과 이중 금지) */
 .cyp-mode-bar {
   display: flex;
   align-items: stretch;
@@ -1900,7 +1930,7 @@ p { margin: 0; }
   z-index: 80;
   width: 100% !important;
   max-width: none !important;
-  padding: 0 18px env(safe-area-inset-bottom, 0px);
+  padding: 0 18px var(--cyp-mode-bar-safe, max(8px, env(safe-area-inset-bottom, 0px)));
   box-sizing: border-box;
   background: rgba(2, 4, 3, 0.96);
 }
