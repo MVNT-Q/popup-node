@@ -38,23 +38,23 @@ export const IMAGINE_COPY = {
   optional: "Optional — describe it in your own words:",
 } as const;
 
-// SEEK 예시 — 목업 POC_2 원문
+// SEEK 예시 — 원문 그대로 (자르지 않음, 4번 영어 마침표 없음)
 export const SEEK_EXAMPLES = [
   {
-    en: "A front-end developer who can help turn my interactive installation concept into a working web prototype.",
-    ko: "인터랙티브 설치 컨셉을 작동하는 웹 프로토타입으로 구현할 프론트엔드 개발자.",
+    en: "A frontend developer who can help turn my interactive installation concept into a working web prototype.",
+    ko: "인터랙티브 설치 아이디어를 실제 웹 프로토타입으로 구현해줄 프론트엔드 개발자.",
   },
   {
     en: "A filmmaker interested in documenting underground music and youth culture in Seoul.",
-    ko: "서울의 언더그라운드 음악과 청춘 문화를 기록하는 데 관심 있는 영상 제작자.",
+    ko: "서울의 언더그라운드 음악과 젊은 문화를 기록하는 데 관심 있는 영상 제작자.",
   },
   {
-    en: "A researcher or technologist working on privacy-preserving AI who is open to collaborating on real-world work.",
-    ko: "프라이버시를 보호하는 AI 연구를 하며, 실제 적용 사례에 대해 함께 협업할 의사가 있는 연구자.",
+    en: "A researcher or technologist working on privacy-preserving AI who is open to collaborating with artists.",
+    ko: "프라이버시를 보호하는 AI를 연구하며 아티스트와 협업에 열려 있는 연구자 또는 기술자.",
   },
   {
-    en: "A collaborator from a completely different field, especially someone working in hardware / biology / game design, who could take my idea somewhere I wouldn't reach alone.",
-    ko: "지금까지는 전혀 다른 분야(특히 하드웨어 / 생공학 / 게임 디자인 등)의 협업자. 혼자라면 나의 아이디어를 전혀 다른 방향으로 확장할 수 있는 사람.",
+    en: "A collaborator from a completely different field, especially someone working in [architecture / biology / game design], who could take my idea somewhere I wouldn't reach alone",
+    ko: "혼자서는 생각하지 못한 방향으로 아이디어를 확장시켜줄 전혀 다른 분야, 특히 [건축 / 생물학 / 게임 디자인] 분야의 협업자.",
   },
 ] as const;
 
