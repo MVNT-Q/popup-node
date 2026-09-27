@@ -1310,37 +1310,6 @@ p { margin: 0; }
   pointer-events: none;
 }
 
-.cyp-star .dot .cross {
-  display: block;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 48px;
-  height: 48px;
-  margin: 0;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  background:
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 46%,
-      rgba(235, 255, 245, 1) 50%,
-      transparent 54%,
-      transparent 100%
-    ),
-    linear-gradient(
-      0deg,
-      transparent 0%,
-      transparent 46%,
-      rgba(170, 255, 210, 0.95) 50%,
-      transparent 54%,
-      transparent 100%
-    );
-  opacity: 0.95;
-  mix-blend-mode: screen;
-}
-
 .cyp-star.self .dot {
   width: 14px;
   height: 14px;
@@ -1351,12 +1320,6 @@ p { margin: 0; }
     0 0 44px 18px rgba(28, 255, 138, 0.62),
     0 0 90px 36px rgba(28, 255, 138, 0.28),
     0 0 140px 52px rgba(28, 255, 138, 0.12);
-}
-
-.cyp-star.self .dot .cross {
-  width: 64px;
-  height: 64px;
-  opacity: 1;
 }
 
 .cyp-star.strong .dot {
@@ -1379,12 +1342,6 @@ p { margin: 0; }
     0 0 38px 15px rgba(28, 255, 138, 0.5),
     0 0 72px 28px rgba(28, 255, 138, 0.2),
     0 0 100px 38px rgba(28, 255, 138, 0.08);
-}
-
-.cyp-star.mid .dot .cross {
-  width: 38px;
-  height: 38px;
-  opacity: 0.72;
 }
 
 .cyp-star.weak .dot {
@@ -1678,18 +1635,6 @@ p { margin: 0; }
     0 0 70px rgba(28, 255, 138, 0.1);
   pointer-events: none;
   z-index: 0;
-}
-
-.cyp-sphere-plasma {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: visible;
-  z-index: 1;
-  filter: blur(0.6px);
-  opacity: 0.85;
 }
 
 .cyp-sphere-wires {

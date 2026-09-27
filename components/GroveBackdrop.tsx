@@ -13,6 +13,30 @@ function mulberry32(seed: number) {
   };
 }
 
+/** 가장자리·여백 쪽을 더 자주 고른다. 가운데 폭격 금지. */
+function edgeSpot(rand: () => number): { x: number; y: number } {
+  // 가장자리 링에 더 많이
+  if (rand() < 0.72) {
+    const side = Math.floor(rand() * 4);
+    const t = rand();
+    const inset = 0.02 + rand() * 0.16;
+    if (side === 0) return { x: t, y: inset };
+    if (side === 1) return { x: t, y: 1 - inset };
+    if (side === 2) return { x: inset, y: t };
+    return { x: 1 - inset, y: t };
+  }
+  // 사이사이 — 중앙 코어는 거의 비움
+  let x = rand();
+  let y = rand();
+  const nx = Math.abs(x - 0.5) * 2;
+  const ny = Math.abs(y - 0.5) * 2;
+  if (Math.min(nx, ny) < 0.28 && rand() > 0.12) {
+    if (rand() < 0.5) x = rand() < 0.5 ? rand() * 0.22 : 0.78 + rand() * 0.22;
+    else y = rand() < 0.5 ? rand() * 0.22 : 0.78 + rand() * 0.22;
+  }
+  return { x, y };
+}
+
 function paintStarSky(canvas: HTMLCanvasElement) {
   const parent = canvas.parentElement;
   if (!parent) return;
@@ -33,17 +57,16 @@ function paintStarSky(canvas: HTMLCanvasElement) {
 
   const rand = mulberry32(0xc003 ^ (w * 131 + h));
 
-  // 1) 깊은 검정 바닥 — POC처럼 검은 바탕이 주인공
+  // 1) 깊은 검정 바닥
   ctx.fillStyle = "#020403";
   ctx.fillRect(0, 0, w, h);
 
-  // 2) 성운 — 옅은 초록 기운만 (짙은 구름·섬유 줄임)
+  // 2) 성운 — 옅은 초록 포인트만
   const blobs = [
-    { x: 0.22, y: 0.28, rx: 0.42, ry: 0.32, a: 0.07 },
-    { x: 0.72, y: 0.22, rx: 0.36, ry: 0.3, a: 0.055 },
-    { x: 0.5, y: 0.55, rx: 0.5, ry: 0.4, a: 0.045 },
-    { x: 0.3, y: 0.75, rx: 0.38, ry: 0.28, a: 0.06 },
-    { x: 0.8, y: 0.72, rx: 0.32, ry: 0.26, a: 0.05 },
+    { x: 0.18, y: 0.22, rx: 0.36, ry: 0.28, a: 0.055 },
+    { x: 0.78, y: 0.2, rx: 0.3, ry: 0.26, a: 0.04 },
+    { x: 0.52, y: 0.72, rx: 0.4, ry: 0.32, a: 0.035 },
+    { x: 0.28, y: 0.78, rx: 0.3, ry: 0.24, a: 0.045 },
   ];
   for (const blob of blobs) {
     const cx = blob.x * w;
@@ -52,8 +75,8 @@ function paintStarSky(canvas: HTMLCanvasElement) {
     const ry = blob.ry * h;
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
     g.addColorStop(0, `rgba(40, 255, 140, ${blob.a})`);
-    g.addColorStop(0.4, `rgba(12, 70, 40, ${blob.a * 0.4})`);
-    g.addColorStop(0.75, `rgba(4, 20, 12, ${blob.a * 0.12})`);
+    g.addColorStop(0.45, `rgba(12, 70, 40, ${blob.a * 0.35})`);
+    g.addColorStop(0.8, `rgba(4, 20, 12, ${blob.a * 0.1})`);
     g.addColorStop(1, "rgba(2, 4, 3, 0)");
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -61,63 +84,61 @@ function paintStarSky(canvas: HTMLCanvasElement) {
     ctx.fill();
   }
 
-  // 3) 먼지 노이즈 — 거의 안 보이게
-  const nw = Math.max(48, Math.floor(w / 10));
-  const nh = Math.max(72, Math.floor(h / 10));
-  const dust = ctx.createImageData(nw, nh);
-  for (let i = 0; i < dust.data.length; i += 4) {
-    const n = rand();
-    const v = n > 0.88 ? Math.floor((n - 0.88) * 40) : 0;
-    dust.data[i] = Math.floor(v * 0.3);
-    dust.data[i + 1] = Math.floor(v * 1.0);
-    dust.data[i + 2] = Math.floor(v * 0.45);
-    dust.data[i + 3] = v > 0 ? 18 + Math.floor(rand() * 22) : 0;
-  }
-  const off = document.createElement("canvas");
-  off.width = nw;
-  off.height = nh;
-  const octx = off.getContext("2d");
-  if (octx) {
-    octx.putImageData(dust, 0, 0);
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(off, 0, 0, w, h);
-    ctx.restore();
-  }
-
-  // 4) 배경 잔별 — POC처럼 듬성듬성 (구 표면 점과 구분)
   const area = (w * h) / (dpr * dpr);
-  const count = Math.min(420, Math.floor(area * 0.00042));
-  for (let i = 0; i < count; i++) {
-    const x = rand() * w;
-    const y = rand() * h;
+
+  // 3) 잔별 — 드문드문, 가장자리·사이사이. 십자/+ 없음.
+  const tiny = Math.min(95, Math.floor(area * 0.00009));
+  for (let i = 0; i < tiny; i++) {
+    const spot = edgeSpot(rand);
+    const x = spot.x * w;
+    const y = spot.y * h;
     const bright = rand();
-    const r = (bright > 0.96 ? 1.4 : bright > 0.85 ? 0.9 : 0.45) * dpr;
-    const alpha = bright > 0.96 ? 0.75 : bright > 0.8 ? 0.45 : 0.14 + bright * 0.22;
-    const green = bright > 0.9;
+    const r = (bright > 0.85 ? 0.85 : 0.4) * dpr;
+    const alpha = bright > 0.85 ? 0.55 : 0.12 + bright * 0.2;
+    const green = bright > 0.92;
     ctx.fillStyle = green
       ? `rgba(140, 255, 190, ${alpha})`
-      : `rgba(200, 230, 210, ${alpha})`;
+      : `rgba(210, 235, 220, ${alpha})`;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-    if (bright > 0.985) {
-      ctx.strokeStyle = `rgba(100, 255, 170, ${alpha * 0.5})`;
-      ctx.lineWidth = 0.55 * dpr;
-      ctx.beginPath();
-      ctx.moveTo(x - r * 4, y);
-      ctx.lineTo(x + r * 4, y);
-      ctx.moveTo(x, y - r * 4);
-      ctx.lineTo(x, y + r * 4);
-      ctx.stroke();
+  }
+
+  // 4) 예쁜 별 — 흰 심 + 초록 bloom만 (가장자리·여백)
+  const pretty = Math.min(28, Math.max(12, Math.floor(area * 0.000028)));
+  for (let i = 0; i < pretty; i++) {
+    const spot = edgeSpot(rand);
+    const x = spot.x * w;
+    const y = spot.y * h;
+    const scale = (0.7 + rand() * 1.1) * dpr;
+    const green = rand() > 0.35;
+    const bloom = ctx.createRadialGradient(x, y, 0, x, y, scale * 14);
+    if (green) {
+      bloom.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+      bloom.addColorStop(0.12, "rgba(200, 255, 220, 0.7)");
+      bloom.addColorStop(0.35, "rgba(40, 255, 150, 0.28)");
+      bloom.addColorStop(0.7, "rgba(28, 255, 138, 0.08)");
+      bloom.addColorStop(1, "rgba(28, 255, 138, 0)");
+    } else {
+      bloom.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+      bloom.addColorStop(0.15, "rgba(230, 245, 235, 0.45)");
+      bloom.addColorStop(0.5, "rgba(180, 220, 200, 0.1)");
+      bloom.addColorStop(1, "rgba(180, 220, 200, 0)");
     }
+    ctx.fillStyle = bloom;
+    ctx.beginPath();
+    ctx.arc(x, y, scale * 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(0.6, scale * 0.9), 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // 5) 그레인 — 아주 약하게
   ctx.save();
-  ctx.globalAlpha = 0.04;
-  for (let i = 0; i < Math.floor(area * 0.02); i++) {
+  ctx.globalAlpha = 0.035;
+  for (let i = 0; i < Math.floor(area * 0.015); i++) {
     const x = rand() * w;
     const y = rand() * h;
     const g = 70 + Math.floor(rand() * 90);
@@ -153,7 +174,7 @@ export function GroveBackdrop() {
   return (
     <div className="grove-bg" aria-hidden>
       <div className="grove-bg-nebula" />
-      {/* 캔버스는 미세 별만 — 번호·콜사인 안 그림 */}
+      {/* 캔버스는 배경 별만 — 구 장식·번호·콜사인 안 그림 */}
       <canvas ref={ref} className="grove-bg-canvas" />
     </div>
   );

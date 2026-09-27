@@ -210,25 +210,17 @@ export function ConstellationSky({
           })}
         </svg>
         {stars.map((star) => {
-          // 강·중·자아 + 일부 번호는 목업처럼 십자 플레어
-          const flare =
-            star.band === "self" ||
-            star.band === "strong" ||
-            star.band === "mid" ||
-            star.code % 5 === 0;
           const place = labelPlacement(star, neighborsOf.get(star.id) ?? []);
           return (
             <button
               key={star.id}
               type="button"
-              className={`cyp-star ${star.band}${star.selected ? " on" : ""}${flare ? " flare" : ""} label-${place.side}`}
+              className={`cyp-star ${star.band}${star.selected ? " on" : ""} label-${place.side}`}
               style={{ left: star.x, top: star.y }}
               data-star={star.id}
               aria-label={star.name ? `#${String(star.code).padStart(3, "0")} ${star.name}` : `NODE ${star.code}`}
             >
-              <span className="dot">
-                {flare ? <i className="cross" aria-hidden /> : null}
-              </span>
+              <span className="dot" />
               <span className="num">#{String(star.code).padStart(3, "0")}</span>
               {star.name ? <span className="call">{star.name}</span> : null}
             </button>
