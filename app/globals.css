@@ -1254,7 +1254,7 @@ p { margin: 0; }
 }
 
 .cyp-empty {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1262,13 +1262,14 @@ p { margin: 0; }
   gap: 8px;
   text-align: center;
   padding: 40px 12px;
-  min-height: 280px;
+  min-height: 0;
 }
 
 .cyp-sky {
   position: relative;
-  flex: 1;
-  min-height: min(62dvh, 560px);
+  flex: 1 1 auto;
+  /* 고정 62dvh면 헤더·틱커·모드바를 화면 밖으로 민다 — 남은 칸만 */
+  min-height: 0;
   overflow: hidden;
   border: 0;
   border-radius: 0;
