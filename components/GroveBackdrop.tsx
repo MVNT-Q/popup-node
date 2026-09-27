@@ -40,22 +40,20 @@ function paintStarSky(canvas: HTMLCanvasElement) {
   canvas.style.height = `${cssH}px`;
   canvas.dataset.painted = "1";
 
-  const ctx = canvas.getContext("2d", { alpha: false });
+  // 사진 백플레이트가 보이도록 투명 캔버스 — 성운·먼지만 아주 옅게
+  const ctx = canvas.getContext("2d", { alpha: true });
   if (!ctx) return;
 
   const rand = mulberry32(0xc003 ^ (w * 131 + h));
+  ctx.clearRect(0, 0, w, h);
 
-  // 1) 깊은 검정 바닥
-  ctx.fillStyle = "#020403";
-  ctx.fillRect(0, 0, w, h);
-
-  // 2) 성운 — 옅은 초록 기운만 (노드처럼 빛나는 점 없음)
+  // 성운 — 옅은 초록 기운만 (노드처럼 빛나는 점 없음). 사진 위를 가리지 않게 약하게
   const blobs: Blob[] = [
-    { x: 0.22, y: 0.28, rx: 0.42, ry: 0.32, a: 0.07 },
-    { x: 0.72, y: 0.22, rx: 0.36, ry: 0.3, a: 0.055 },
-    { x: 0.5, y: 0.55, rx: 0.5, ry: 0.4, a: 0.045 },
-    { x: 0.3, y: 0.75, rx: 0.38, ry: 0.28, a: 0.06 },
-    { x: 0.8, y: 0.72, rx: 0.32, ry: 0.26, a: 0.05 },
+    { x: 0.22, y: 0.28, rx: 0.42, ry: 0.32, a: 0.035 },
+    { x: 0.72, y: 0.22, rx: 0.36, ry: 0.3, a: 0.028 },
+    { x: 0.5, y: 0.55, rx: 0.5, ry: 0.4, a: 0.022 },
+    { x: 0.3, y: 0.75, rx: 0.38, ry: 0.28, a: 0.03 },
+    { x: 0.8, y: 0.72, rx: 0.32, ry: 0.26, a: 0.025 },
   ];
   for (const blob of blobs) {
     const cx = blob.x * w;
@@ -137,6 +135,13 @@ export function GroveBackdrop() {
 
   return (
     <div className="grove-bg" aria-hidden>
+      {/* 풀블리드 별하늘 사진 — 성좌·스피어·제목·틱커 뒤 백플레이트 */}
+      <img
+        className="grove-bg-photo"
+        src="/sky-field.jpg"
+        alt=""
+        draggable={false}
+      />
       <div className="grove-bg-nebula" />
       {/* 캔버스는 성운+먼지뿐 — 장식 별·번호·콜사인 안 그림 */}
       <canvas ref={ref} className="grove-bg-canvas" />

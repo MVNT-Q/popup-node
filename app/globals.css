@@ -754,8 +754,9 @@ p { margin: 0; }
 }
 
 /* 랜딩·가입: 별하늘은 유지하되 글 읽기용 살짝 어둡게 */
-.cyp:not(.cyp-sky-page) .grove-bg-canvas { opacity: 0.7; }
-.cyp:not(.cyp-sky-page) .grove-bg-nebula { opacity: 0.4; }
+.cyp:not(.cyp-sky-page) .grove-bg-canvas { opacity: 0.45; }
+.cyp:not(.cyp-sky-page) .grove-bg-nebula { opacity: 0.22; }
+.cyp:not(.cyp-sky-page) .grove-bg-photo { opacity: 0.85; }
 .cyp:not(.cyp-sky-page)::after {
   content: "";
   position: absolute;
@@ -776,20 +777,34 @@ p { margin: 0; }
   background: #020403;
 }
 
+/* 성좌·스피어 뒤 풀블리드 사진 — 클릭은 위 레이어가 받음 */
+.grove-bg-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
 .grove-bg-nebula {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  /* 아주 옅은 초록 성운만 — 노드로 헷갈리는 가장자리 큰 점 금지 */
+  z-index: 1;
+  /* 아주 옅은 초록 성운만 — 사진 백플레이트를 가리지 않게 */
   background:
     radial-gradient(ellipse 62% 44% at 22% 24%, rgba(28, 255, 138, 0.1), transparent 74%),
     radial-gradient(ellipse 50% 40% at 78% 20%, rgba(40, 255, 150, 0.07), transparent 72%),
     radial-gradient(ellipse 72% 54% at 50% 58%, rgba(10, 70, 36, 0.08), transparent 76%),
     radial-gradient(ellipse 44% 36% at 32% 78%, rgba(28, 255, 138, 0.07), transparent 74%),
     url("/sky-nebula.svg") center / cover no-repeat;
-  opacity: 0.48;
+  opacity: 0.22;
 }
 
 .grove-bg-canvas {
@@ -799,7 +814,8 @@ p { margin: 0; }
   height: 100%;
   display: block;
   pointer-events: none;
-  opacity: 0.85;
+  z-index: 2;
+  opacity: 0.4;
 }
 
 /* 모드바·시트·스크림은 fixed 유지 — 여기 relative가 특이도로 fixed를 덮으면 탭 아래 검은 띠 */
