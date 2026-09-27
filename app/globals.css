@@ -11,7 +11,9 @@
 
 html, body {
   margin: 0;
-  background: #05060a;
+  width: 100%;
+  min-height: 100%;
+  background: #020403;
   color: var(--ink);
 }
 
@@ -33,11 +35,10 @@ p { margin: 0; }
 }
 
 .column {
-  width: min(400px, 100%);
+  width: 100%;
   min-height: 100dvh;
-  margin: 0 auto;
-  background: var(--bg);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  margin: 0;
+  background: #020403;
   display: flex;
   flex-direction: column;
 }
@@ -676,6 +677,17 @@ p { margin: 0; }
   overflow: hidden;
   background: #020403;
   color: #e9fff3;
+  width: 100%;
+}
+
+/* 랜딩·가입: 성운은 가로 꽉, 글·폼만 읽기 폭 */
+.cyp:not(.cyp-sky-page) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cyp:not(.cyp-sky-page) > :not(.grove-bg) {
+  width: min(400px, 100%);
 }
 
 /* 랜딩·가입: 별하늘은 유지하되 글 읽기용 살짝 어둡게 */
@@ -704,6 +716,9 @@ p { margin: 0; }
 .grove-bg-nebula {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
   background:
     radial-gradient(ellipse 70% 50% at 20% 22%, rgba(28, 255, 138, 0.2), transparent 70%),
     radial-gradient(ellipse 55% 45% at 78% 18%, rgba(40, 255, 150, 0.14), transparent 68%),
@@ -714,12 +729,25 @@ p { margin: 0; }
   opacity: 0.95;
 }
 
+/* 목업 구 잠상 — 강하게 블러해서 글자·번호는 안 읽히게 */
+.grove-bg-photo {
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+  background: url("/poc-sphere-lock.jpg") center 42% / cover no-repeat;
+  opacity: 0.34;
+  mix-blend-mode: screen;
+  filter: blur(14px) saturate(1.35) brightness(0.75);
+}
+
 .grove-bg-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
+  pointer-events: none;
+  opacity: 0.72;
 }
 
 .cyp > :not(.grove-bg) { position: relative; z-index: 1; }
@@ -734,11 +762,41 @@ p { margin: 0; }
 }
 
 .mark-lock {
-  width: 92px;
+  width: 100px;
   margin: 8px auto 18px;
 }
 
-.mark-lock svg { width: 100%; height: auto; display: block; filter: drop-shadow(0 0 8px rgba(28, 255, 138, 0.45)); }
+.mark-lock.born { width: 120px; }
+
+.mark-lock svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(28, 255, 138, 0.55));
+}
+
+.landing-brand {
+  margin: 0 0 10px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  color: #e9fff3;
+}
+
+.landing-title {
+  font-size: clamp(28px, 7vw, 40px);
+  letter-spacing: 0.16em;
+  line-height: 1.05;
+  color: #f2fff7;
+  text-shadow: 0 0 24px rgba(28, 255, 138, 0.35);
+}
+
+.lead-line em {
+  font-style: normal;
+  color: #1cff8a;
+}
 
 .display {
   margin: 0;
@@ -750,7 +808,7 @@ p { margin: 0; }
 }
 
 .display-sub {
-  margin: 14px 0 22px;
+  margin: 14px 0 10px;
   text-align: center;
   letter-spacing: 0.28em;
   font-size: 12px;
@@ -868,7 +926,7 @@ p { margin: 0; }
 }
 .chip.on { background: rgba(28, 255, 138, 0.16); color: #fff; }
 
-.imagine-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.imagine-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: 100%; }
 .imagine-card {
   display: grid;
   grid-template-columns: 88px 1fr;
@@ -877,6 +935,11 @@ p { margin: 0; }
   border: 1px solid rgba(28, 255, 138, 0.35);
   border-radius: 16px;
   background: rgba(0, 0, 0, 0.28);
+}
+.imagine-card.text-only {
+  display: block;
+  grid-template-columns: none;
+  padding: 12px 14px;
 }
 .imagine-card svg { width: 88px; height: 72px; }
 .imagine-card p { margin: 0; text-align: left; }
@@ -925,35 +988,35 @@ p { margin: 0; }
 
 /* --- CYP3 하늘 / 시트 / 그로브 --- */
 
-.column:has(.cyp-sky-page) {
-  width: min(720px, 100%);
-  background: #020403;
-  box-shadow: none;
-}
-
-.column:has(.cyp-show) {
-  width: min(1100px, 100%);
-}
-
 .cyp-sky-page {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   min-height: calc(100dvh - 48px);
   padding: 16px 0 20px;
   overflow: hidden;
   background: transparent;
 }
 
+/* 제목·틱커만 읽기 폭. 하늘·스테이지는 가로 100% */
 .cyp-sky-page > .cyp-sky-head,
 .cyp-sky-page > .cyp-qrow,
 .cyp-sky-page > .cyp-sky-actions,
-.cyp-sky-page > .cyp-mode-toggle,
 .cyp-sky-page > .cyp-ticker,
 .cyp-sky-page > .cyp-error,
 .cyp-sky-page > .cyp-empty,
 .cyp-sky-page > .hint {
   padding-left: 18px;
   padding-right: 18px;
+  width: min(960px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.cyp-sky-page > .cyp-grove-stage,
+.cyp-sky-page > .cyp-sky {
+  width: 100%;
 }
 
 .cyp-sky-head {
@@ -962,6 +1025,14 @@ p { margin: 0; }
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.cyp-sky-head-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: none;
 }
 
 .cyp-sky-title {
@@ -1047,6 +1118,7 @@ p { margin: 0; }
   position: absolute;
   inset: 0;
   overflow: visible;
+  pointer-events: none;
 }
 
 .cyp-line {
@@ -1071,8 +1143,12 @@ p { margin: 0; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 0;
-  min-width: 44px;
+  padding: 12px 10px 6px;
+  min-width: 52px;
+  min-height: 52px;
+  z-index: 3;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 /* 흰 코어 + 넓게 번지는 초록 bloom */
@@ -1253,6 +1329,17 @@ p { margin: 0; }
   background: transparent;
 }
 
+.cyp-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
 .cyp-sheet {
   position: fixed;
   left: 50%;
@@ -1348,81 +1435,133 @@ p { margin: 0; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: rgba(2, 4, 3, 0.55);
+  justify-content: flex-start;
+  gap: 2px;
+  padding-top: 2px;
+  background: rgba(2, 4, 3, 0.35);
   border-radius: 0;
+  width: 100%;
+}
+
+.cyp-collective-title {
+  margin: 0;
+  flex: none;
+  font-family: var(--mono);
+  font-size: clamp(11px, 1.8vw, 14px);
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: #c8ffe0;
+  text-align: center;
+  line-height: 1.2;
+  opacity: 0.85;
 }
 
 .cyp-sphere {
   position: relative;
-  width: min(360px, 92%);
+  width: min(860px, 98vw);
   aspect-ratio: 1;
-  margin-top: 8px;
+  margin-top: 0;
+  max-height: min(68dvh, 720px);
+  flex: 1;
 }
 
 .cyp-sphere-core {
   position: absolute;
-  inset: 18%;
+  inset: 8%;
   border-radius: 50%;
-  border: 1px solid rgba(28, 255, 138, 0.22);
-  box-shadow: inset 0 0 40px rgba(28, 255, 138, 0.12), 0 0 40px rgba(28, 255, 138, 0.08);
+  border: 1px solid rgba(28, 255, 138, 0.14);
+  box-shadow:
+    inset 0 0 60px rgba(28, 255, 138, 0.1),
+    0 0 50px rgba(28, 255, 138, 0.08);
+  pointer-events: none;
+}
+
+.cyp-sphere-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
 }
 
 .cyp-word {
   position: absolute;
   font-family: var(--mono);
-  letter-spacing: 0.06em;
-  color: #7dffb4;
+  letter-spacing: 0.14em;
+  color: #9dffc4;
   white-space: nowrap;
-  text-shadow: 0 0 10px rgba(28, 255, 138, 0.35);
+  text-shadow: 0 0 8px rgba(28, 255, 138, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cyp-word-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #1cff8a;
+  box-shadow: 0 0 6px rgba(28, 255, 138, 0.8);
+  flex: none;
 }
 
 .cyp-word.example {
   color: #3a5a48;
+  letter-spacing: 0.16em;
   text-shadow: none;
 }
 
 .cyp-ticker {
   margin-top: 10px;
+  margin-bottom: 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  flex: none;
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
 
 .cyp-ticker-row {
   overflow: hidden;
   white-space: nowrap;
+  border-top: 1px solid rgba(28, 255, 138, 0.18);
+  border-bottom: 1px solid rgba(28, 255, 138, 0.18);
+  padding: 8px 0;
 }
 
 .cyp-ticker-track {
   display: inline-flex;
-  gap: 48px;
-  animation: cyp-marquee 48s linear infinite;
-  font-size: 12px;
-  color: #8d929c;
+  gap: 64px;
+  /* 왼쪽 → 오른쪽 */
+  animation: cyp-marquee-ltr 90s linear infinite;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: #c8ddd0;
 }
 
 .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
-  animation-duration: 62s;
-  animation-direction: reverse;
-  color: #6f8a7a;
+  animation-duration: 110s;
+  font-size: 17px;
+  color: #9ab0a2;
 }
 
-@keyframes cyp-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+@keyframes cyp-marquee-ltr {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
 }
 
 .cyp-mode-toggle {
   display: flex;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 4px;
+  gap: 4px;
+  margin: 0;
+  padding: 3px;
   border: 1px solid rgba(28, 255, 138, 0.28);
   border-radius: 999px;
+  width: auto;
+  max-width: min(420px, 72vw);
 }
 
 .cyp-mode-toggle button {
@@ -1432,14 +1571,44 @@ p { margin: 0; }
   background: transparent;
   color: #6a7a70;
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  padding: 10px 6px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 8px 10px;
+  white-space: nowrap;
 }
 
 .cyp-mode-toggle button.on {
   background: rgba(28, 255, 138, 0.14);
   color: #e9fff3;
+}
+
+.cyp-notify-lead {
+  margin: 0 0 6px;
+  color: #c8ffe0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .cyp-sky-page {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .cyp-grove-stage {
+    min-height: min(48dvh, 360px);
+  }
+  .cyp-sphere {
+    max-height: min(52dvh, 420px);
+  }
+  .cyp-collective-title {
+    font-size: 11px;
+  }
+  .cyp-ticker-track {
+    font-size: 15px;
+  }
+  .cyp-ticker-row {
+    padding: 4px 0;
+  }
 }
 
 .cyp-chat, .cyp-inbox {

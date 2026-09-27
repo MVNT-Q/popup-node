@@ -1,7 +1,7 @@
 "use client";
 
 export function ImagineTicker({ lines }: { lines: string[] }) {
-  // 저장된 IMAGINE 문장 두 줄. 느린 마퀴. 같은 문장은 한 번만.
+  // 저장된 IMAGINE 문장 두 줄. 왼쪽→오른쪽, 천천히, 크게.
   const cleaned: string[] = [];
   const seen = new Set<string>();
   for (const raw of lines) {
@@ -10,7 +10,7 @@ export function ImagineTicker({ lines }: { lines: string[] }) {
     seen.add(line);
     cleaned.push(line);
   }
-  const rowA = cleaned.length ? cleaned : ["Waiting for imaginings… / 상상이 모이는 중"];
+  const rowA = cleaned.length ? cleaned : ["Waiting for imaginings…"];
   const rowB = cleaned.length > 1 ? [...cleaned].reverse() : rowA;
 
   function track(items: string[], key: string) {
@@ -19,7 +19,7 @@ export function ImagineTicker({ lines }: { lines: string[] }) {
       <div className="cyp-ticker-row" key={key}>
         <div className="cyp-ticker-track">
           {doubled.map((line, index) => (
-            <span key={`${key}-${index}`}>{line}</span>
+            <span key={`${key}-${index}`}>· {line}</span>
           ))}
         </div>
       </div>

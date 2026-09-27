@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExperimentKicker, GroveBackdrop, StepMark } from "@/components/GroveBackdrop";
-import { SceneThumb } from "@/components/SceneThumb";
 import { clearDraft, readDraft, type NodeDraft } from "@/lib/draft";
 import { IMAGINE_CARDS } from "@/lib/prompts";
 
@@ -92,12 +91,9 @@ export default function ImaginePage() {
       {open ? (
         <div className="imagine-cards">
           {IMAGINE_CARDS.map((card) => (
-            <article key={card.scene} className="imagine-card">
-              <SceneThumb scene={card.scene} />
-              <div>
-                <p>{card.en}</p>
-                <p className="ko">{card.ko}</p>
-              </div>
+            <article key={card.scene} className="imagine-card text-only">
+              <p>{card.en}</p>
+              <p className="ko">{card.ko}</p>
             </article>
           ))}
         </div>

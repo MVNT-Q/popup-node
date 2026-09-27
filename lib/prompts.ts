@@ -38,6 +38,7 @@ export const IMAGINE_COPY = {
   optional: "Optional — describe it in your own words:",
 } as const;
 
+// SEEK 예시 — 목업 POC_2 원문
 export const SEEK_EXAMPLES = [
   {
     en: "A front-end developer who can help turn my interactive installation concept into a working web prototype.",
@@ -49,11 +50,11 @@ export const SEEK_EXAMPLES = [
   },
   {
     en: "A researcher or technologist working on privacy-preserving AI who is open to collaborating on real-world work.",
-    ko: "프라이버시를 보호하는 AI 연구를 하며, 실제 현실 사례에 협업할 의사가 있는 연구자.",
+    ko: "프라이버시를 보호하는 AI 연구를 하며, 실제 적용 사례에 대해 함께 협업할 의사가 있는 연구자.",
   },
   {
-    en: "A collaborator from a completely different field, especially someone working in hardware, biology, or game design, who could take my idea somewhere I wouldn't reach alone.",
-    ko: "하드웨어, 생물, 게임처럼 전혀 다른 분야에서 와서, 혼자서는 못 가는 데로 아이디어를 가져갈 사람.",
+    en: "A collaborator from a completely different field, especially someone working in hardware / biology / game design, who could take my idea somewhere I wouldn't reach alone.",
+    ko: "지금 현재와는 전혀 다른 분야(특히 하드웨어 / 생물공학 / 게임 디자인 등)의 협업자. 함께라면 나의 아이디어가 전혀 다른 방향으로 확장될 수 있는 사람.",
   },
 ] as const;
 
@@ -62,7 +63,7 @@ export const OFFER_TAGS = [
   "TECH / AI",
   "KNOWLEDGE / RESEARCH",
   "BUSINESS / STRATEGY",
-  "HACKING / PRODUCTION",
+  "MAKING / PRODUCTION",
   "COMMUNITY / FACILITATION",
   "NETWORK / INTRODUCTIONS",
   "RESOURCES / SPACE / FUNDING",
@@ -70,50 +71,52 @@ export const OFFER_TAGS = [
   "GOOD ENERGY / SPIRIT",
 ] as const;
 
+// OFFER 예시 — 목업 POC_2 원문
 export const OFFER_EXAMPLES = [
   {
     en: "I run a small photo zine print studio in Seoul and can offer space for workshops, product shoots, or gatherings of up to 15 people.",
-    ko: "서울에서 소규모 사진집 스튜디오를 운영하고, 최대 15명 규모의 워크숍과 촬영, 모임을 열 수 있다.",
+    ko: "서울에서 소규모 사진집 출력소 스튜디오를 운영하고 있으며, 최대 15인 규모의 워크숍, 제품 촬영, 모임 공간을 제공할 수 있습니다.",
   },
   {
-    en: "I work in strategy and can help early-stage teams with market research, user analysis, and positioning, so you can focus on building.",
-    ko: "전략과 리서치로 초기 팀이 만드는 일에 집중하게 돕는다. 시장, 사용자, 포지션.",
+    en: "I work in strategy and can help early-stage teams with market research, user analysis, and positioning, so you can focus on building without getting overwhelmed by the business side.",
+    ko: "전략 분야에서 일하고 있으며, 초기 단계팀의 시장 리서치, 사용자 분석, 포지셔닝을 도와드릴 수 있습니다. 여러분은 비즈니스적인 부분에 대한 부담 없이 개발에 집중할 수 있도록.",
   },
   {
-    en: "I have an experimental background in sound and spatial media, and I can help with technical setup, software, or creative direction for installations.",
-    ko: "사운드와 공간 미디어로 설치의 기술 세팅, 소프트웨어, 창작 방향을 돕는다.",
+    en: "I have an experimental background in sound and spatial media, and I can help with technical setup, software, or creative direction for audio-visual projects and installations.",
+    ko: "사운드와 공간 미디어를 실험적으로 연구해 왔으며, 오디오-비주얼 프로젝트와 설치 작업을 위한 기술적인 세팅, 소프트웨어, 혹은 창의적 방향성을 도와드릴 수 있습니다.",
   },
   {
-    en: "I have experience in policy and cultural research, and can help you find relevant people or resources within institutions, developers, and organisers.",
-    ko: "정책과 문화 연구로, 기관과 만드는 사람, 행사를 잇는 사람과 자원을 찾는다.",
+    en: "I have experience in policy and cultural research, and can help you find relevant people or resources within institutions, developers, and organisers for collaborations or exhibitions.",
+    ko: "정책 및 문화 연구 경험이 있으며, 협업이나 전시를 위해 관련 기관, 개발자, 기획자들과 연결될 수 있는 사람이나 리소스를 찾아드릴 수 있습니다.",
   },
 ] as const;
 
+// IMAGINE 예시 — 목업 POC_3_2 원문 (썸네일 없음)
 export const IMAGINE_CARDS = [
   {
     scene: "valley",
-    en: "Imagine a future where people live closely with nature, sharing energy, food, tools, and knowledge within small communities. Technology supports daily life quietly. Something like the Valley of the Wind.",
-    ko: "자연과 가까이 살며 작은 공동체 안에서 에너지, 음식, 도구와 지식을 나누는 미래. 기술은 조용히 하루를 돕는다. 바람계곡 같은 세계.",
+    en: "I imagine a future where people live closely with nature, sharing energy, food, tools, and knowledge within small communities. Technology supports daily life quietly, protecting privacy without demanding constant attention. Something like the Valley in Nausicaä of the Valley of the Wind.",
+    ko: "자연과 가까이 살아가며 작은 공동체 안에서 에너지, 음식, 도구와 지식을 나누는 미래. 기술은 끊임없이 주의를 요구하지 않고, 일상과 프라이버시를 조용히 지켜주는 《바람계곡의 나우시카》의 계곡 같은 세계.",
   },
   {
     scene: "float",
-    en: "Imagine floating cities above the clouds, where gardens, workshops, homes, and public spaces are woven together. Moving through the city feels like wandering a shared landscape.",
-    ko: "정원과 작업실, 집과 공공 공간이 이어진 구름 위의 부유 도시. 이동은 출퇴근이 아니라 풍경을 거니는 일이다.",
+    en: "I imagine floating cities above the clouds, where gardens, workshops, homes, and public spaces are woven together instead of being divided by roads and advertisements. Moving through the city feels more like wandering through a shared landscape than commuting.",
+    ko: "도로와 광고로 분리된 도시가 아니라, 정원과 작업실, 집과 공공 공간이 서로 이어진 구름 위의 부유 도시. 이동은 출퇴근이라기보다 하나의 공유된 풍경을 거니는 경험에 가까운 세계.",
   },
   {
     scene: "ritual",
-    en: "Imagine a future that feels ancient and futuristic at once, where craft, rituals, shared meals, and slower rhythms are everyday again. Advanced technology stays mostly invisible.",
-    ko: "공예와 의식, 함께하는 식사와 느린 리듬이 다시 일상이 되는 미래. 기술은 있지만 앞에 나서지 않는다.",
+    en: "I imagine a future that feels ancient and futuristic at the same time, where craft, rituals, shared meals, and slower rhythms become part of everyday life again. Advanced technology still exists, but it stays mostly invisible in the background.",
+    ko: "공예와 의식, 함께하는 식사와 느린 삶의 리듬이 다시 일상의 중요한 부분이 되는 미래적 중세 같은 세계. 첨단 기술은 존재하지만 전면에 드러나기보다 보이지 않는 곳에서 조용히 작동하는 미래.",
   },
   {
     scene: "identity",
-    en: "Imagine identity moving between physical and digital spaces. People choose names, personas, and how visible or anonymous they want to be.",
-    ko: "몸과 화면 사이를 오가며 이름과 페르소나를 고르는 세계. 드러낼지, 익명으로 있을지를 스스로 정한다.",
+    en: "I imagine a world where identity is fluid across physical and digital spaces. People can use different names, personas, or levels of anonymity, and choose for themselves when to be visible, private, or somewhere in between.",
+    ko: "물리적 공간과 디지털 공간을 오가며 정체성을 더 유동적으로 선택할 수 있는 세계. 서로 다른 이름과 페르소나를 사용하고, 언제 자신을 드러내고 언제 익명으로 존재할지 스스로 결정할 수 있는 미래.",
   },
   {
     scene: "craft",
-    en: "Imagine automation taking the repetitive work, so people have time to learn, make, care, explore, play, and create. Making belongs to everyday life, not only to a profession.",
-    ko: "반복 노동이 걷히고, 배우고 만들고 돌보고 노는 시간이 늘어나는 미래. 만들기는 일부의 직업이 아니라 모두의 일상이다.",
+    en: "I imagine a future where automation has removed most repetitive work, giving people much more time to learn, make things, care for others, explore, play, and create. Creativity is no longer reserved for a profession, but becomes part of everyday life for everyone.",
+    ko: "자동화로 반복 노동 대부분이 사라지고, 사람들이 배우고, 만들고, 돌보고, 탐험하고, 놀고, 창작하는 데 더 많은 시간을 쓰는 미래. 창작이 일부 사람의 직업이 아니라 모두의 일상이 되는 세계.",
   },
 ] as const;
 

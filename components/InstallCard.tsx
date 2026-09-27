@@ -184,13 +184,29 @@ export function InstallCard({ place = "join" }: { place?: "join" | "continue" })
 
   return (
     <section className={place === "continue" ? "install banner" : "install"}>
-      {phase === "install" ? <p>먼저 홈 화면에 넣고, 이어서 이 폰 알림을 켭니다.</p> : null}
-      {phase === "notify" ? <p>홈 화면 다음은 알림입니다. 여기서 허용해야 이 폰에 붙습니다.</p> : null}
+      {phase === "install" ? (
+        <>
+          <p>First add this to your home screen, then turn on notifications for this phone.</p>
+          <p className="ko">먼저 홈 화면에 넣고, 이어서 이 폰 알림을 켭니다.</p>
+        </>
+      ) : null}
+      {phase === "notify" ? (
+        <>
+          <p>After the home-screen icon, allow notifications here so they stay on this phone.</p>
+          <p className="ko">홈 화면 다음은 알림입니다. 여기서 허용해야 이 폰에 붙습니다.</p>
+        </>
+      ) : null}
       {phase === "guide" && guide === "ios" ? (
-        <p>아이폰은 홈 화면에 넣기 전에는 알림이 폰에 안 붙습니다. 공유 → 홈 화면에 추가 → 그 아이콘으로 다시 열면, 알림 허용이 이어집니다.</p>
+        <>
+          <p>On iPhone, notifications only stick after you add the icon. Share → Add to Home Screen → open that icon, then allow alerts.</p>
+          <p className="ko">아이폰은 홈 화면에 넣기 전에는 알림이 폰에 안 붙습니다. 공유 → 홈 화면에 추가 → 그 아이콘으로 다시 열면, 알림 허용이 이어집니다.</p>
+        </>
       ) : null}
       {phase === "guide" && guide === "manual" ? (
-        <p>이 브라우저는 설치 창을 안 띄웁니다. 메뉴에서 홈 화면에 추가한 뒤, 그 아이콘으로 다시 여세요. 알림 허용은 그때 나옵니다.</p>
+        <>
+          <p>This browser will not show an install prompt. Add it from the menu, reopen from that icon, then allow notifications.</p>
+          <p className="ko">이 브라우저는 설치 창을 안 띄웁니다. 메뉴에서 홈 화면에 추가한 뒤, 그 아이콘으로 다시 여세요. 알림 허용은 그때 나옵니다.</p>
+        </>
       ) : null}
       {phase === "pending" || phase === "linked" ? <p>{note}</p> : null}
       {showButton ? (

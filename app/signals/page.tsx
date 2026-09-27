@@ -42,13 +42,14 @@ export default function SignalsPage() {
   const seek = me?.slots[0];
   const offer = me?.slots[1];
   const imagine = me?.slots[2];
+  const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";
 
   return (
     <main className="cyp cyp-signals">
       <GroveBackdrop />
-      <p className="fine">MY SIGNALS / 내 시그널</p>
-      <h1 className="display form-title">SENT TO THE GROVE</h1>
-      <p className="ko center">그로브에 보낸 문장. 고치기 없음.</p>
+      <h1 className="display form-title">MY SIGNALS</h1>
+      <p className="ko center">내 시그널</p>
+      {me ? <p className="fine center" style={{ marginTop: 8 }}>{codeLabel}</p> : null}
       {error ? <p className="cyp-error">{error}</p> : null}
 
       <section className="block">

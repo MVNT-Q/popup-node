@@ -178,6 +178,7 @@ export function GroveBackdrop() {
   return (
     <div className="grove-bg" aria-hidden>
       <div className="grove-bg-nebula" />
+      <div className="grove-bg-photo" />
       <canvas ref={ref} className="grove-bg-canvas" />
     </div>
   );

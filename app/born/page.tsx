@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
+import { MarkLock } from "@/components/MarkLock";
 
 type Me = { code: number; name: string } | null;
 
@@ -21,13 +22,7 @@ export default function BornPage() {
     <main className="cyp born">
       <GroveBackdrop />
       <p className="kicker">CYP3 | PROOF OF COEXISTENCE EXPERIMENT - 001</p>
-      <div className="mark-lock" aria-hidden>
-        <svg viewBox="0 0 120 120">
-          <polygon points="60,8 104,34 104,86 60,112 16,86 16,34" fill="none" stroke="#1cff8a" strokeWidth="1" />
-          <polygon points="60,28 88,44 88,76 60,92 32,76 32,44" fill="none" stroke="#7dffb4" strokeWidth="1" />
-          <circle cx="60" cy="60" r="4" fill="#1cff8a" />
-        </svg>
-      </div>
+      <MarkLock variant="born" />
       <h1 className="display">YOU ARE A NODE</h1>
       <p className="ko center">당신은 하나의 노드가 되었습니다.</p>
       <p className="code-no">#{code}</p>

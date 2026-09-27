@@ -112,14 +112,36 @@ export default function GrovePage() {
       <GroveBackdrop />
       <header className="cyp-sky-head">
         <div>
-          <p className="fine">NODE GROVE / 노드 그로브</p>
+          <p className="fine">NODE GROVE</p>
           <h1 className="cyp-sky-title">
             {counts.nodes} NODES · {counts.connections} CONNECTIONS
           </h1>
         </div>
-        <Link className="cyp-mini" href="/my-node">
-          MY NODE
-        </Link>
+        <div className="cyp-sky-head-right">
+          <Link className="cyp-mini" href="/my-node">
+            MY NODE
+          </Link>
+          <div className="cyp-mode-toggle" role="tablist" aria-label="Grove mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "grove"}
+              className={mode === "grove" ? "on" : ""}
+              onClick={() => setMode("grove")}
+            >
+              GROVE
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "collective"}
+              className={mode === "collective" ? "on" : ""}
+              onClick={() => setMode("collective")}
+            >
+              COLLECTIVE IMAGINATION
+            </button>
+          </div>
+        </div>
       </header>
 
       {error ? <p className="cyp-error">{error}</p> : null}
@@ -131,45 +153,26 @@ export default function GrovePage() {
               stars={skyStars}
               edges={skyEdges}
               onPick={(id) => {
-                if (me && id === me.id) return;
+                if (me && id === me.id) {
+                  router.push("/my-node");
+                  return;
+                }
                 setPicked(id);
               }}
             />
           ) : (
-            <p className="hint center">불러오는 중</p>
+            <p className="hint center">Loading…</p>
           )}
         </div>
         <div className={mode === "collective" ? "cyp-fade on" : "cyp-fade"}>
           <div className="cyp-collective">
-            <p className="fine">COLLECTIVE IMAGINATION</p>
-            <p className="ko center">사람들이 쓴 상상의 말</p>
+            <p className="cyp-collective-title">COLLECTIVE IMAGINATION</p>
             <WordSphere imagines={imagines} />
           </div>
         </div>
       </div>
 
       <ImagineTicker lines={imagines} />
-
-      <div className="cyp-mode-toggle" role="tablist" aria-label="Grove mode">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "grove"}
-          className={mode === "grove" ? "on" : ""}
-          onClick={() => setMode("grove")}
-        >
-          GROVE
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "collective"}
-          className={mode === "collective" ? "on" : ""}
-          onClick={() => setMode("collective")}
-        >
-          COLLECTIVE IMAGINATION
-        </button>
-      </div>
 
       {pickedNode && me ? (
         <RelationSheet

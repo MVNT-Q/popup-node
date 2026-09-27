@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { askNotification, subscribePush } from "@/components/alerts";
-import { ExperimentKicker, GroveBackdrop } from "@/components/GroveBackdrop";
+import { GroveBackdrop } from "@/components/GroveBackdrop";
+import { MarkLock } from "@/components/MarkLock";
 
 type Me = { id: string; code: number; name: string } | null;
 
@@ -47,18 +48,16 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="cyp">
+    <main className="cyp cyp-landing">
       <GroveBackdrop />
-      <ExperimentKicker />
-      <div className="mark-lock" aria-hidden>
-        <svg viewBox="0 0 80 80">
-          <polygon points="40,8 66,23 66,53 40,68 14,53 14,23" fill="none" stroke="#1cff8a" strokeWidth="1.2" />
-          <polygon points="40,20 56,29 56,47 40,56 24,47 24,29" fill="none" stroke="#b8ffd8" strokeWidth="1" />
-          <circle cx="40" cy="38" r="3" fill="#1cff8a" />
-        </svg>
-      </div>
-      <h1 className="display">cyp3 grove</h1>
-      <p className="display-sub">PROOF OF COEXISTENCE · EXPERIMENT 001</p>
+      <p className="landing-brand">CYP3</p>
+      <h1 className="display landing-title">
+        PROOF OF
+        <br />
+        COEXISTENCE
+      </h1>
+      <p className="display-sub">EXPERIMENT 001</p>
+      <MarkLock variant="landing" />
 
       <div className="copy">
         <p>A network is just beginning to form.</p>
@@ -66,16 +65,18 @@ export default function LandingPage() {
         <p>Not a platform. Not a nation. Not yet.</p>
         <p className="ko">플랫폼도, 국가도 아닙니다. 아직은.</p>
         <p>For four days, a temporary NODE GROVE will take shape here.</p>
-        <p className="ko">4일 동안 이곳에는 하나의 임시적인 노드 그로브가 만들어집니다.</p>
+        <p className="ko">4일 동안 이곳에는 하나의 임시적인 노드 그로브(숲)이 만들어집니다.</p>
         <p>
           People will connect not by where they come from, but by what they are seeking, what they can bring, and the
           futures they are willing to imagine together.
         </p>
         <p className="ko">
-          사람들은 어디서 왔는지가 아니라, 무엇을 찾고 있는지, 무엇을 가져올 수 있는지, 그리고 어떤 미래를 함께
+          사람들은 어디에서 왔는지가 아니라, 무엇을 찾고 있는지, 무엇을 가져올 수 있는지, 그리고 어떤 미래를 함께
           상상할 수 있는지를 통해 연결됩니다.
         </p>
-        <p className="lead-line">Become one of the first NODES.</p>
+        <p className="lead-line">
+          Become one of the first <em>NODES</em>.
+        </p>
         <p className="ko">초기의 NODE 중 하나가 되어보세요.</p>
       </div>
 

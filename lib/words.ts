@@ -1,8 +1,9 @@
-// 컬렉티브 구에 쓸 단어. 답이 적을 때 예시만 옅게 깐다.
+// 컬렉티브 구에 쓸 단어. 답이 적을 때 예시만 옅게 깐다. POC_8 영어.
 
 export const EXAMPLE_WORDS = [
   "NATURE",
   "AUTONOMY",
+  "COEXISTENCE",
   "QUIET TECHNOLOGY",
   "FLOATING CITY",
   "CARE",
@@ -10,7 +11,26 @@ export const EXAMPLE_WORDS = [
   "FOREST",
   "CRAFT",
   "SHARED MEALS",
-  "SLOW",
+  "SLOW LIFE",
+  "COMMONS",
+  "PRIVACY",
+  "OPEN TECHNOLOGY",
+  "SHARED SPACES",
+  "FLUID IDENTITY",
+  "LOCAL MAKING",
+  "SELF-SOVEREIGNTY",
+  "MUTUAL AID",
+  "BIOLUMINESCENCE",
+  "DIGITAL COMMONS",
+  "PEER NETWORKS",
+  "HEALING",
+  "ECOLOGY",
+  "STORYTELLING",
+  "ANONYMITY",
+  "WORKSHOPS",
+  "FRIENDSHIP",
+  "DREAMING",
+  "MOONLIGHT",
 ] as const;
 
 const STOP = new Set(
@@ -96,25 +116,27 @@ export function sphereWords(imagines: string[]): SphereWord[] {
   const counts = new Map<string, number>();
   for (const line of imagines) {
     for (const token of tokens(line)) {
+      // 구에는 영어만. 한글 토큰은 건너뛴다.
+      if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(token)) continue;
       const key = token.length <= 24 ? token : token.slice(0, 24);
-      const display = /[a-z]/.test(key) && !/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(key) ? key.toUpperCase() : key;
+      const display = key.toUpperCase();
       counts.set(display, (counts.get(display) ?? 0) + 1);
     }
   }
 
   const real: SphereWord[] = [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, 40)
+    .slice(0, 48)
     .map(([text, weight]) => ({ text, weight, example: false }));
 
-  if (real.length >= 8) return real;
+  if (real.length >= 12) return real;
 
   const used = new Set(real.map((w) => w.text.toUpperCase()));
   const extras: SphereWord[] = [];
   for (const word of EXAMPLE_WORDS) {
     if (used.has(word)) continue;
     extras.push({ text: word, weight: 1, example: true });
-    if (real.length + extras.length >= 14) break;
+    if (real.length + extras.length >= 28) break;
   }
   return [...real, ...extras];
 }

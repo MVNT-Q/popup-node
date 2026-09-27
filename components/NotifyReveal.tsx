@@ -17,6 +17,10 @@ export function NotifyReveal() {
       </button>
       {open ? (
         <div className="cyp-notify-panel">
+          <p className="cyp-notify-lead">
+            Add this to your home screen, then allow notifications on this phone.
+          </p>
+          <p className="ko">먼저 홈 화면에 넣고, 이어서 이 폰 알림을 켭니다. 텔레그램·이메일은 없습니다.</p>
           <InstallCard place="join" />
         </div>
       ) : null}

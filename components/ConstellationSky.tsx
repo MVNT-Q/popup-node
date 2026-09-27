@@ -138,7 +138,9 @@ export function ConstellationSky({
         if (!current || current.id !== event.pointerId) return;
         const dx = event.clientX - current.x;
         const dy = event.clientY - current.y;
-        if (Math.hypot(dx, dy) > 6) current.moved = true;
+        if (Math.hypot(dx, dy) > 10) current.moved = true;
+        // 별 위에서 시작한 제스처는 팬하지 않음 — 탭으로 시트 열기
+        if (current.starId) return;
         setCam({ x: current.ox + dx, y: current.oy + dy, s: camRef.current.s });
       }}
       onPointerUp={(event) => {

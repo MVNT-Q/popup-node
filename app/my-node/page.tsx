@@ -181,7 +181,10 @@ export default function MyNodePage() {
           stars={skyStars}
           edges={skyEdges}
           onPick={(id) => {
-            if (me && id === me.id) return;
+            if (me && id === me.id) {
+              setPicked(null);
+              return;
+            }
             setPicked(id);
           }}
         />

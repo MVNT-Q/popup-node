@@ -1,22 +1,31 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/ConstellationSky";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { ImagineTicker } from "@/components/ImagineTicker";
+import { RelationSheet } from "@/components/RelationSheet";
 import { WordSphere } from "@/components/WordSphere";
 import { layoutGrove } from "@/lib/constellation";
+import type { HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
 type AllNode = { id: string; code: number; name: string; slots: Slot[] };
+type Me = { id: string; code: number; name: string; slots: Slot[] };
+type Star = { id: string; hits: HitLite[] };
 type Mode = "grove" | "collective";
 
 export default function ShowPage() {
+  const router = useRouter();
+  const [me, setMe] = useState<Me | null>(null);
+  const [stars, setStars] = useState<Star[]>([]);
   const [all, setAll] = useState<AllNode[]>([]);
   const [edges, setEdges] = useState<{ a: string; b: string; questions: number[] }[]>([]);
   const [imagines, setImagines] = useState<string[]>([]);
   const [counts, setCounts] = useState({ nodes: 0, connections: 0 });
   const [mode, setMode] = useState<Mode>("grove");
+  const [picked, setPicked] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
   const laid = useRef(false);
@@ -31,6 +40,8 @@ export default function ShowPage() {
       const response = await fetch("/api/sky?view=show", { cache: "no-store" });
       const data = (await response.json()) as {
         error?: string;
+        me?: Me | null;
+        stars?: Star[];
         all?: AllNode[];
         edges?: { a: string; b: string; questions: number[] }[];
         imagines?: string[];
@@ -40,6 +51,8 @@ export default function ShowPage() {
       if (stop) return;
       const nextAll = data.all ?? [];
       const nextEdges = data.edges ?? [];
+      setMe(data.me ?? null);
+      setStars(data.stars ?? []);
       setAll(nextAll);
       setEdges(nextEdges);
       setImagines(data.imagines ?? []);
@@ -86,23 +99,31 @@ export default function ShowPage() {
     if (!layout) return [];
     return all.map((node) => {
       const point = layout.get(node.id) ?? { x: 500, y: 500 };
+      const self = me && node.id === me.id;
       return {
         id: node.id,
         code: node.code,
         name: node.name,
         x: point.x,
         y: point.y,
-        // 전시는 개인 공명 없이 전부 비슷한 밝기. 일부만 플레어용 mid.
-        band: node.code % 5 === 0 ? ("mid" as const) : ("weak" as const),
-        selected: false,
+        band: self ? ("self" as const) : node.code % 5 === 0 ? ("mid" as const) : ("weak" as const),
+        selected: picked === node.id,
       };
     });
-  }, [all, layout]);
+  }, [all, layout, me, picked]);
 
   const skyEdges: SkyEdge[] = useMemo(
     () => edges.map((edge) => ({ ...edge, bright: true })),
     [edges],
   );
+
+  const pickedNode = all.find((node) => node.id === picked) ?? null;
+  const pickedHits = stars.find((star) => star.id === picked)?.hits ?? [];
+  const emptySlots: Slot[] = [
+    { question: "SEEK", answer: "" },
+    { question: "OFFER", answer: "" },
+    { question: "IMAGINE", answer: "" },
+  ];
 
   return (
     <main
@@ -120,10 +141,32 @@ export default function ShowPage() {
       <GroveBackdrop />
       <header className="cyp-sky-head">
         <div>
-          <p className="fine">cyp3 grove</p>
+          <p className="fine">NODE GROVE</p>
           <h1 className="cyp-sky-title">
             {counts.nodes} NODES · {counts.connections} CONNECTIONS
           </h1>
+        </div>
+        <div className="cyp-sky-head-right">
+          <div className="cyp-mode-toggle" role="tablist" aria-label="Grove mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "grove"}
+              className={mode === "grove" ? "on" : ""}
+              onClick={() => setMode("grove")}
+            >
+              GROVE
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "collective"}
+              className={mode === "collective" ? "on" : ""}
+              onClick={() => setMode("collective")}
+            >
+              COLLECTIVE IMAGINATION
+            </button>
+          </div>
         </div>
       </header>
 
@@ -132,21 +175,42 @@ export default function ShowPage() {
       <div className={`cyp-grove-stage ${mode}`}>
         <div className={mode === "grove" ? "cyp-fade on" : "cyp-fade"}>
           {layout ? (
-            <ConstellationSky stars={skyStars} edges={skyEdges} onPick={() => undefined} />
+            <ConstellationSky
+              stars={skyStars}
+              edges={skyEdges}
+              onPick={(id) => {
+                if (me && id === me.id) {
+                  router.push("/my-node");
+                  return;
+                }
+                setPicked(id);
+              }}
+            />
           ) : (
-            <p className="hint center">불러오는 중</p>
+            <p className="hint center">Loading…</p>
           )}
         </div>
         <div className={mode === "collective" ? "cyp-fade on" : "cyp-fade"}>
           <div className="cyp-collective">
-            <p className="fine">COLLECTIVE IMAGINATION</p>
-            <p className="ko center">사람들이 쓴 상상의 말</p>
+            <p className="cyp-collective-title">COLLECTIVE IMAGINATION</p>
             <WordSphere imagines={imagines} />
           </div>
         </div>
       </div>
 
       <ImagineTicker lines={imagines} />
+
+      {pickedNode ? (
+        <RelationSheet
+          meSlots={me?.slots ?? emptySlots}
+          theirSlots={pickedNode.slots}
+          code={pickedNode.code}
+          name={pickedNode.name}
+          id={pickedNode.id}
+          hits={pickedHits}
+          onClose={() => setPicked(null)}
+        />
+      ) : null}
     </main>
   );
 }
