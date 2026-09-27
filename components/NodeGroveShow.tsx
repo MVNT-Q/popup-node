@@ -84,8 +84,10 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
     };
   }, []);
 
-  // 전시: 12초 교차. 만지는 동안·카드 읽는 동안 멈춤. 컬렉티브에 오래 머물면 그로브로.
+  // 전시 패드(/devshow)만 12초 교차. /usershow(nav)는 사용자가 고른 모드 유지.
+  // 만지는 동안·노드 카드(picked) 열린 동안 멈춤. 컬렉티브에 오래 머물면 그로브로.
   useEffect(() => {
+    if (nav) return;
     const timer = window.setInterval(() => {
       if (touching.current) return;
       if (pickedRef.current) return;
@@ -103,7 +105,7 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
       });
     }, 12000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [nav]);
 
   const skyStars: SkyPoint[] = useMemo(() => {
     if (!layout) return [];
