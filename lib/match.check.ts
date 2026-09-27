@@ -18,8 +18,9 @@ if (bAll.hits[0]?.theirIndex !== 1 || bAll.hits[1]?.theirIndex !== 0 || bAll.hit
 }
 if (bAll.band !== "strong") throw new Error(`B 전체는 강. ${JSON.stringify(bAll)}`);
 
-if (cAll.band !== "mid" || cAll.hits.length !== 1 || cAll.hits[0]?.questionIndex !== 2) {
-  throw new Error(`15는 IMAGINE에서만 중이어야 한다. ${JSON.stringify(cAll)}`);
+// 15는 valley vs night/forest — world 불용어만 겹치면 선 없음 (예전 mid 오탐).
+if (cAll.hits.some((hit) => hit.band === "mid" || hit.band === "strong")) {
+  throw new Error(`15는 world만으로 mid/strong이면 안 된다. ${JSON.stringify(cAll)}`);
 }
 if (dAll.band !== "weak" || dAll.hits.length !== 1 || dAll.hits[0]?.questionIndex !== 0 || dAll.hits[0]?.theirIndex !== 1) {
   throw new Error(`18은 SEEK↔OFFER에서만 약이어야 한다. ${JSON.stringify(dAll)}`);

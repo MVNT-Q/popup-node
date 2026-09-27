@@ -15,13 +15,212 @@ const THEMES: Record<string, string[]> = {
   bind: ["같은 결", "묶이"],
   space: ["조명", "설치", "사운드", "전시"],
   future: ["미래", "도시"],
-  // IMAGINE 영어 세계. A·B는 bioluminescent까지 겹쳐 강, 15는 world만 겹쳐 중.
-  // 18의 달빛 사회에는 이 단어가 없다.
-  world: ["world"],
+  // IMAGINE 영어. bioluminescent는 구체적. world 한 글자는 아래 불용어로 버린다.
   glow: ["bioluminescent"],
 };
 
 const SOFT = ["아티스트"];
+
+// SEEK/OFFER/IMAGINE에 자주 붙지만 연결 근거가 안 되는 말.
+// world 하나, 세상/사람만 겹친다고 mid 선을 그리지 않는다.
+const STOP = new Set([
+  "a",
+  "an",
+  "the",
+  "of",
+  "to",
+  "in",
+  "on",
+  "and",
+  "or",
+  "with",
+  "for",
+  "that",
+  "this",
+  "these",
+  "those",
+  "it",
+  "its",
+  "is",
+  "are",
+  "be",
+  "am",
+  "was",
+  "were",
+  "been",
+  "being",
+  "as",
+  "at",
+  "by",
+  "from",
+  "into",
+  "over",
+  "under",
+  "about",
+  "across",
+  "through",
+  "within",
+  "without",
+  "up",
+  "down",
+  "out",
+  "off",
+  "than",
+  "then",
+  "too",
+  "very",
+  "just",
+  "also",
+  "only",
+  "more",
+  "most",
+  "some",
+  "any",
+  "all",
+  "each",
+  "other",
+  "own",
+  "such",
+  "can",
+  "could",
+  "would",
+  "should",
+  "will",
+  "may",
+  "might",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "i",
+  "my",
+  "me",
+  "we",
+  "our",
+  "you",
+  "your",
+  "they",
+  "them",
+  "their",
+  "who",
+  "what",
+  "where",
+  "when",
+  "how",
+  "which",
+  "there",
+  "here",
+  "so",
+  "if",
+  "not",
+  "no",
+  "nor",
+  "but",
+  "because",
+  "while",
+  "after",
+  "before",
+  "between",
+  "among",
+  "around",
+  "like",
+  "feels",
+  "feel",
+  "feeling",
+  "world",
+  "worlds",
+  "people",
+  "person",
+  "persons",
+  "someone",
+  "something",
+  "somewhere",
+  "every",
+  "everyone",
+  "everything",
+  "want",
+  "wants",
+  "wanted",
+  "live",
+  "lives",
+  "living",
+  "life",
+  "way",
+  "ways",
+  "place",
+  "places",
+  "kind",
+  "kinds",
+  "make",
+  "makes",
+  "made",
+  "making",
+  "get",
+  "gets",
+  "help",
+  "helps",
+  "use",
+  "uses",
+  "using",
+  "used",
+  "one",
+  "two",
+  "many",
+  "much",
+  "few",
+  "new",
+  "old",
+  "good",
+  "great",
+  "small",
+  "big",
+  "large",
+  "quiet",
+  "soft",
+  "warm",
+  "cold",
+  "daily",
+  "day",
+  "days",
+  "night",
+  "nights",
+  "time",
+  "times",
+  "future",
+  "past",
+  "together",
+  "same",
+  "different",
+  "imagine",
+  "offer",
+  "seek",
+  "세상",
+  "사람",
+  "사람들",
+  "모든",
+  "있는",
+  "되는",
+  "하는",
+  "된",
+  "한",
+  "수",
+  "것",
+  "거",
+  "더",
+  "그",
+  "이",
+  "저",
+  "및",
+  "또",
+  "또는",
+  "그리고",
+  "같이",
+  "같은",
+  "싶음",
+  "싶은",
+]);
 
 function themesOf(text: string): Set<string> {
   const t = text.toLowerCase();
@@ -48,6 +247,45 @@ function themeScore(question: string, answer: string): number {
 function softScore(question: string, answer: string): number {
   const hit = SOFT.some((word) => question.includes(word) && answer.includes(word));
   return hit ? 0.3 : 0;
+}
+
+/** 영어 단어·한글 덩어리. 불용어·한 글자 토큰은 버린다. */
+export function contentTokens(text: string): string[] {
+  const raw = text.toLowerCase().match(/[a-z0-9]+|[가-힣]+/g) ?? [];
+  return raw.filter((token) => token.length >= 2 && !STOP.has(token));
+}
+
+function sharedContent(question: string, answer: string): string[] {
+  const right = new Set(contentTokens(answer));
+  const seen = new Set<string>();
+  const shared: string[] = [];
+  for (const token of contentTokens(question)) {
+    if (!right.has(token) || seen.has(token)) continue;
+    seen.add(token);
+    shared.push(token);
+  }
+  return shared;
+}
+
+/** 내용 토큰이 두 개 이상 이어진 구가 양쪽에 같으면 true. */
+function sharedPhrase(question: string, answer: string): boolean {
+  const left = contentTokens(question);
+  const right = contentTokens(answer);
+  if (left.length < 2 || right.length < 2) return false;
+  const grams = new Set<string>();
+  for (let i = 0; i < right.length - 1; i += 1) {
+    grams.add(`${right[i]}\0${right[i + 1]}`);
+  }
+  for (let i = 0; i < left.length - 1; i += 1) {
+    if (grams.has(`${left[i]}\0${left[i + 1]}`)) return true;
+  }
+  return false;
+}
+
+/** mid 선을 그릴 만큼 내용이 겹쳤는지. 불용어 하나·분위기 단어 하나로는 안 된다. */
+function substantiveOverlap(question: string, answer: string): boolean {
+  if (sharedPhrase(question, answer)) return true;
+  return sharedContent(question, answer).length >= 2;
 }
 
 function bag(text: string): Map<string, number> {
@@ -79,12 +317,22 @@ function lexical(question: string, answer: string): number {
 
 export function scoreText(question: string, answer: string): number {
   if (!question.trim() || !answer.trim()) return 0;
+  const theme = themeScore(question, answer);
+  const soft = softScore(question, answer);
+  const solid = substantiveOverlap(question, answer);
   const lex = lexical(question, answer);
-  // SEEK/OFFER/IMAGINE 공통 막대. mid·strong을 넘기면 그대로 쓰고, 그 아래 얕은 겹침만 약으로 자른다.
-  // (예전엔 mid 직전에서 어휘를 잘라 IMAGINE 테마만 중으로 올라가는 일이 있었다.)
-  const lexBoost =
-    lex >= THEME_BAND.mid ? lex : lex >= 0.28 ? Math.min(lex, THEME_BAND.mid - 0.01) : 0;
-  return Math.min(1, Math.max(themeScore(question, answer), softScore(question, answer), lexBoost));
+
+  // 문자 bigram만 높고 내용 토큰이 비면 mid로 올리지 않는다 (world·poetry 오탐).
+  let lexBoost = 0;
+  if (solid) {
+    lexBoost =
+      lex >= THEME_BAND.mid ? lex : lex >= 0.28 ? Math.min(lex, THEME_BAND.mid - 0.01) : 0;
+  } else if (sharedContent(question, answer).length === 1 || soft > 0) {
+    // 내용 토큰 하나·소프트만이면 약(별)까지만.
+    lexBoost = Math.min(Math.max(lex, soft), THEME_BAND.mid - 0.01);
+  }
+
+  return Math.min(1, Math.max(theme, soft, lexBoost));
 }
 
 // SLOT_TARGETS(짝 칸)만 본다. SEEK/OFFER가 IMAGINE 문장을 가져가지 않게.
