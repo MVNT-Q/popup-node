@@ -21,6 +21,8 @@ export type SkyEdge = {
 };
 
 const WORLD = 1000;
+/** 화면 픽셀 기준 별 히트 반경 — 줌·태블릿 데스크톱 모드에서도 손가락이 먹게 */
+const HIT_PX = 44;
 
 function lineClass(bright: boolean, a: SkyPoint["band"], b: SkyPoint["band"]) {
   if (!bright) return "cyp-line dim";
@@ -55,6 +57,46 @@ function labelPlacement(
     return { side: ox >= 0 ? "right" : "left", alone: false };
   }
   return { side: oy >= 0 ? "below" : "above", alone: false };
+}
+
+/** 뷰포트 로컬 좌표 → 월드. 카메라 변환과 같은 식 */
+function clientToWorld(
+  el: HTMLElement,
+  clientX: number,
+  clientY: number,
+  cam: Cam,
+): { x: number; y: number } {
+  const rect = el.getBoundingClientRect();
+  // visualViewport 오프셋이 있어도 client·getBoundingClientRect는 같은 좌표계
+  const lx = clientX - rect.left;
+  const ly = clientY - rect.top;
+  return {
+    x: (lx - cam.x) / cam.s,
+    y: (ly - cam.y) / cam.s,
+  };
+}
+
+/** DOM 타깃이 아닌 화면 거리로 고른다 — 줌 아웃·갤탭에서 56px 박스가 안 맞는 문제 */
+function nearestStarId(
+  el: HTMLElement,
+  clientX: number,
+  clientY: number,
+  cam: Cam,
+  stars: SkyPoint[],
+): string | undefined {
+  if (!stars.length) return undefined;
+  const world = clientToWorld(el, clientX, clientY, cam);
+  const maxDist = HIT_PX / Math.max(cam.s, 0.001);
+  let bestId: string | undefined;
+  let best = maxDist;
+  for (const star of stars) {
+    const d = Math.hypot(star.x - world.x, star.y - world.y);
+    if (d <= best) {
+      best = d;
+      bestId = star.id;
+    }
+  }
+  return bestId;
 }
 
 export function ConstellationSky({
@@ -141,9 +183,14 @@ export function ConstellationSky({
     const raf = requestAnimationFrame(apply);
     const onResize = () => apply();
     window.addEventListener("resize", onResize);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", onResize);
+    vv?.addEventListener("scroll", onResize);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      vv?.removeEventListener("resize", onResize);
+      vv?.removeEventListener("scroll", onResize);
     };
   }, [focusId]);
 
@@ -167,7 +214,12 @@ export function ConstellationSky({
       ref={viewportRef}
       onPointerDown={(event) => {
         const el = event.currentTarget;
-        el.setPointerCapture(event.pointerId);
+        // 버튼이 클릭을 삼키지 않게 — 하늘이 포인터를 갖는다
+        try {
+          el.setPointerCapture(event.pointerId);
+        } catch {
+          /* capture 실패해도 좌표 히트는 동작 */
+        }
         pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
         if (pointers.current.size >= 2) {
           const pts = [...pointers.current.values()];
@@ -178,7 +230,10 @@ export function ConstellationSky({
           drag.current = null;
           return;
         }
-        const star = (event.target as HTMLElement).closest?.("[data-star]");
+        // DOM closest만 믿으면 라벨·글로우·줌 아웃에서 빗나감 → 화면 거리
+        const fromDom = (event.target as HTMLElement).closest?.("[data-star]");
+        const domId = fromDom instanceof HTMLElement ? fromDom.dataset.star : undefined;
+        const nearId = nearestStarId(el, event.clientX, event.clientY, camRef.current, starsRef.current);
         drag.current = {
           id: event.pointerId,
           x: event.clientX,
@@ -186,7 +241,7 @@ export function ConstellationSky({
           ox: camRef.current.x,
           oy: camRef.current.y,
           moved: false,
-          starId: star instanceof HTMLElement ? star.dataset.star : undefined,
+          starId: nearId || domId,
         };
       }}
       onPointerMove={(event) => {
@@ -208,7 +263,7 @@ export function ConstellationSky({
         const dx = event.clientX - current.x;
         const dy = event.clientY - current.y;
         // 별 탭은 손가락 떨림을 더 허용 — 10px면 모바일에서 선택이 자주 죽음
-        const slop = current.starId ? 28 : 10;
+        const slop = current.starId ? 32 : 10;
         if (Math.hypot(dx, dy) > slop) current.moved = true;
         // 별 위에서 시작한 제스처는 팬하지 않음 — 탭으로 시트 열기
         if (current.starId) return;
@@ -216,13 +271,21 @@ export function ConstellationSky({
         setCam({ x: current.ox + dx, y: current.oy + dy, s: camRef.current.s });
       }}
       onPointerUp={(event) => {
-        const dragged = Boolean(drag.current?.moved);
+        const current = drag.current?.id === event.pointerId ? drag.current : null;
+        const dragged = Boolean(current?.moved);
         const pinched = Boolean(pinch.current);
-        const id = drag.current?.id === event.pointerId ? drag.current.starId : undefined;
         pointers.current.delete(event.pointerId);
         if (pointers.current.size < 2) pinch.current = null;
         if (drag.current?.id === event.pointerId) drag.current = null;
-        if (!dragged && !pinched && id) onPick(id);
+        if (dragged || pinched || !current) return;
+        const el = viewportRef.current;
+        // 업 시점에도 다시 히트 — 포커스 변환·mouse/touch 혼용에서도 같은 별
+        const again =
+          el
+            ? nearestStarId(el, event.clientX, event.clientY, camRef.current, starsRef.current)
+            : undefined;
+        const id = again || current.starId;
+        if (id) onPick(id);
       }}
       onPointerCancel={(event) => {
         pointers.current.delete(event.pointerId);
@@ -267,6 +330,7 @@ export function ConstellationSky({
               style={{ left: star.x, top: star.y }}
               data-star={star.id}
               aria-label={star.name ? `#${String(star.code).padStart(3, "0")} ${star.name}` : `NODE ${star.code}`}
+              tabIndex={-1}
             >
               <span className="dot" />
               <span className="num">#{String(star.code).padStart(3, "0")}</span>

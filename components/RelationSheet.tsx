@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { themeHits } from "@/lib/match";
 import {
+  midStrongHits,
   relationBlocks,
   sheetChrome,
   type HitLite,
@@ -16,18 +18,37 @@ function TranslatedQuote({ quote, lang }: { quote: string; lang: SheetLang }) {
 
   useEffect(() => {
     let stop = false;
+    // 번역 전에 원문을 바로 보여 mid 문장이 빈 칸으로 남지 않게
     setText(quote);
     if (!quote.trim()) return;
     void translateQuote(quote, lang).then((next) => {
-      if (!stop) setText(next);
+      if (!stop) setText(next.trim() || quote);
     });
     return () => {
       stop = true;
     };
   }, [quote, lang]);
 
-  if (!text) return null;
-  return <p className="cyp-sheet-line">{text}</p>;
+  const shown = text.trim() || quote.trim();
+  if (!shown) return null;
+  return <p className="cyp-sheet-line">{shown}</p>;
+}
+
+/** API hits가 비었거나 mid가 빠졌을 때 슬롯 문장으로 다시 채움 (같은 mid 막대) */
+function hitsForCard(meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): HitLite[] {
+  if (midStrongHits(hits).length > 0) return hits;
+  const mine = meSlots.map((slot) => slot.answer ?? "");
+  const theirs = theirSlots.map((slot) => slot.answer ?? "");
+  if (!mine.some((text) => text.trim().length >= 2)) return hits;
+  if (!theirs.some((text) => text.trim().length >= 2)) return hits;
+  const ranked = themeHits(mine, theirs, [0, 1, 2]);
+  return ranked.hits.map((hit) => ({
+    questionIndex: hit.questionIndex,
+    theirIndex: hit.theirIndex,
+    band: hit.band,
+    score: hit.score,
+    answer: theirs[hit.theirIndex] ?? "",
+  }));
 }
 
 export function RelationSheet({
@@ -49,7 +70,11 @@ export function RelationSheet({
 }) {
   const [lang, setLang] = useState<SheetLang>("en");
   const chrome = sheetChrome(lang);
-  const blocks = relationBlocks(meSlots, theirSlots, hits);
+  const effectiveHits = useMemo(
+    () => hitsForCard(meSlots, theirSlots, hits),
+    [meSlots, theirSlots, hits],
+  );
+  const blocks = relationBlocks(meSlots, theirSlots, effectiveHits);
   const label = `#${String(code).padStart(3, "0")} ${name}`;
 
   return (

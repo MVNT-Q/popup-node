@@ -95,7 +95,10 @@ export default function MyNodePage() {
 
   useEffect(() => {
     if (!picked || !me) return;
-    if (picked === me.id) return;
+    if (picked === me.id) {
+      setPicked(null);
+      return;
+    }
     if (!visibleStars.some((star) => star.id === picked)) setPicked(null);
   }, [picked, me, visibleStars]);
 
@@ -109,7 +112,8 @@ export default function MyNodePage() {
         x: points.get(me.id)?.x ?? 500,
         y: points.get(me.id)?.y ?? 500,
         band: "self",
-        selected: picked === me.id,
+        // 내 별은 포커스·선택 링 없이 항상 청록 self 크기
+        selected: false,
       },
     ];
     for (const star of visibleStars) {
@@ -140,12 +144,9 @@ export default function MyNodePage() {
       .filter((edge) => edge.bright && ids.has(edge.a) && ids.has(edge.b));
   }, [edgesRaw, on, me, points, skyStars]);
 
-  // 보이는 별은 전부 시트 — 내 별·약·고독 포함. 줄 유무와 클릭을 묶지 않음.
+  // 타인 별만 시트. 내 별은 골라지지 않음(청록 링만 유지).
   const pickedStar: Star | null = useMemo(() => {
-    if (!me || !picked) return null;
-    if (picked === me.id) {
-      return { id: me.id, code: me.code, name: me.name, band: "strong", slots: me.slots, hits: [] };
-    }
+    if (!me || !picked || picked === me.id) return null;
     return stars.find((star) => star.id === picked) ?? null;
   }, [me, picked, stars]);
 
@@ -205,6 +206,8 @@ export default function MyNodePage() {
           edges={skyEdges}
           focusId={picked}
           onPick={(id) => {
+            // 내 별은 청록 링만 — 정보 카드 열지 않음. 타인 별만 토글.
+            if (me && id === me.id) return;
             setPicked((prev) => (prev === id ? null : id));
           }}
         />

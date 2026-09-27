@@ -42,16 +42,25 @@ export async function GET(request: Request) {
   const showProps = testAgentsEnabled();
 
   const id = await readSessionId();
-  const me = id ? await getNode(id) : null;
-  if (view !== "show" && !me) {
+  const sessionMe = id ? await getNode(id) : null;
+  if (view !== "show" && !sessionMe) {
     return Response.json({ error: "노드가 없습니다." }, { status: 401 });
   }
 
   const nodes = (await listNodes()).filter((node) => {
     if (!isFilled(node.slots)) return false;
-    if (!showProps && node.kind !== "guest" && (!me || node.id !== me.id)) return false;
+    if (!showProps && node.kind !== "guest" && (!sessionMe || node.id !== sessionMe.id)) return false;
     return true;
   });
+
+  // /show 무세션: 카드 hits가 비면 SEEK/OFFER/IMAGINE 설명이 전부 빈다.
+  // 가장 작은 code 노드를 렌즈로 써서 관계 문장을 채운다 (전시장 태블릿).
+  const lens =
+    sessionMe ??
+    (view === "show" && nodes.length
+      ? [...nodes].sort((a, b) => a.code - b.code || a.id.localeCompare(b.id))[0]
+      : null);
+  const me = lens;
 
   let mode: "theme" | "embed" = "theme";
   const againstMe: {

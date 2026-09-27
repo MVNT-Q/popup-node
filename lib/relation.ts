@@ -40,12 +40,24 @@ export function midStrongHits(hits: HitLite[]) {
  * 짝 칸(SLOT_TARGETS) 히트만 인정. 인용 문장은 SLOT_COUNTERPART에서 읽는다.
  */
 function solidSlotHit(hits: HitLite[], questionIndex: number): HitLite | undefined {
-  const hit = midStrongHits(hits).find((item) => item.questionIndex === questionIndex);
-  if (!hit) return undefined;
+  const solid = midStrongHits(hits).filter((item) => item.questionIndex === questionIndex);
+  if (!solid.length) return undefined;
   const allowed = SLOT_TARGETS[questionIndex] ?? [];
-  // 예전 IMAGINE 유출 히트는 버린다. 짝 칸 히트만 인정.
-  if (allowed.length && !allowed.includes(hit.theirIndex)) return undefined;
-  return hit;
+  // 짝 칸 히트 우선. 예전에 theirIndex가 어긋난 mid 히트만 있으면 그래도 문장은 살린다.
+  const matched = allowed.length
+    ? solid.find((item) => allowed.includes(item.theirIndex))
+    : solid[0];
+  return matched ?? solid[0];
+}
+
+/** mid를 넘긴 슬롯의 짝 문장만 — IMAGINE이 SEEK/OFFER로 새지 않게 */
+function counterpartQuote(theirSlots: Slot[], hit: HitLite, questionIndex: number): string {
+  const idx = SLOT_COUNTERPART[questionIndex];
+  if (idx == null) return "";
+  // 짝 칸 원문. hit.answer는 같은 칸일 때만 보조.
+  return tidy(
+    slotAnswer(theirSlots, idx) || (hit.theirIndex === idx ? hit.answer || "" : "") || "",
+  );
 }
 
 /** 원문 언어 추정 — 이미 목표 언어면 번역 호출 생략 */
@@ -83,20 +95,12 @@ export function relationBlocks(_meSlots: Slot[], theirSlots: Slot[], hits: HitLi
   const offer = solidSlotHit(hits, 1);
   const imagine = solidSlotHit(hits, 2);
 
-  // SEEK 행: 상대 OFFER. IMAGINE 금지. mid 미만이면 빈 줄.
-  const theyHelpQuote = seek
-    ? tidy(slotAnswer(theirSlots, SLOT_COUNTERPART[0]) || seek.answer || "")
-    : "";
-
-  // OFFER 행: 상대 SEEK. IMAGINE 금지.
-  const youHelpQuote = offer
-    ? tidy(slotAnswer(theirSlots, SLOT_COUNTERPART[1]) || offer.answer || "")
-    : "";
-
-  // IMAGINE 행: 미래상 칸만. SEEK/OFFER 문장 끌어오지 않음.
-  const imagineQuote = imagine
-    ? tidy(slotAnswer(theirSlots, SLOT_COUNTERPART[2]) || imagine.answer || "")
-    : "";
+  // SEEK 행: 상대 OFFER만. IMAGINE 문장 금지. mid 미만이면 빈 줄.
+  const theyHelpQuote = seek ? counterpartQuote(theirSlots, seek, 0) : "";
+  // OFFER 행: 상대 SEEK만.
+  const youHelpQuote = offer ? counterpartQuote(theirSlots, offer, 1) : "";
+  // IMAGINE 행: 미래상 칸만. SEEK/OFFER 끌어오지 않음.
+  const imagineQuote = imagine ? counterpartQuote(theirSlots, imagine, 2) : "";
 
   return [
     {
