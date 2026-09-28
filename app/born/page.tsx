@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { rememberNode } from "@/lib/nodePresence";
 import { MarkLock } from "@/components/MarkLock";
@@ -9,10 +9,22 @@ type Me = { code: number; name: string } | null;
 type PromptStep = "ask" | "skip-note" | null;
 
 const TG_PROMPT_DONE = "cyp-tg-prompt-done";
+const TG_OPEN_NOTIFY = "node-open-notify";
+
+function stillNeedsTgPrompt(): boolean {
+  try {
+    if (sessionStorage.getItem(TG_PROMPT_DONE) === "1") return false;
+    if (sessionStorage.getItem(TG_OPEN_NOTIFY) !== "1") return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default function BornPage() {
   const [me, setMe] = useState<Me>(null);
   const [prompt, setPrompt] = useState<PromptStep>(null);
+  const [blocking, setBlocking] = useState(false);
   const [configured, setConfigured] = useState(true);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,14 +39,11 @@ export default function BornPage() {
       .catch(() => setMe(null));
   }, []);
 
-  useEffect(() => {
-    if (!me) return;
-    try {
-      if (sessionStorage.getItem(TG_PROMPT_DONE) === "1") return;
-      if (sessionStorage.getItem("node-open-notify") !== "1") return;
-    } catch {
-      /* ignore */
-    }
+  // Scrim on first paint when this tab still needs the prompt — do not wait for session/link.
+  useLayoutEffect(() => {
+    if (!stillNeedsTgPrompt()) return;
+
+    setBlocking(true);
     let stop = false;
     fetch("/api/telegram/link", { cache: "no-store" })
       .then((response) => response.json())
@@ -43,6 +52,7 @@ export default function BornPage() {
         setConfigured(Boolean(data.configured));
         if (data.linked) {
           markPromptDone();
+          setBlocking(false);
           return;
         }
         setPrompt("ask");
@@ -53,12 +63,12 @@ export default function BornPage() {
     return () => {
       stop = true;
     };
-  }, [me]);
+  }, []);
 
   function markPromptDone() {
     try {
       sessionStorage.setItem(TG_PROMPT_DONE, "1");
-      sessionStorage.removeItem("node-open-notify");
+      sessionStorage.removeItem(TG_OPEN_NOTIFY);
     } catch {
       /* ignore */
     }
@@ -92,9 +102,11 @@ export default function BornPage() {
   function dismissSkipNote() {
     markPromptDone();
     setPrompt(null);
+    setBlocking(false);
   }
 
   const code = me ? String(me.code).padStart(3, "0") : "—";
+  const showLayer = blocking || prompt !== null;
 
   return (
     <main className="cyp born">
@@ -121,42 +133,44 @@ export default function BornPage() {
         <small>노드 그로브 탐색하기</small>
       </a>
 
-      {prompt ? (
+      {showLayer ? (
         <div className="born-notify-layer" role="dialog" aria-modal="true">
-          <div className="born-notify">
-            {prompt === "ask" ? (
-              <>
-                <h2 className="lede">텔레그램으로 채팅 알림</h2>
-                <p className="hint">
-                  채팅이 오면 텔레그램으로 노드 번호와 링크가 옵니다. 이 텔레그램에 적은 글은 상대에게 가지 않습니다.
-                </p>
-                <p className="ko">Chat alerts via Telegram — node number and a link only.</p>
-                {!configured || note ? (
-                  <p className="hint">{note || "봇 설정이 아직 없습니다."}</p>
-                ) : null}
-                <button
-                  className="btn"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void openTelegram()}
-                >
-                  텔레그램으로 받기
-                </button>
-                <button className="text-btn" type="button" onClick={skipAsk}>
-                  나중에
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="hint">
-                  채팅은 이 웹의 메시지 아이콘에서 확인합니다. 알림은 오른쪽 위 종 아이콘에서 나중에 켤 수 있습니다.
-                </p>
-                <button className="btn" type="button" onClick={dismissSkipNote}>
-                  알겠습니다
-                </button>
-              </>
-            )}
-          </div>
+          {prompt ? (
+            <div className="born-notify">
+              {prompt === "ask" ? (
+                <>
+                  <h2 className="lede">텔레그램으로 채팅 알림</h2>
+                  <p className="hint">
+                    채팅이 오면 텔레그램으로 노드 번호와 링크가 옵니다. 이 텔레그램에 적은 글은 상대에게 가지 않습니다.
+                  </p>
+                  <p className="ko">Chat alerts via Telegram — node number and a link only.</p>
+                  {!configured || note ? (
+                    <p className="hint">{note || "봇 설정이 아직 없습니다."}</p>
+                  ) : null}
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void openTelegram()}
+                  >
+                    텔레그램으로 받기
+                  </button>
+                  <button className="text-btn" type="button" onClick={skipAsk}>
+                    나중에
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="hint">
+                    채팅은 이 웹의 메시지 아이콘에서 확인합니다. 알림은 오른쪽 위 종 아이콘에서 나중에 켤 수 있습니다.
+                  </p>
+                  <button className="btn" type="button" onClick={dismissSkipNote}>
+                    알겠습니다
+                  </button>
+                </>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </main>
