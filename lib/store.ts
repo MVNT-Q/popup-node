@@ -181,6 +181,10 @@ async function ensurePg() {
           k text primary key,
           v jsonb not null
         );
+        create table if not exists node_judge (
+          k text primary key,
+          v text not null
+        );
       `);
       if (!testAgentsEnabled()) return;
       for (const seed of SEEDS) {
@@ -466,6 +470,32 @@ export async function markRead(reader: string, other: string, at: string) {
     insert into node_read (reader, other, at)
     values (${reader}, ${other}, ${at})
     on conflict (reader, other) do update set at = excluded.at
+  `;
+}
+
+export async function getJudge(key: string): Promise<string | null> {
+  await requireStorage();
+  if (!usePg()) {
+    return withFile((bag) => bag.judgments?.[key] ?? null);
+  }
+  const rows = await sqlClient()<{ v: string }[]>`select v from node_judge where k = ${key} limit 1`;
+  return rows[0]?.v ?? null;
+}
+
+export async function setJudge(key: string, value: string) {
+  await requireStorage();
+  if (!usePg()) {
+    await withFile((bag, dirty) => {
+      bag.judgments ||= {};
+      bag.judgments[key] = value;
+      dirty();
+    });
+    return;
+  }
+  await sqlClient()`
+    insert into node_judge (k, v)
+    values (${key}, ${value})
+    on conflict (k) do update set v = excluded.v
   `;
 }
 

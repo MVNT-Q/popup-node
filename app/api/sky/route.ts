@@ -1,3 +1,4 @@
+import { warmJudgments } from "@/lib/judge";
 import { rankAgainst } from "@/lib/rank";
 import { brightestBand, midStrongHits } from "@/lib/relation";
 import { readSessionId, testAgentsEnabled } from "@/lib/session";
@@ -62,7 +63,7 @@ export async function GET(request: Request) {
       ? [...nodes].sort((a, b) => a.code - b.code || a.id.localeCompare(b.id))[0]
       : null);
 
-  let mode: "theme" | "embed" = "theme";
+  let mode: "theme" | "embed" | "llm" = (await warmJudgments(nodes)) ? "llm" : "theme";
   const againstMe: {
     id: string;
     code: number;

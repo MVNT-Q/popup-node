@@ -1,3 +1,4 @@
+import { warmJudgments } from "@/lib/judge";
 import { rankAgainst } from "@/lib/rank";
 import { readSessionId, testAgentsEnabled } from "@/lib/session";
 import { isFilled } from "@/lib/slots";
@@ -29,7 +30,8 @@ export async function GET(request: Request) {
 
   const nodes = await listNodes();
   const stars = [];
-  let mode: "theme" | "embed" = "theme";
+  const filled = nodes.filter((node) => node.id === me.id || isFilled(node.slots));
+  let mode: "theme" | "embed" | "llm" = (await warmJudgments(filled)) ? "llm" : "theme";
   for (const node of nodes) {
     if (node.id === me.id || !isFilled(node.slots)) continue;
     if (!showProps && node.kind !== "guest") continue;

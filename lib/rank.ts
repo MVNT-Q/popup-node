@@ -1,5 +1,6 @@
 import { isCrossLingual } from "./crossLang";
 import { cachedVector, embedEnabled } from "./embed";
+import { judgedScores } from "./judge";
 import { bandOf, blendBand, cosineVec, pickIndex, scoreText } from "./match";
 import { toEnglishForMatch } from "./mymemory";
 import { SLOT_TARGETS } from "./prompts";
@@ -50,7 +51,40 @@ export async function rankAgainst(
   me: NodeRecord,
   other: NodeRecord,
   selected: number[],
-): Promise<{ score: number; band: Band | null; hits: Hit[]; mode: "theme" | "embed" }> {
+): Promise<{ score: number; band: Band | null; hits: Hit[]; mode: "theme" | "embed" | "llm" }> {
+  const judged = judgedScores(me.id, other.id);
+  if (judged) {
+    const answers = [0, 1, 2].map((index) => other.slots[index]?.answer ?? "");
+    const directed = [
+      { questionIndex: 0, theirIndex: 1, score: judged.seek },
+      { questionIndex: 1, theirIndex: 0, score: judged.offer },
+      { questionIndex: 2, theirIndex: 2, score: judged.imagine },
+    ];
+    const hits: Hit[] = [];
+    for (const row of directed) {
+      if (!selected.includes(row.questionIndex)) continue;
+      const band = bandOf(row.score, "theme");
+      if (!band) continue;
+      hits.push({
+        questionIndex: row.questionIndex,
+        theirIndex: row.theirIndex,
+        band,
+        score: row.score,
+        answer: answers[row.theirIndex] ?? "",
+      });
+    }
+    const score = hits.reduce((max, hit) => Math.max(max, hit.score), 0);
+    return {
+      score,
+      band: blendBand(
+        hits.map((hit) => hit.band),
+        selected.length,
+      ),
+      hits,
+      mode: "llm",
+    };
+  }
+
   const answers = [0, 1, 2].map((index) => other.slots[index]?.answer ?? "");
   const hits: Hit[] = [];
   let usedEmbed = false;

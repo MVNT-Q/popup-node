@@ -39,4 +39,5 @@ export type Bag = {
   messages: Message[];
   reads: Record<string, string>;
   vectors: Record<string, number[]>;
+  judgments?: Record<string, string>;
 };
