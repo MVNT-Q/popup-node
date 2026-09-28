@@ -56,8 +56,9 @@ export default function AlertsPage() {
       </p>
 
       {configured && !linked ? (
-        <button className="btn-ghost" type="button" onClick={() => void openTelegram()} style={{ marginTop: 10 }}>
+        <button className="btn-ghost btn-bi" type="button" onClick={() => void openTelegram()} style={{ marginTop: 10 }}>
           텔레그램으로 받기
+          <small>Get Telegram alerts</small>
         </button>
       ) : null}
       {linked ? (

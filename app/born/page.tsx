@@ -154,9 +154,11 @@ export default function BornPage() {
                     onClick={() => void openTelegram()}
                   >
                     텔레그램으로 받기
+                    <small>Get Telegram alerts</small>
                   </button>
                   <button className="text-btn" type="button" onClick={skipAsk}>
                     나중에
+                    <small>Later</small>
                   </button>
                 </>
               ) : (
@@ -164,8 +166,10 @@ export default function BornPage() {
                   <p className="hint">
                     채팅은 이 웹의 메시지 아이콘에서 확인합니다. 알림은 오른쪽 위 종 아이콘에서 나중에 켤 수 있습니다.
                   </p>
+                  <p className="ko">Check chats on the message icon. Turn on alerts later from the bell.</p>
                   <button className="btn" type="button" onClick={dismissSkipNote}>
                     알겠습니다
+                    <small>OK</small>
                   </button>
                 </>
               )}
