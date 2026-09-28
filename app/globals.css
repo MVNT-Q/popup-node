@@ -110,13 +110,23 @@ p { margin: 0; }
 .born-notify-layer {
   position: fixed;
   inset: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100%;
+  margin: 0;
   z-index: 120;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
   background: rgba(0, 0, 0, 0.55);
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+  pointer-events: auto;
 }
 
 .born-notify {
@@ -807,7 +817,7 @@ p { margin: 0; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-.cyp:not(.cyp-sky-page) > :not(.grove-bg) {
+.cyp:not(.cyp-sky-page) > :not(.grove-bg):not(.born-notify-layer) {
   width: min(400px, 100%);
 }
 
@@ -876,8 +886,8 @@ p { margin: 0; }
   opacity: 0.4;
 }
 
-/* 모드바·시트·스크림은 fixed 유지 — 여기 relative가 특이도로 fixed를 덮으면 탭 아래 검은 띠 */
-.cyp > :not(.grove-bg):not(.cyp-mode-bar):not(.cyp-sheet):not(.cyp-sheet-scrim) {
+/* 모드바·시트·스크림·born 알림 오버레이는 fixed 유지 — 여기 relative가 특이도로 fixed를 덮으면 탭 아래 검은 띠 / 폴드 아래로 밀림 */
+.cyp > :not(.grove-bg):not(.cyp-mode-bar):not(.cyp-sheet):not(.cyp-sheet-scrim):not(.born-notify-layer) {
   position: relative;
   z-index: 1;
 }
