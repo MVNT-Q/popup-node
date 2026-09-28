@@ -29,6 +29,9 @@ function kindsOf(node: NodeRecord, index: number) {
   return tags.map((tag) => String(tag).trim()).filter(Boolean);
 }
 
+/** Bump when match criteria change so node_judge cache re-asks the model. */
+const CRITERIA_VERSION = "criteria-v2";
+
 function fingerprint(nodes: NodeRecord[]) {
   const body = nodes
     .map((node) => {
@@ -39,7 +42,7 @@ function fingerprint(nodes: NodeRecord[]) {
     })
     .sort()
     .join("\n---\n");
-  return createHash("sha256").update(body).digest("hex").slice(0, 24);
+  return createHash("sha256").update(`${CRITERIA_VERSION}\n${body}`).digest("hex").slice(0, 24);
 }
 
 function clampScore(value: unknown) {
@@ -98,20 +101,20 @@ async function ask(nodes: NodeRecord[]) {
         {
           role: "system",
           content: [
-            "You match people at a gathering by meaning, not word overlap.",
-            "SEEK is what they are looking for. OFFER is what they can give. IMAGINE is the future they want to live in.",
-            "seekKinds / offerKinds are chips they chose: claims about the kind of person or what they can give — not a free pass.",
-            "Match by meaning. Korean and English count the same when the meaning fits.",
-            "A short real overlap is enough: e.g. seeking a developer and offering AI/Unreal development should match.",
-            "If the written sentence contradicts a chip, trust the sentence.",
-            "A chip plus a fitting sentence can support a match; chips alone do not.",
-            "Do not match vague backdrops, empty seekers like Nobody/no one, or lives that only share a thin scene.",
-            "seek = person A is looking for what person B can give.",
-            "offer = person A can give what person B is looking for.",
-            "imagine = their futures are actually the same kind of life.",
+            "You match people at a gathering by meaning, not by requiring long or ornate wording.",
+            "SEEK is what they look for. OFFER is what they can give. IMAGINE is the future life they want.",
+            "seek = A's SEEK vs B's OFFER: include when B can give what A is looking for.",
+            "offer = A's OFFER vs B's SEEK: include when A can give what B is looking for.",
+            "Short answers and near-identical wording still count: if one person needs X and the other can do X, that is a clear match.",
+            "Example shape only (not real people): \"I need help soldering sensors\" ↔ \"I can help with circuit soldering and sensor wiring\".",
+            "Korean and English match when the meaning fits.",
+            "seekKinds / offerKinds are chips: they can support a match when they fit the sentences, but they are not a free pass.",
+            "If a sentence contradicts a chip, trust the sentence.",
+            "imagine = only when both want the same kind of life — not a vague shared backdrop like \"world\", \"everyone happy\", or \"good world\".",
+            "Empty seekers (Nobody / no one / blank) do not match.",
             "Return JSON only: {\"pairs\":[{\"a\":\"id\",\"b\":\"id\",\"seek\":0,\"offer\":0,\"imagine\":0}]}.",
-            "Include a pair only when at least one of seek, offer, imagine is a real fit.",
-            "Use 0.9 when it is clearly the same thing, 0.6 when it fits, and omit the pair otherwise.",
+            "Include a pair when at least one of seek, offer, imagine fits.",
+            "Score 0.9 when the meaning is clearly the same thing, 0.6 when it fits; omit axes that do not fit (use 0) and omit the pair only if none fit.",
           ].join(" "),
         },
         { role: "user", content: JSON.stringify({ people }) },
