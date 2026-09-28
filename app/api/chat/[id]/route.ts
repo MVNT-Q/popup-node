@@ -1,9 +1,9 @@
 import { after } from "next/server";
 import { sendPush } from "@/lib/push";
-import { readSessionId } from "@/lib/session";
+import { readSessionId, setSessionId } from "@/lib/session";
 import { publicNode } from "@/lib/slots";
 import { addMessage, getNode, listThread, markRead, saveNode, storageMissingMessage, storageReady } from "@/lib/store";
-import { chatOpenPath } from "@/lib/chatLink";
+import { chatOpenPath, readTicket } from "@/lib/chatLink";
 import { chatNotice, sendTelegram } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -11,11 +11,20 @@ export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, ctx: Ctx) {
+async function actor(request: Request) {
+  const fromTicket = readTicket(request.headers.get("x-node-ticket"));
+  const fromCookie = await readSessionId();
+  const id = fromTicket || fromCookie;
+  if (!id) return null;
+  const node = await getNode(id);
+  if (node && fromTicket && fromCookie !== fromTicket) await setSessionId(node.id);
+  return node;
+}
+
+export async function GET(request: Request, ctx: Ctx) {
   if (!storageReady()) return Response.json({ error: storageMissingMessage() }, { status: 503 });
   const { id } = await ctx.params;
-  const meId = await readSessionId();
-  const me = meId ? await getNode(meId) : null;
+  const me = await actor(request);
   if (!me) return Response.json({ error: "노드가 없습니다." }, { status: 401 });
   const other = await getNode(id);
   if (!other || other.id === me.id) return Response.json({ error: "상대 노드가 없습니다." }, { status: 404 });
@@ -31,8 +40,7 @@ export async function GET(_request: Request, ctx: Ctx) {
 export async function POST(request: Request, ctx: Ctx) {
   if (!storageReady()) return Response.json({ error: storageMissingMessage() }, { status: 503 });
   const { id } = await ctx.params;
-  const meId = await readSessionId();
-  const me = meId ? await getNode(meId) : null;
+  const me = await actor(request);
   if (!me) return Response.json({ error: "노드가 없습니다." }, { status: 401 });
   const other = await getNode(id);
   if (!other || other.id === me.id) return Response.json({ error: "상대 노드가 없습니다." }, { status: 404 });

@@ -10,6 +10,24 @@ function clock(iso: string) {
   return new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
 
+const TICKET = "cyp-node-ticket";
+
+function ticketHeaders(): Record<string, string> {
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get("t");
+    if (fromUrl) {
+      sessionStorage.setItem(TICKET, fromUrl);
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete("t");
+      window.history.replaceState(null, "", `${clean.pathname}${clean.search}${clean.hash}`);
+    }
+    const ticket = sessionStorage.getItem(TICKET);
+    return ticket ? { "x-node-ticket": ticket } : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function ChatPage() {
   const params = useParams<{ id: string }>();
   const otherId = params.id;
@@ -25,7 +43,7 @@ export default function ChatPage() {
   useEffect(() => {
     let stop = false;
     async function load() {
-      const response = await fetch(`/api/chat/${otherId}`, { cache: "no-store" });
+      const response = await fetch(`/api/chat/${otherId}`, { cache: "no-store", headers: ticketHeaders() });
       if (response.status === 401) {
         if (!stop) setError("이 브라우저에는 노드가 없습니다. 텔레그램의 채팅 링크를 다시 눌러 주세요.");
         stop = true;
@@ -76,7 +94,11 @@ export default function ChatPage() {
 
   async function send() {
     const body = text.trim();
-    if (!body || sending || !meId) return;
+    if (!body || sending) return;
+    if (!meId) {
+      setError("이 브라우저에는 노드가 없습니다. 텔레그램의 채팅 링크를 다시 눌러 주세요.");
+      return;
+    }
     const pending: Msg = {
       id: `pending-${Date.now()}`,
       from: meId,
@@ -91,7 +113,7 @@ export default function ChatPage() {
     try {
       const response = await fetch(`/api/chat/${otherId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...ticketHeaders() },
         body: JSON.stringify({ body }),
       });
       const data = (await response.json()) as { error?: string; message?: Msg };

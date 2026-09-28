@@ -30,6 +30,31 @@ export function chatOpenUrl(meId: string, withId: string) {
   return `${SITE}${chatOpenPath(meId, withId)}`;
 }
 
+function ticketSign(meId: string, exp: number) {
+  return createHmac("sha256", secret()).update(`ticket.${meId}.${exp}`).digest("base64url");
+}
+
+/** 쿠키가 막혀도 이 값으로 받는 노드를 알아본다. */
+export function issueTicket(meId: string) {
+  const exp = Math.floor(Date.now() / 1000) + WEEK;
+  return `${meId}.${exp}.${ticketSign(meId, exp)}`;
+}
+
+export function readTicket(ticket: string | null) {
+  const key = secret();
+  if (!key || !ticket) return null;
+  const parts = ticket.split(".");
+  if (parts.length !== 3) return null;
+  const [meId, expRaw, sig] = parts;
+  const exp = Number(expRaw);
+  if (!ID.test(meId) || !Number.isFinite(exp) || exp < Math.floor(Date.now() / 1000)) return null;
+  const expected = ticketSign(meId, exp);
+  const a = Buffer.from(expected);
+  const b = Buffer.from(sig);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  return meId;
+}
+
 export function openLinkOk(meId: string, withId: string, exp: number, sig: string) {
   const key = secret();
   if (!key || !ID.test(meId) || !ID.test(withId) || !Number.isFinite(exp)) return false;

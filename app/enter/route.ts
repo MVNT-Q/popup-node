@@ -1,11 +1,12 @@
-import { openLinkOk } from "@/lib/chatLink";
-import { setSessionId } from "@/lib/session";
+import { NextResponse } from "next/server";
+import { issueTicket, openLinkOk } from "@/lib/chatLink";
+import { COOKIE } from "@/lib/session";
 import { getNode, storageMissingMessage, storageReady } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** 알림 링크. 받는 노드 쿠키를 심고 그 사람과의 채팅으로 보낸다. */
+/** 알림 링크. 받는 노드로 들어온 뒤 그 사람과의 채팅으로 보낸다. */
 export async function GET(request: Request) {
   if (!storageReady()) return new Response(storageMissingMessage(), { status: 503 });
   const url = new URL(request.url);
@@ -21,6 +22,15 @@ export async function GET(request: Request) {
   if (!me || !other || me.id === other.id) {
     return new Response("채팅 상대를 찾지 못했습니다.", { status: 404 });
   }
-  await setSessionId(me.id);
-  return Response.redirect(new URL(`/chat/${other.id}`, request.url));
+  const dest = new URL(`/chat/${other.id}`, request.url);
+  dest.searchParams.set("t", issueTicket(me.id));
+  const response = NextResponse.redirect(dest);
+  response.cookies.set(COOKIE, me.id, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 60,
+    secure: process.env.NODE_ENV === "production",
+  });
+  return response;
 }
