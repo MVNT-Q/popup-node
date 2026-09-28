@@ -31,12 +31,11 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v5";
+const CRITERIA_VERSION = "criteria-v6";
 
-/** Tiny groups so one completion can list every required pair without truncation. */
-const CHUNK_SIZE = 4;
+/** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
+const PAIR_BATCH = 8;
 
-/** Cap parallel OpenAI calls so a grove warm stays under route maxDuration. */
 const ASK_CONCURRENCY = 3;
 
 function fingerprint(nodes: NodeRecord[]) {
@@ -60,10 +59,18 @@ function clampScore(value: unknown) {
   return 0;
 }
 
-function chunkNodes(nodes: NodeRecord[], size: number) {
-  const out: NodeRecord[][] = [];
-  for (let i = 0; i < nodes.length; i += size) out.push(nodes.slice(i, i + size));
-  return out;
+function normText(text: string) {
+  return text.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function isEmptySeek(text: string) {
+  const t = normText(text);
+  return !t || t === "nobody" || t === "no one" || t === "no-one" || t === "none";
+}
+
+function isVagueImagine(text: string) {
+  const t = normText(text);
+  return !t || t === "world" || t === "everyone happy" || t === "good world" || t === "happy world";
 }
 
 function unorderedPairs(ids: string[]): [string, string][] {
@@ -78,13 +85,9 @@ function unorderedPairs(ids: string[]): [string, string][] {
   return out;
 }
 
-function crossPairs(leftIds: string[], rightIds: string[]): [string, string][] {
-  const out: [string, string][] = [];
-  for (const left of leftIds) {
-    for (const right of rightIds) {
-      out.push(left < right ? [left, right] : [right, left]);
-    }
-  }
+function chunkPairs(pairs: [string, string][], size: number) {
+  const out: [string, string][][] = [];
+  for (let i = 0; i < pairs.length; i += size) out.push(pairs.slice(i, i + size));
   return out;
 }
 
@@ -114,6 +117,44 @@ function storeDirected(
       pairKey(a, b),
       mergeScore(pairs.get(pairKey(a, b)), { seek: offer, offer: seek, imagine }),
     );
+  }
+}
+
+/**
+ * Identical text is a match without the model — covers near-copy regressions
+ * where a busy completion returns 0 for the same sentence.
+ */
+function exactScores(a: NodeRecord, b: NodeRecord): JudgeScores {
+  const left = answersOf(a);
+  const right = answersOf(b);
+  const seek =
+    !isEmptySeek(left[0]) && normText(left[0]) && normText(left[0]) === normText(right[1])
+      ? 0.9
+      : 0;
+  const offer =
+    !isEmptySeek(right[0]) && normText(left[1]) && normText(left[1]) === normText(right[0])
+      ? 0.9
+      : 0;
+  const imagine =
+    !isVagueImagine(left[2]) &&
+    !isVagueImagine(right[2]) &&
+    normText(left[2]) &&
+    normText(left[2]) === normText(right[2])
+      ? 0.9
+      : 0;
+  return { seek, offer, imagine };
+}
+
+function applyExactMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores>) {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  for (const [aId, bId] of unorderedPairs(nodes.map((node) => node.id))) {
+    const a = byId.get(aId);
+    const b = byId.get(bId);
+    if (!a || !b) continue;
+    const hit = exactScores(a, b);
+    if (hit.seek || hit.offer || hit.imagine) {
+      storeDirected(pairs, aId, bId, hit.seek, hit.offer, hit.imagine);
+    }
   }
 }
 
@@ -183,7 +224,7 @@ async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
     body: JSON.stringify({
       model,
       temperature: 0,
-      max_tokens: 8192,
+      max_tokens: 4096,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -193,7 +234,7 @@ async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
             "SEEK is what they look for. OFFER is what they can give. IMAGINE is the future life they want.",
             "For each required pair (a,b): seek = a SEEK vs b OFFER; offer = a OFFER vs b SEEK; imagine = both IMAGINE.",
             "If one side can give what the other is looking for — even in a short or almost identical sentence — that direction is a match.",
-            "Score 0.9 when nearly the same offer/seek, or when IMAGINE text is identical or a near-copy. Score 0.6 when it clearly fits. Score 0 when it does not.",
+            "Score 0.9 when nearly the same offer/seek, or when IMAGINE is identical or a near-copy. Score 0.6 when it clearly fits. Score 0 when it does not.",
             "A match on ANY ONE axis is enough (OR, not AND). Do NOT require both seek and offer. Do NOT require imagine on top of a seek/offer hit.",
             "Identical or near-copy IMAGINE is a match. Vague backdrop only (\"world\", \"everyone happy\", \"good world\") is imagine 0.",
             "Korean and English match when the meaning fits.",
@@ -247,33 +288,17 @@ async function askComplete(
 }
 
 function buildJobs(nodes: NodeRecord[]) {
-  const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
-  const groups = chunkNodes(sorted, CHUNK_SIZE);
-  const jobs: { people: NodeRecord[]; requiredPairs: [string, string][] }[] = [];
-
-  for (const group of groups) {
-    if (group.length < 2) continue;
-    jobs.push({
-      people: group,
-      requiredPairs: unorderedPairs(group.map((node) => node.id)),
-    });
-  }
-
-  for (let i = 0; i < groups.length; i += 1) {
-    for (let j = i + 1; j < groups.length; j += 1) {
-      const left = groups[i];
-      const right = groups[j];
-      jobs.push({
-        people: [...left, ...right],
-        requiredPairs: crossPairs(
-          left.map((node) => node.id),
-          right.map((node) => node.id),
-        ),
-      });
+  const sortedIds = [...nodes].map((node) => node.id).sort((a, b) => a.localeCompare(b));
+  const all = unorderedPairs(sortedIds);
+  return chunkPairs(all, PAIR_BATCH).map((requiredPairs) => {
+    const peopleIds = new Set<string>();
+    for (const [a, b] of requiredPairs) {
+      peopleIds.add(a);
+      peopleIds.add(b);
     }
-  }
-
-  return jobs;
+    const people = nodes.filter((node) => peopleIds.has(node.id));
+    return { people, requiredPairs };
+  });
 }
 
 async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>) {
@@ -319,6 +344,8 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
         pairs.set(k, mergeScore(pairs.get(k), scores));
       }
     }
+    // Deterministic identical-text hits win over a lazy 0 from the model.
+    applyExactMatches(nodes, pairs);
     for (const [a, b] of unorderedPairs([...ids])) {
       if (!pairs.has(pairKey(a, b))) {
         throw new Error("매칭 판단 불완전");
