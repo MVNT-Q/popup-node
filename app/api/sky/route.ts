@@ -8,6 +8,7 @@ import type { Band, NodeRecord } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type HitOut = {
   questionIndex: number;

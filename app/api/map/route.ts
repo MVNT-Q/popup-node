@@ -6,6 +6,7 @@ import { getNode, listNodes, storageMissingMessage, storageReady } from "@/lib/s
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function GET(request: Request) {
   if (!storageReady()) {
