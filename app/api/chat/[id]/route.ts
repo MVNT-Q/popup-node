@@ -75,7 +75,7 @@ export async function POST(request: Request, ctx: Ctx) {
         }
       }
       if (telegramChatId) {
-        await sendTelegram(telegramChatId, chatNotice(fromCode, fromId, otherId));
+        await sendTelegram(telegramChatId, chatNotice(fromCode));
       }
     });
   }
