@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v10";
+const CRITERIA_VERSION = "criteria-v11";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -203,8 +203,9 @@ function imagineFit(left: string, right: string): number {
   if (a === b) return 0.9;
   const shorter = a.length <= b.length ? a : b;
   const longer = a.length <= b.length ? b : a;
-  if (shorter.length >= 12 && longer.includes(shorter)) return 0.9;
-  for (let len = Math.min(shorter.length, 48); len >= 12; len -= 1) {
+  // 20+ chars so glue like " and shared " cannot link unrelated atmospheres.
+  if (shorter.length >= 20 && longer.includes(shorter)) return 0.9;
+  for (let len = Math.min(shorter.length, 64); len >= 20; len -= 1) {
     for (let i = 0; i <= shorter.length - len; i += 1) {
       if (longer.includes(shorter.slice(i, i + len))) return 0.9;
     }
