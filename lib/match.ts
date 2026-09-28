@@ -1,11 +1,12 @@
 import { SLOT_TARGETS } from "./prompts";
 import type { Band } from "./types";
 
-// 키 없을 때의 매칭. 임베딩이 있으면 이 점수는 쓰지 않는다.
+// 같은 언어·교차언어(번역 후) theme 막대.
 // 강: 질문의 주제를 답이 다 덮음. 중: 절반. 약: '사람' 같은 얇은 겹침만.
+// 교차 언어는 rank.scorePair: 키 있으면 임베딩, 없으면 MyMemory→EN 후 이 점수.
 export const THEME_BAND = { strong: 0.72, mid: 0.42, weak: 0.22 };
 
-// text-embedding-3-small 초깃값. 짧은 한국어는 몰려서, 행사 전에 문장 몇 십 개로 다시 자른다.
+// text-embedding-3-small. 교차 언어 쌍에만 쓴다 (같은 언어는 theme 유지).
 export const EMBED_BAND = { strong: 0.58, mid: 0.47, weak: 0.38 };
 
 const THEMES: Record<string, string[]> = {

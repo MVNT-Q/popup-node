@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { themeHits } from "@/lib/match";
 import {
   answerBlocks,
   midStrongHits,
@@ -11,6 +10,7 @@ import {
   type HitLite,
   type SheetLang,
 } from "@/lib/relation";
+import { themeHitsBrowser } from "@/lib/scoreBrowser";
 import { translateQuote } from "@/lib/translate";
 import type { Slot } from "@/lib/types";
 
@@ -38,23 +38,6 @@ function TranslatedQuote({ quote, lang }: { quote: string; lang: SheetLang }) {
   return <p className="cyp-sheet-line">{shown}</p>;
 }
 
-/** API hits가 비었거나 mid가 빠졌을 때 슬롯 문장으로 다시 채움 (같은 mid 막대) */
-function hitsForCard(meSlots: Slot[], theirSlots: Slot[], hits: HitLite[]): HitLite[] {
-  if (midStrongHits(hits).length > 0) return hits;
-  const mine = meSlots.map((slot) => slot.answer ?? "");
-  const theirs = theirSlots.map((slot) => slot.answer ?? "");
-  if (!mine.some((text) => text.trim().length >= 2)) return hits;
-  if (!theirs.some((text) => text.trim().length >= 2)) return hits;
-  const ranked = themeHits(mine, theirs, [0, 1, 2]);
-  return ranked.hits.map((hit) => ({
-    questionIndex: hit.questionIndex,
-    theirIndex: hit.theirIndex,
-    band: hit.band,
-    score: hit.score,
-    answer: theirs[hit.theirIndex] ?? "",
-  }));
-}
-
 export function RelationSheet({
   meSlots,
   theirSlots,
@@ -77,10 +60,38 @@ export function RelationSheet({
 }) {
   const [lang, setLang] = useState<SheetLang>("en");
   const chrome = sheetChrome(lang, variant);
-  const effectiveHits = useMemo(
-    () => hitsForCard(meSlots, theirSlots, hits),
-    [meSlots, theirSlots, hits],
-  );
+  // API mid가 있으면 그대로. 없으면 교차언어(번역) 포함해 다시 점수 — 줄·카드 동일 막대.
+  const [effectiveHits, setEffectiveHits] = useState<HitLite[]>(hits);
+  useEffect(() => {
+    let stop = false;
+    if (midStrongHits(hits).length > 0) {
+      setEffectiveHits(hits);
+      return;
+    }
+    const mine = meSlots.map((slot) => slot.answer ?? "");
+    const theirs = theirSlots.map((slot) => slot.answer ?? "");
+    if (!mine.some((text) => text.trim().length >= 2) || !theirs.some((text) => text.trim().length >= 2)) {
+      setEffectiveHits(hits);
+      return;
+    }
+    setEffectiveHits(hits);
+    void themeHitsBrowser(mine, theirs, [0, 1, 2]).then((ranked) => {
+      if (stop) return;
+      if (!midStrongHits(ranked.hits).length) return;
+      setEffectiveHits(
+        ranked.hits.map((hit) => ({
+          questionIndex: hit.questionIndex,
+          theirIndex: hit.theirIndex,
+          band: hit.band,
+          score: hit.score,
+          answer: theirs[hit.theirIndex] ?? "",
+        })),
+      );
+    });
+    return () => {
+      stop = true;
+    };
+  }, [meSlots, theirSlots, hits]);
   const relationRows = useMemo(
     () => relationBlocks(meSlots, theirSlots, effectiveHits),
     [meSlots, theirSlots, effectiveHits],

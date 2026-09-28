@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { mymemoryTranslate, type Lang } from "@/lib/mymemory";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-type Lang = "en" | "ko";
 
 function asLang(value: string | null): Lang | null {
   if (value === "en" || value === "ko") return value;
@@ -21,29 +20,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ text: q.slice(0, 400) }, { status: 400 });
   }
 
-  const from: Lang = to === "ko" ? "en" : "ko";
-  const langpair = `${from}|${to}`;
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(q)}&langpair=${encodeURIComponent(langpair)}`;
-
-  try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) {
-      return NextResponse.json({ text: q });
-    }
-    const data = (await response.json()) as {
-      responseStatus?: number;
-      responseData?: { translatedText?: string };
-    };
-    const translated = data.responseData?.translatedText?.trim();
-    if (!translated || data.responseStatus !== 200) {
-      return NextResponse.json({ text: q });
-    }
-    // MyMemory 한도/오류 문구가 섞이면 원문 유지
-    if (/MYMEMORY WARNING|INVALID SOURCE LANGUAGE|PLEASE SELECT/i.test(translated)) {
-      return NextResponse.json({ text: q });
-    }
-    return NextResponse.json({ text: translated });
-  } catch {
-    return NextResponse.json({ text: q });
-  }
+  const translated = await mymemoryTranslate(q, to);
+  // UI는 실패 시 원문 유지 (안내 문구 없음). 매칭 쪽은 null을 0으로 본다.
+  return NextResponse.json({ text: translated ?? q });
 }
