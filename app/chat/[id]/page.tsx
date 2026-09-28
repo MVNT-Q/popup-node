@@ -41,7 +41,15 @@ export default function ChatPage() {
       if (stop) return;
       setMeId(data.me?.id ?? "");
       setCode(data.other?.code ?? null);
-      setMessages(data.messages ?? []);
+      const incoming = data.messages ?? [];
+      setMessages((prev) => {
+        const pending = prev.filter(
+          (item) =>
+            item.id.startsWith("pending-") &&
+            !incoming.some((saved) => saved.from === item.from && saved.body === item.body),
+        );
+        return [...incoming, ...pending];
+      });
       setError("");
     }
     let timer = 0;
@@ -49,7 +57,7 @@ export default function ChatPage() {
       load().catch((reason) => {
         if (!stop) setError(reason instanceof Error ? reason.message : "채팅을 열지 못했습니다.");
       });
-      if (!stop) timer = window.setTimeout(tick, 1500);
+      if (!stop) timer = window.setTimeout(tick, 700);
     };
     tick();
     return () => {
@@ -65,9 +73,18 @@ export default function ChatPage() {
 
   async function send() {
     const body = text.trim();
-    if (!body || sending) return;
+    if (!body || sending || !meId) return;
+    const pending: Msg = {
+      id: `pending-${Date.now()}`,
+      from: meId,
+      to: otherId,
+      body,
+      at: new Date().toISOString(),
+    };
     setSending(true);
     setText("");
+    setMessages((prev) => [...prev, pending]);
+    stick.current = true;
     try {
       const response = await fetch(`/api/chat/${otherId}`, {
         method: "POST",
@@ -76,9 +93,9 @@ export default function ChatPage() {
       });
       const data = (await response.json()) as { error?: string; message?: Msg };
       if (!response.ok || !data.message) throw new Error(data.error || "전송 실패");
-      setMessages((prev) => (prev.some((item) => item.id === data.message!.id) ? prev : [...prev, data.message!]));
-      stick.current = true;
+      setMessages((prev) => prev.map((item) => (item.id === pending.id ? data.message! : item)));
     } catch (reason) {
+      setMessages((prev) => prev.filter((item) => item.id !== pending.id));
       setText(body);
       setError(reason instanceof Error ? reason.message : "전송 실패");
     } finally {

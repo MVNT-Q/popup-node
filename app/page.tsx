@@ -5,22 +5,31 @@ import { useEffect, useState } from "react";
 import { askNotification, subscribePush } from "@/components/alerts";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { MarkLock } from "@/components/MarkLock";
+import { rememberedNode, rememberNode } from "@/lib/nodePresence";
 
 type Me = { id: string; code: number; name: string } | null;
 
 export default function LandingPage() {
   const router = useRouter();
   const [me, setMe] = useState<Me>(null);
+  const [known, setKnown] = useState(false);
   const [testAgents, setTestAgents] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<string | null>(null);
 
   useEffect(() => {
+    if (rememberedNode()) {
+      setMe({ id: "known", code: 0, name: "" });
+      setKnown(true);
+    }
     fetch("/api/session", { cache: "no-store" })
       .then((response) => response.json())
       .then((data: { me: Me; testAgents?: boolean; error?: string }) => {
         if (data.error) setError(data.error);
-        setMe(data.me ?? null);
+        const next = data.me ?? null;
+        rememberNode(Boolean(next));
+        setMe(next);
+        setKnown(true);
         setTestAgents(data.testAgents === true);
       })
       .catch(() => setError("세션을 읽지 못했습니다."));
@@ -80,19 +89,20 @@ export default function LandingPage() {
         <p className="ko">초기의 NODE 중 하나가 되어보세요.</p>
       </div>
 
-      {me ? (
+      {known && me ? (
         <a className="cyp-btn" href="/my-node">
           <span>VIEW MY NODE</span>
           <small>내 노드 보기</small>
         </a>
-      ) : (
+      ) : null}
+      {known && !me ? (
         <a className="cyp-btn" href="/join">
           <span>
             BECOME A NODE <i aria-hidden>→</i>
           </span>
           <small>NODE가 되기</small>
         </a>
-      )}
+      ) : null}
       <a className="cyp-btn ghost" href="/usershow">
         <span>
           EXPLORE THE NODE GROVE <i aria-hidden>→</i>

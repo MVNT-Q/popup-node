@@ -1,8 +1,8 @@
-import { threadMessages } from "@/lib/feed";
+import { after } from "next/server";
 import { sendPush } from "@/lib/push";
 import { readSessionId } from "@/lib/session";
 import { publicNode } from "@/lib/slots";
-import { addMessage, getNode, listMessages, markRead, saveNode, storageMissingMessage, storageReady } from "@/lib/store";
+import { addMessage, getNode, listThread, markRead, saveNode, storageMissingMessage, storageReady } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ export async function GET(_request: Request, ctx: Ctx) {
   if (!me) return Response.json({ error: "노드가 없습니다." }, { status: 401 });
   const other = await getNode(id);
   if (!other || other.id === me.id) return Response.json({ error: "상대 노드가 없습니다." }, { status: 404 });
-  const messages = threadMessages(me.id, other.id, await listMessages());
+  const messages = await listThread(me.id, other.id);
   await markRead(me.id, other.id, new Date().toISOString());
   return Response.json({
     me: publicNode(me),
@@ -47,15 +47,17 @@ export async function POST(request: Request, ctx: Ctx) {
   await addMessage(message);
   await markRead(me.id, other.id, message.at);
   if (other.push) {
-    const result = await sendPush(other.push, {
-      title: `NODE ${me.code}`,
-      body: text,
-      url: `/chat/${me.id}`,
+    const sub = other.push;
+    const title = `NODE ${me.code}`;
+    const otherId = other.id;
+    after(async () => {
+      const result = await sendPush(sub, { title, body: text, url: `/chat/${me.id}` });
+      if (!result.gone) return;
+      const fresh = await getNode(otherId);
+      if (!fresh) return;
+      fresh.push = null;
+      await saveNode(fresh);
     });
-    if (result.gone) {
-      other.push = null;
-      await saveNode(other);
-    }
   }
   return Response.json({ message });
 }

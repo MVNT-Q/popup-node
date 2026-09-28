@@ -420,6 +420,33 @@ export async function addMessage(message: Message) {
   `;
 }
 
+export async function listThread(a: string, b: string): Promise<Message[]> {
+  await requireStorage();
+  if (!usePg()) {
+    const all = await withFile((bag) => bag.messages.map((message) => ({ ...message })));
+    return all.filter(
+      (message) =>
+        (message.from === a && message.to === b) || (message.from === b && message.to === a),
+    );
+  }
+  const rows = await sqlClient()<
+    { id: string; from_id: string; to_id: string; body: string; at: Date }[]
+  >`
+    select id, from_id, to_id, body, at
+    from node_message
+    where (from_id = ${a} and to_id = ${b}) or (from_id = ${b} and to_id = ${a})
+    order by at asc
+    limit 400
+  `;
+  return rows.map((row) => ({
+    id: row.id,
+    from: row.from_id,
+    to: row.to_id,
+    body: row.body,
+    at: new Date(row.at).toISOString(),
+  }));
+}
+
 export async function listMessages(): Promise<Message[]> {
   await requireStorage();
   if (!usePg()) {

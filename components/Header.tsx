@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { rememberNode } from "@/lib/nodePresence";
 
 function MessageIcon() {
   return (
@@ -28,7 +29,9 @@ export function Header() {
     fetch("/api/session", { cache: "no-store" })
       .then((response) => response.json())
       .then((data: { me?: { code?: number } | null }) => {
-        if (!stop) setCode(data.me?.code ?? null);
+        if (stop) return;
+        rememberNode(data.me?.code != null);
+        setCode(data.me?.code ?? null);
       })
       .catch(() => undefined);
     return () => {

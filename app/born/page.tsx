@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
+import { rememberNode } from "@/lib/nodePresence";
 import { InstallCard } from "@/components/InstallCard";
 import { MarkLock } from "@/components/MarkLock";
 
@@ -14,7 +15,10 @@ export default function BornPage() {
   useEffect(() => {
     fetch("/api/session", { cache: "no-store" })
       .then((response) => response.json())
-      .then((data: { me?: Me }) => setMe(data.me ?? null))
+      .then((data: { me?: Me }) => {
+        rememberNode(Boolean(data.me));
+        setMe(data.me ?? null);
+      })
       .catch(() => setMe(null));
   }, []);
 
