@@ -1,3 +1,4 @@
+import { chatOpenUrl } from "./chatLink";
 import { getNode, listNodes, saveNode } from "./store";
 import type { NodeRecord } from "./types";
 
@@ -99,13 +100,14 @@ export function roomNotice() {
   return ALERT_ONLY;
 }
 
-export function chatNotice(code: number) {
+export function chatNotice(code: number, fromId: string, toId: string) {
   const label = String(code).padStart(3, "0");
   return `NODE #${label} 채팅이 왔습니다.
 NODE #${label} sent a chat.
+${chatOpenUrl(toId, fromId)}
 
-노드를 만든 브라우저나 홈 화면 아이콘으로 돌아가세요. 거기 메시지 아이콘에 채팅이 있습니다. 이 텔레그램 안에서 링크를 열면 다른 브라우저가 열려 노드를 다시 만들게 됩니다.
-Go back to the browser or home-screen icon where you created your node. The chat is under the message icon there. Opening a link inside Telegram opens another browser, and you may be asked to create a node again.`;
+채팅은 위 링크의 CYP3에서 하세요. 이 텔레그램은 알림만 옵니다.
+Reply on CYP3 using the link above. This Telegram only sends alerts.`;
 }
 
 export async function nodeById(id: string) {
