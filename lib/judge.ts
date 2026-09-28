@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v11";
+const CRITERIA_VERSION = "criteria-v12";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -70,7 +70,15 @@ function isEmptySeek(text: string) {
 
 function isVagueImagine(text: string) {
   const t = normText(text);
-  return !t || t === "world" || t === "everyone happy" || t === "good world" || t === "happy world";
+  return (
+    !t ||
+    t === "world" ||
+    t === "everyone happy" ||
+    t === "good world" ||
+    t === "happy world" ||
+    t === "모두가 행복" ||
+    t === "모두 행복"
+  );
 }
 
 function unorderedPairs(ids: string[]): [string, string][] {
@@ -192,8 +200,8 @@ function phraseFit(left: string, right: string): number {
 }
 
 /**
- * IMAGINE: identical or long near-copy only.
- * Short windows like "quiet "/"world " must not link unrelated atmospheres.
+ * IMAGINE lexical boost: identical text only.
+ * Near-copy / short meaning matches go to the model — no character minimum.
  */
 function imagineFit(left: string, right: string): number {
   if (isVagueImagine(left) || isVagueImagine(right)) return 0;
@@ -201,30 +209,18 @@ function imagineFit(left: string, right: string): number {
   const b = normText(right);
   if (!a || !b) return 0;
   if (a === b) return 0.9;
-  const shorter = a.length <= b.length ? a : b;
-  const longer = a.length <= b.length ? b : a;
-  // 20+ chars so glue like " and shared " cannot link unrelated atmospheres.
-  if (shorter.length >= 20 && longer.includes(shorter)) return 0.9;
-  for (let len = Math.min(shorter.length, 64); len >= 20; len -= 1) {
-    for (let i = 0; i <= shorter.length - len; i += 1) {
-      if (longer.includes(shorter.slice(i, i + len))) return 0.9;
-    }
-  }
   return 0;
 }
 
 /**
- * Identical / near-copy text is a match without trusting a busy completion.
- * Empty seekers (Nobody) opt out of all axes for that person-pair.
+ * Identical / near-copy SEEK/OFFER (and identical IMAGINE) without trusting a busy completion.
+ * Nobody SEEK zeros that seek direction only — not the whole pair / IMAGINE.
  */
 function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   const left = answersOf(a);
   const right = answersOf(b);
-  if (isEmptySeek(left[0]) || isEmptySeek(right[0])) {
-    return { seek: 0, offer: 0, imagine: 0 };
-  }
-  const seek = phraseFit(left[0], right[1]);
-  const offer = phraseFit(left[1], right[0]);
+  const seek = isEmptySeek(left[0]) ? 0 : phraseFit(left[0], right[1]);
+  const offer = isEmptySeek(right[0]) ? 0 : phraseFit(left[1], right[0]);
   const imagine = imagineFit(left[2], right[2]);
   return { seek, offer, imagine };
 }
@@ -235,24 +231,23 @@ function applyLexicalMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores
     const a = byId.get(aId);
     const b = byId.get(bId);
     if (!a || !b) continue;
+    const left = answersOf(a);
+    const right = answersOf(b);
     const hit = lexicalScores(a, b);
-    if (isEmptySeek(answersOf(a)[0]) || isEmptySeek(answersOf(b)[0])) {
-      pairs.set(pairKey(aId, bId), { seek: 0, offer: 0, imagine: 0 });
-      continue;
-    }
     if (hit.seek || hit.offer || hit.imagine) {
       storeDirected(pairs, aId, bId, hit.seek, hit.offer, hit.imagine);
     }
-    // IMAGINE is identical/near-copy only — drop soft LLM atmosphere scores.
     const key = pairKey(aId, bId);
-    const cur = pairs.get(key);
-    if (cur) {
-      pairs.set(key, {
-        seek: cur.seek,
-        offer: cur.offer,
-        imagine: clampScore(hit.imagine),
-      });
-    }
+    const cur = pairs.get(key) ?? { seek: 0, offer: 0, imagine: 0 };
+    // aId < bId: seek = a.SEEK↔b.OFFER, offer = a.OFFER↔b.SEEK
+    let seek = Math.max(cur.seek, hit.seek);
+    let offer = Math.max(cur.offer, hit.offer);
+    // Keep LLM IMAGINE meaning scores; identical text only boosts, never wipes.
+    let imagine = Math.max(cur.imagine, hit.imagine);
+    if (isEmptySeek(left[0])) seek = 0;
+    if (isEmptySeek(right[0])) offer = 0;
+    if (isVagueImagine(left[2]) || isVagueImagine(right[2])) imagine = 0;
+    pairs.set(key, { seek, offer, imagine });
   }
 }
 
@@ -332,13 +327,14 @@ async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
             "SEEK is what they look for. OFFER is what they can give. IMAGINE is the future life they want.",
             "For each required pair (a,b): seek = a SEEK vs b OFFER; offer = a OFFER vs b SEEK; imagine = both IMAGINE.",
             "If one side can give what the other is looking for — even in a short or almost identical sentence — that direction is a match.",
-            "Score 0.9 when nearly the same offer/seek, or when IMAGINE is identical or a near-copy. Score 0.6 when it clearly fits. Score 0 when it does not.",
+            "Score 0.9 when the fit is clear and strong. Score 0.6 when it clearly fits. Score 0 when it does not.",
             "A match on ANY ONE axis is enough (OR, not AND). Do NOT require both seek and offer. Do NOT require imagine on top of a seek/offer hit.",
-            "Identical or near-copy IMAGINE is a match. Vague backdrop only (\"world\", \"everyone happy\", \"good world\") is imagine 0.",
+            "IMAGINE: match when the two futures are the same kind of life or the same picture, even if one side wrote only a few words. A two or three character answer can be a full match when it points at the same thing. Infer meaning the way a person would — do not use character count.",
+            "Vague backdrop that does not name a life (\"world\", \"good world\", \"everyone happy\", \"모두가 행복\") is imagine 0 — that refusal is meaning, not length.",
             "Korean and English match when the meaning fits.",
             "seekKinds / offerKinds are chips: they support when they fit the sentences, but are not a free pass.",
             "If a sentence contradicts a chip, trust the sentence.",
-            "Empty seekers (Nobody / no one / blank): that person's seek axis is 0 against everyone.",
+            "Empty SEEK (Nobody / no one / blank): that person's seek direction is 0. Do not zero a real IMAGINE overlap just because SEEK is Nobody.",
             "You MUST return exactly one row for every entry in requiredPairs. Never omit a pair — use 0,0,0 if none of the three fit.",
             "Return JSON only: {\"pairs\":[{\"a\":\"id\",\"b\":\"id\",\"seek\":0,\"offer\":0,\"imagine\":0}]}.",
           ].join(" "),
@@ -442,7 +438,7 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
         pairs.set(k, mergeScore(pairs.get(k), scores));
       }
     }
-    // Deterministic phrase hits win over a lazy 0; Nobody seekers clear the pair.
+    // Deterministic phrase hits win over a lazy 0; Nobody SEEK zeros seek only.
     applyLexicalMatches(nodes, pairs);
     for (const [a, b] of unorderedPairs([...ids])) {
       if (!pairs.has(pairKey(a, b))) {
