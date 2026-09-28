@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v12";
+const CRITERIA_VERSION = "criteria-v13";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -214,13 +214,16 @@ function imagineFit(left: string, right: string): number {
 
 /**
  * Identical / near-copy SEEK/OFFER (and identical IMAGINE) without trusting a busy completion.
- * Nobody SEEK zeros that seek direction only — not the whole pair / IMAGINE.
+ * Nobody SEEK opts out of seek/offer for that pair — IMAGINE can still match.
  */
 function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   const left = answersOf(a);
   const right = answersOf(b);
-  const seek = isEmptySeek(left[0]) ? 0 : phraseFit(left[0], right[1]);
-  const offer = isEmptySeek(right[0]) ? 0 : phraseFit(left[1], right[0]);
+  if (isEmptySeek(left[0]) || isEmptySeek(right[0])) {
+    return { seek: 0, offer: 0, imagine: imagineFit(left[2], right[2]) };
+  }
+  const seek = phraseFit(left[0], right[1]);
+  const offer = phraseFit(left[1], right[0]);
   const imagine = imagineFit(left[2], right[2]);
   return { seek, offer, imagine };
 }
@@ -239,15 +242,19 @@ function applyLexicalMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores
     }
     const key = pairKey(aId, bId);
     const cur = pairs.get(key) ?? { seek: 0, offer: 0, imagine: 0 };
-    // aId < bId: seek = a.SEEK↔b.OFFER, offer = a.OFFER↔b.SEEK
-    let seek = Math.max(cur.seek, hit.seek);
-    let offer = Math.max(cur.offer, hit.offer);
     // Keep LLM IMAGINE meaning scores; identical text only boosts, never wipes.
     let imagine = Math.max(cur.imagine, hit.imagine);
-    if (isEmptySeek(left[0])) seek = 0;
-    if (isEmptySeek(right[0])) offer = 0;
     if (isVagueImagine(left[2]) || isVagueImagine(right[2])) imagine = 0;
-    pairs.set(key, { seek, offer, imagine });
+    // Nobody SEEK: no seek/offer lines for this pair; do not clear a real IMAGINE hit.
+    if (isEmptySeek(left[0]) || isEmptySeek(right[0])) {
+      pairs.set(key, { seek: 0, offer: 0, imagine });
+      continue;
+    }
+    pairs.set(key, {
+      seek: Math.max(cur.seek, hit.seek),
+      offer: Math.max(cur.offer, hit.offer),
+      imagine,
+    });
   }
 }
 
@@ -334,7 +341,7 @@ async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
             "Korean and English match when the meaning fits.",
             "seekKinds / offerKinds are chips: they support when they fit the sentences, but are not a free pass.",
             "If a sentence contradicts a chip, trust the sentence.",
-            "Empty SEEK (Nobody / no one / blank): that person's seek direction is 0. Do not zero a real IMAGINE overlap just because SEEK is Nobody.",
+            "Empty SEEK (Nobody / no one / blank): seek and offer for that pair are 0. Do not zero a real IMAGINE overlap just because SEEK is Nobody.",
             "You MUST return exactly one row for every entry in requiredPairs. Never omit a pair — use 0,0,0 if none of the three fit.",
             "Return JSON only: {\"pairs\":[{\"a\":\"id\",\"b\":\"id\",\"seek\":0,\"offer\":0,\"imagine\":0}]}.",
           ].join(" "),
@@ -438,7 +445,7 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
         pairs.set(k, mergeScore(pairs.get(k), scores));
       }
     }
-    // Deterministic phrase hits win over a lazy 0; Nobody SEEK zeros seek only.
+    // Deterministic phrase hits win over a lazy 0; Nobody SEEK clears seek/offer only.
     applyLexicalMatches(nodes, pairs);
     for (const [a, b] of unorderedPairs([...ids])) {
       if (!pairs.has(pairKey(a, b))) {
