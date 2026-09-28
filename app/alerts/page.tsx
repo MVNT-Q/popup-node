@@ -2,19 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { BackButton } from "@/components/BackButton";
-import { InstallCard } from "@/components/InstallCard";
-import { isStandalone } from "@/components/install";
 
 export default function AlertsPage() {
-  const [on, setOn] = useState<boolean | null>(null);
-  const [home, setHome] = useState(false);
   const [linked, setLinked] = useState(false);
   const [configured, setConfigured] = useState(false);
   const [note, setNote] = useState("");
 
   useEffect(() => {
-    setHome(isStandalone());
-    setOn("Notification" in window && Notification.permission === "granted");
     fetch("/api/telegram/link", { cache: "no-store" })
       .then((response) => response.json())
       .then((data: { linked?: boolean; configured?: boolean }) => {
@@ -49,21 +43,18 @@ export default function AlertsPage() {
     <main className="pad cyp-inbox">
       <BackButton fallback="/my-node" />
       <h1 className="lede">알림</h1>
-      <p className="hint">
-        {on == null ? "…" : on ? "이 폰 알림이 켜져 있습니다." : "이 폰 알림이 꺼져 있습니다."}
-      </p>
-      <p className="hint">
-        {home ? "홈 화면 아이콘으로 열린 상태입니다." : "홈 화면에는 아직 없습니다. 아래에서 넣으면 알림이 이어집니다."}
-      </p>
-      <InstallCard place="inbox" />
 
-      <h2 className="lede" style={{ marginTop: 28 }}>
-        텔레그램
-      </h2>
+      {linked ? (
+        <p className="hint">텔레그램 켜짐. 채팅이 오면 노드 번호와 링크가 옵니다.</p>
+      ) : (
+        <p className="hint">
+          채팅은 이 웹의 메시지 아이콘에서 확인합니다. 이 페이지에서 텔레그램 알림을 켭니다.
+        </p>
+      )}
       <p className="hint">
-        {linked ? "텔레그램 켜짐. 채팅이 오면 노드 번호와 링크만 옵니다. 이 탭을 닫아도 옵니다." : "텔레그램 꺼짐."}
+        다른 참가자에게 텔레그램 주소는 보이지 않습니다. 채팅은 이 사이트에 남습니다.
       </p>
-      <p className="hint">다른 참가자에게 텔레그램 주소는 보이지 않습니다. 채팅은 이 사이트에서 하고, 텔레그램은 알림만 옵니다.</p>
+
       {configured && !linked ? (
         <button className="btn-ghost" type="button" onClick={() => void openTelegram()} style={{ marginTop: 10 }}>
           텔레그램으로 받기
@@ -74,7 +65,7 @@ export default function AlertsPage() {
           텔레그램 연결 해제
         </button>
       ) : null}
-      {!configured ? <p className="hint">텔레그램 봇 설정이 아직 없습니다.</p> : null}
+      {!configured ? <p className="hint">봇 설정이 아직 없습니다.</p> : null}
       {note ? <p className="hint">{note}</p> : null}
     </main>
   );
