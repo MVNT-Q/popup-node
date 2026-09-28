@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const payload = text.replace(/^\/start(?:@\w+)?/, "").trim();
   const node = payload ? await bindTelegramStart(payload, String(chatId)) : null;
   if (node) {
-    await sendTelegram(String(chatId), `NODE #${String(node.code).padStart(3, "0")}에 연결됐습니다. 말이 오면 여기에 알려 드립니다.`);
+    await sendTelegram(String(chatId), `NODE #${String(node.code).padStart(3, "0")}에 연결됐습니다. 채팅이 오면 여기로 옵니다. 알림 탭을 닫아도 그대로 옵니다.`);
   } else if (payload) {
     await sendTelegram(String(chatId), "연결 시간이 지났습니다. 알림 화면에서 다시 열어 주세요.");
   } else {

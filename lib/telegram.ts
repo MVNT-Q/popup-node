@@ -71,7 +71,7 @@ export async function sendTelegram(chatId: string, text: string) {
 
 export function chatNotice(code: number, fromId: string) {
   const label = String(code).padStart(3, "0");
-  return `NODE #${label}가 말을 걸었습니다.\n${SITE}/chat/${fromId}`;
+  return `NODE #${label} 채팅이 왔습니다.\n${SITE}/chat/${fromId}`;
 }
 
 export async function nodeById(id: string) {
