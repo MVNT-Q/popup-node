@@ -71,15 +71,15 @@ export default function JoinPage() {
           <b>01</b> CALLSIGN
         </h2>
         <p>Choose a name to represent you in the Node Grove.</p>
-        <p className="ko">고유한 이름은 다른 NODE와의 첫 만남과 연대를 강화할 연동입니다.</p>
+        <p className="ko">호출명: NODE GROVE 안에서 당신을 나타낼 이름을 정해주세요.</p>
         <input
           className="cyp-input"
           value={callsign}
           maxLength={20}
-          placeholder="Enter your callsign..."
+          placeholder="Enter your callsign…"
           onChange={(event) => setCallsign(event.target.value)}
         />
-        <p className="fine">e.g. HEX3 / LUNA / ORBIT / NULL</p>
+        <p className="fine">e.g. MOSS / LUMA / ORBIT / NULL</p>
         <label className="label" htmlFor="join-email">
           EMAIL (Optional)
         </label>

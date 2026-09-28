@@ -30,7 +30,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v2";
+const CRITERIA_VERSION = "criteria-v3";
 
 function fingerprint(nodes: NodeRecord[]) {
   const body = nodes
@@ -101,20 +101,21 @@ async function ask(nodes: NodeRecord[]) {
         {
           role: "system",
           content: [
-            "You match people at a gathering by meaning, not by requiring long or ornate wording.",
+            "You match people at a gathering by meaning. Matching is OR across axes — one direction is enough.",
             "SEEK is what they look for. OFFER is what they can give. IMAGINE is the future life they want.",
-            "seek = A's SEEK vs B's OFFER: include when B can give what A is looking for.",
-            "offer = A's OFFER vs B's SEEK: include when A can give what B is looking for.",
-            "Short answers and near-identical wording still count: if one person needs X and the other can do X, that is a clear match.",
-            "Example shape only (not real people): \"I need help soldering sensors\" ↔ \"I can help with circuit soldering and sensor wiring\".",
+            "seek score = A's SEEK vs B's OFFER: set when B can give what A is looking for.",
+            "offer score = A's OFFER vs B's SEEK: set when A can give what B is looking for.",
+            "imagine score = both want the same kind of life — not a vague backdrop like \"world\", \"everyone happy\", or \"good world\".",
+            "Include a pair if ANY ONE of these is true (OR, not AND): seek fits, OR offer fits, OR imagine fits.",
+            "Do NOT require seek AND offer both to overlap. Do NOT require imagine as well.",
+            "A short sentence is enough for that one direction; near-identical wording still counts.",
+            "Example shape only (not real people): \"I need X\" ↔ \"I can do X\" is a clear single-direction match.",
             "Korean and English match when the meaning fits.",
             "seekKinds / offerKinds are chips: they can support a match when they fit the sentences, but they are not a free pass.",
             "If a sentence contradicts a chip, trust the sentence.",
-            "imagine = only when both want the same kind of life — not a vague shared backdrop like \"world\", \"everyone happy\", or \"good world\".",
             "Empty seekers (Nobody / no one / blank) do not match.",
             "Return JSON only: {\"pairs\":[{\"a\":\"id\",\"b\":\"id\",\"seek\":0,\"offer\":0,\"imagine\":0}]}.",
-            "Include a pair when at least one of seek, offer, imagine fits.",
-            "Score 0.9 when the meaning is clearly the same thing, 0.6 when it fits; omit axes that do not fit (use 0) and omit the pair only if none fit.",
+            "Score 0.9 when clearly the same thing, 0.6 when it fits; use 0 on axes that do not fit; omit the pair only if none of the three fit.",
           ].join(" "),
         },
         { role: "user", content: JSON.stringify({ people }) },
