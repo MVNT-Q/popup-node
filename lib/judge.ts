@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v7";
+const CRITERIA_VERSION = "criteria-v8";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -120,7 +120,7 @@ function storeDirected(
   }
 }
 
-/** Shared content words — backs short Korean near-copies without a name list. */
+/** Shared content words for SEEK/OFFER near-copies. Not used for IMAGINE. */
 function tokenFit(left: string, right: string): number {
   const stop = new Set([
     "같이",
@@ -151,22 +151,28 @@ function tokenFit(left: string, right: string): number {
   let strong = 0;
   for (const t of a) {
     for (const u of b) {
-      if (t === u || (t.length >= 3 && u.length >= 3 && (t.includes(u) || u.includes(t)))) {
-        if (Math.min(t.length, u.length) >= 3) strong += 1;
+      if (t === u || t.includes(u) || u.includes(t)) {
+        if (Math.min(t.length, u.length) >= 2) strong += 1;
         break;
       }
     }
   }
   if (strong >= 2) return 0.9;
-  if (strong >= 1) return 0.6;
+  if (strong >= 1 && Math.max(...a.map((t) => t.length), ...b.map((t) => t.length)) >= 3) {
+    // one solid content word (3+ chars) is enough for mid
+    for (const t of a) {
+      for (const u of b) {
+        if ((t === u || t.includes(u) || u.includes(t)) && Math.min(t.length, u.length) >= 3) {
+          return 0.6;
+        }
+      }
+    }
+  }
   return 0;
 }
 
-/**
- * Phrase overlap for short/near-copy sentences the model often zeros in batches.
- * Not persona-specific — shared contiguous text / content tokens only.
- */
-function phraseFit(left: string, right: string): number {
+/** Contiguous overlap. tokenFit only when allowTokens (SEEK/OFFER). */
+function phraseFit(left: string, right: string, allowTokens: boolean): number {
   const a = normText(left);
   const b = normText(right);
   if (!a || !b) return 0;
@@ -182,7 +188,7 @@ function phraseFit(left: string, right: string): number {
   for (let i = 0; i <= shorter.length - 6; i += 1) {
     if (longer.includes(shorter.slice(i, i + 6))) return 0.6;
   }
-  return tokenFit(left, right);
+  return allowTokens ? tokenFit(left, right) : 0;
 }
 
 /**
@@ -195,10 +201,11 @@ function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   if (isEmptySeek(left[0]) || isEmptySeek(right[0])) {
     return { seek: 0, offer: 0, imagine: 0 };
   }
-  const seek = phraseFit(left[0], right[1]);
-  const offer = phraseFit(left[1], right[0]);
+  const seek = phraseFit(left[0], right[1], true);
+  const offer = phraseFit(left[1], right[0], true);
+  // IMAGINE: identical / long near-copy only — token overlap ("quiet","world") is noise.
   const imagine =
-    isVagueImagine(left[2]) || isVagueImagine(right[2]) ? 0 : phraseFit(left[2], right[2]);
+    isVagueImagine(left[2]) || isVagueImagine(right[2]) ? 0 : phraseFit(left[2], right[2], false);
   return { seek, offer, imagine };
 }
 
