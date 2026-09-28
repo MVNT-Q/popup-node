@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v9";
+const CRITERIA_VERSION = "criteria-v10";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -171,8 +171,8 @@ function tokenFit(left: string, right: string): number {
   return 0;
 }
 
-/** Contiguous overlap. tokenFit only when allowTokens (SEEK/OFFER). */
-function phraseFit(left: string, right: string, allowTokens: boolean): number {
+/** Contiguous overlap for SEEK/OFFER (tokens allowed as fallback). */
+function phraseFit(left: string, right: string): number {
   const a = normText(left);
   const b = normText(right);
   if (!a || !b) return 0;
@@ -188,7 +188,28 @@ function phraseFit(left: string, right: string, allowTokens: boolean): number {
   for (let i = 0; i <= shorter.length - 6; i += 1) {
     if (longer.includes(shorter.slice(i, i + 6))) return 0.6;
   }
-  return allowTokens ? tokenFit(left, right) : 0;
+  return tokenFit(left, right);
+}
+
+/**
+ * IMAGINE: identical or long near-copy only.
+ * Short windows like "quiet "/"world " must not link unrelated atmospheres.
+ */
+function imagineFit(left: string, right: string): number {
+  if (isVagueImagine(left) || isVagueImagine(right)) return 0;
+  const a = normText(left);
+  const b = normText(right);
+  if (!a || !b) return 0;
+  if (a === b) return 0.9;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  if (shorter.length >= 12 && longer.includes(shorter)) return 0.9;
+  for (let len = Math.min(shorter.length, 48); len >= 12; len -= 1) {
+    for (let i = 0; i <= shorter.length - len; i += 1) {
+      if (longer.includes(shorter.slice(i, i + len))) return 0.9;
+    }
+  }
+  return 0;
 }
 
 /**
@@ -201,11 +222,9 @@ function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   if (isEmptySeek(left[0]) || isEmptySeek(right[0])) {
     return { seek: 0, offer: 0, imagine: 0 };
   }
-  const seek = phraseFit(left[0], right[1], true);
-  const offer = phraseFit(left[1], right[0], true);
-  // IMAGINE: identical / long near-copy only — token overlap ("quiet","world") is noise.
-  const imagine =
-    isVagueImagine(left[2]) || isVagueImagine(right[2]) ? 0 : phraseFit(left[2], right[2], false);
+  const seek = phraseFit(left[0], right[1]);
+  const offer = phraseFit(left[1], right[0]);
+  const imagine = imagineFit(left[2], right[2]);
   return { seek, offer, imagine };
 }
 
