@@ -31,10 +31,13 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v4";
+const CRITERIA_VERSION = "criteria-v5";
 
-/** Small enough that one completion can score every unordered pair in the group. */
-const CHUNK_SIZE = 6;
+/** Tiny groups so one completion can list every required pair without truncation. */
+const CHUNK_SIZE = 4;
+
+/** Cap parallel OpenAI calls so a grove warm stays under route maxDuration. */
+const ASK_CONCURRENCY = 3;
 
 function fingerprint(nodes: NodeRecord[]) {
   const body = nodes
@@ -118,9 +121,14 @@ function parsePairs(raw: string, ids: Set<string>) {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start < 0 || end < start) return new Map<string, JudgeScores>();
-  const json = JSON.parse(raw.slice(start, end + 1)) as {
+  let json: {
     pairs?: { a?: string; b?: string; seek?: number; offer?: number; imagine?: number }[];
   };
+  try {
+    json = JSON.parse(raw.slice(start, end + 1)) as typeof json;
+  } catch {
+    return new Map<string, JudgeScores>();
+  }
   const pairs = new Map<string, JudgeScores>();
   for (const row of json.pairs ?? []) {
     if (!row.a || !row.b || !ids.has(row.a) || !ids.has(row.b) || row.a === row.b) continue;
@@ -151,7 +159,7 @@ function serializePairs(pairs: Map<string, JudgeScores>) {
   return JSON.stringify({ pairs: rows });
 }
 
-async function ask(nodes: NodeRecord[], requiredPairs: [string, string][]) {
+async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
   const key = openaiKey();
   if (!key) throw new Error("OPENAI_API_KEY가 없습니다.");
   const model = process.env.OPENAI_MATCH_MODEL?.trim() || "gpt-4o-mini";
@@ -175,7 +183,7 @@ async function ask(nodes: NodeRecord[], requiredPairs: [string, string][]) {
     body: JSON.stringify({
       model,
       temperature: 0,
-      max_tokens: 4096,
+      max_tokens: 8192,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -185,13 +193,13 @@ async function ask(nodes: NodeRecord[], requiredPairs: [string, string][]) {
             "SEEK is what they look for. OFFER is what they can give. IMAGINE is the future life they want.",
             "For each required pair (a,b): seek = a SEEK vs b OFFER; offer = a OFFER vs b SEEK; imagine = both IMAGINE.",
             "If one side can give what the other is looking for — even in a short or almost identical sentence — that direction is a match.",
-            "Score 0.9 when nearly the same offer/seek (or identical/near-copy IMAGINE). Score 0.6 when it clearly fits. Score 0 when it does not.",
-            "Include a match if ANY ONE axis fits (OR, not AND). Do NOT require both seek and offer. Do NOT require imagine on top of a seek/offer hit.",
-            "Identical or near-copy IMAGINE sentences are a match. Vague backdrop only (\"world\", \"everyone happy\", \"good world\") is 0.",
+            "Score 0.9 when nearly the same offer/seek, or when IMAGINE text is identical or a near-copy. Score 0.6 when it clearly fits. Score 0 when it does not.",
+            "A match on ANY ONE axis is enough (OR, not AND). Do NOT require both seek and offer. Do NOT require imagine on top of a seek/offer hit.",
+            "Identical or near-copy IMAGINE is a match. Vague backdrop only (\"world\", \"everyone happy\", \"good world\") is imagine 0.",
             "Korean and English match when the meaning fits.",
             "seekKinds / offerKinds are chips: they support when they fit the sentences, but are not a free pass.",
             "If a sentence contradicts a chip, trust the sentence.",
-            "Empty seekers (Nobody / no one / blank) do not match on seek/offer.",
+            "Empty seekers (Nobody / no one / blank): that person's seek axis is 0 against everyone.",
             "You MUST return exactly one row for every entry in requiredPairs. Never omit a pair — use 0,0,0 if none of the three fit.",
             "Return JSON only: {\"pairs\":[{\"a\":\"id\",\"b\":\"id\",\"seek\":0,\"offer\":0,\"imagine\":0}]}.",
           ].join(" "),
@@ -206,6 +214,36 @@ async function ask(nodes: NodeRecord[], requiredPairs: [string, string][]) {
   }
   const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
   return json.choices?.[0]?.message?.content ?? "";
+}
+
+/** Ask until every required pair has a model row. Omission must not become a silent 0. */
+async function askComplete(
+  nodes: NodeRecord[],
+  requiredPairs: [string, string][],
+  ids: Set<string>,
+) {
+  if (!requiredPairs.length) return new Map<string, JudgeScores>();
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  let pending = requiredPairs;
+  const merged = new Map<string, JudgeScores>();
+
+  for (let attempt = 0; attempt < 3 && pending.length; attempt += 1) {
+    const peopleIds = new Set<string>();
+    for (const [a, b] of pending) {
+      peopleIds.add(a);
+      peopleIds.add(b);
+    }
+    const people = [...peopleIds].map((id) => byId.get(id)).filter(Boolean) as NodeRecord[];
+    const raw = await askOnce(people, pending);
+    const got = parsePairs(raw, ids);
+    for (const [k, scores] of got) merged.set(k, mergeScore(merged.get(k), scores));
+    pending = pending.filter(([a, b]) => !merged.has(pairKey(a, b)));
+  }
+
+  if (pending.length) {
+    throw new Error(`매칭 판단 누락 ${pending.length}쌍`);
+  }
+  return merged;
 }
 
 function buildJobs(nodes: NodeRecord[]) {
@@ -238,6 +276,21 @@ function buildJobs(nodes: NodeRecord[]) {
   return jobs;
 }
 
+async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>) {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await fn(items[index]);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
 /** 이번 하늘 전체를 판단한다. 키가 없거나 실패하면 false. */
 export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
   if (!openaiKey() || nodes.length < 2) return false;
@@ -257,16 +310,19 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
 
   try {
     const jobs = buildJobs(nodes);
-    const raws = await Promise.all(jobs.map((job) => ask(job.people, job.requiredPairs)));
+    const batchMaps = await mapPool(jobs, ASK_CONCURRENCY, (job) =>
+      askComplete(job.people, job.requiredPairs, ids),
+    );
     const pairs = new Map<string, JudgeScores>();
-    for (const raw of raws) {
-      for (const [k, scores] of parsePairs(raw, ids)) {
+    for (const batch of batchMaps) {
+      for (const [k, scores] of batch) {
         pairs.set(k, mergeScore(pairs.get(k), scores));
       }
     }
-    // Every unordered pair must exist so omission cannot look like "never asked".
     for (const [a, b] of unorderedPairs([...ids])) {
-      if (!pairs.has(pairKey(a, b))) pairs.set(pairKey(a, b), { seek: 0, offer: 0, imagine: 0 });
+      if (!pairs.has(pairKey(a, b))) {
+        throw new Error("매칭 판단 불완전");
+      }
     }
     const merged = serializePairs(pairs);
     memory = { key, pairs };
