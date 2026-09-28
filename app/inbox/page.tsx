@@ -14,7 +14,7 @@ type Thread = {
 };
 
 function clock(iso: string) {
-  return new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default function InboxPage() {
@@ -39,9 +39,9 @@ export default function InboxPage() {
   return (
     <main className="pad cyp-inbox">
       <BackButton fallback="/my-node" />
-      <h1 className="lede">받은 말</h1>
+      <h1 className="lede">Inbox</h1>
 
-      {threads.length === 0 ? <p className="hint">아직 대화가 없다.</p> : null}
+      {threads.length === 0 ? <p className="hint">No conversations yet.</p> : null}
       <div className="threads">
         {threads.map((thread) => (
           <Link

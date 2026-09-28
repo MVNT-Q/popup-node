@@ -81,7 +81,7 @@ export default function BornPage() {
       const response = await fetch("/api/telegram/link", { method: "POST" });
       const data = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !data.url) {
-        setNote(data.error || "봇 설정이 아직 없습니다.");
+        setNote(data.error || "Telegram bot is not configured yet.");
         setConfigured(false);
         setBusy(false);
         return;
@@ -89,7 +89,7 @@ export default function BornPage() {
       markPromptDone();
       window.location.href = data.url;
     } catch {
-      setNote("봇 설정이 아직 없습니다.");
+      setNote("Telegram bot is not configured yet.");
       setConfigured(false);
       setBusy(false);
     }
@@ -139,13 +139,13 @@ export default function BornPage() {
             <div className="born-notify">
               {prompt === "ask" ? (
                 <>
-                  <h2 className="lede">텔레그램으로 채팅 알림</h2>
+                  <h2 className="lede">Chat alerts via Telegram</h2>
                   <p className="hint">
-                    채팅이 오면 텔레그램으로 노드 번호와 링크가 옵니다. 이 텔레그램에 적은 글은 상대에게 가지 않습니다.
+                    When a chat arrives, Telegram sends your node number and a link. Text you type in Telegram is not
+                    delivered to them.
                   </p>
-                  <p className="ko">Chat alerts via Telegram — node number and a link only.</p>
                   {!configured || note ? (
-                    <p className="hint">{note || "봇 설정이 아직 없습니다."}</p>
+                    <p className="hint">{note || "Telegram bot is not configured yet."}</p>
                   ) : null}
                   <button
                     className="btn"
@@ -153,23 +153,19 @@ export default function BornPage() {
                     disabled={busy}
                     onClick={() => void openTelegram()}
                   >
-                    텔레그램으로 받기
-                    <small>Get Telegram alerts</small>
+                    Get Telegram alerts
                   </button>
                   <button className="text-btn" type="button" onClick={skipAsk}>
-                    나중에
-                    <small>Later</small>
+                    Later
                   </button>
                 </>
               ) : (
                 <>
                   <p className="hint">
-                    채팅은 이 웹의 메시지 아이콘에서 확인합니다. 알림은 오른쪽 위 종 아이콘에서 나중에 켤 수 있습니다.
+                    Check chats via the site message icon. You can turn on alerts later from the bell.
                   </p>
-                  <p className="ko">Check chats on the message icon. Turn on alerts later from the bell.</p>
                   <button className="btn" type="button" onClick={dismissSkipNote}>
-                    알겠습니다
-                    <small>OK</small>
+                    OK
                   </button>
                 </>
               )}

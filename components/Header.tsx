@@ -81,13 +81,13 @@ export function Header() {
       </Link>
       {code != null && nodeLabel ? (
         <div className="top-actions">
-          <Link href="/alerts" className="bell" aria-label="알림 켜기">
+          <Link href="/alerts" className="bell" aria-label="Alerts">
             <BellIcon />
           </Link>
           <Link
             href="/inbox"
             className="bell"
-            aria-label={unread > 0 ? `받은 메시지, 안 읽은 ${unread}` : "받은 메시지"}
+            aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"}
           >
             <MessageIcon />
             {unread > 0 ? <i className="pip" /> : null}

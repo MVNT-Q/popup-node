@@ -23,7 +23,7 @@ export default function AlertsPage() {
     const response = await fetch("/api/telegram/link", { method: "POST" });
     const data = (await response.json()) as { url?: string; error?: string };
     if (!response.ok || !data.url) {
-      setNote(data.error || "연결 주소를 만들지 못했습니다.");
+      setNote(data.error || "Could not create a connect link.");
       return;
     }
     window.location.href = data.url;
@@ -33,7 +33,7 @@ export default function AlertsPage() {
     setNote("");
     const response = await fetch("/api/telegram/link", { method: "DELETE" });
     if (!response.ok) {
-      setNote("연결을 끊지 못했습니다.");
+      setNote("Could not disconnect Telegram.");
       return;
     }
     setLinked(false);
@@ -42,31 +42,30 @@ export default function AlertsPage() {
   return (
     <main className="pad cyp-inbox">
       <BackButton fallback="/my-node" />
-      <h1 className="lede">알림</h1>
+      <h1 className="lede">Alerts</h1>
 
       {linked ? (
-        <p className="hint">텔레그램 켜짐. 채팅이 오면 노드 번호와 링크가 옵니다.</p>
+        <p className="hint">Telegram is on. Chat alerts send your node number and a link.</p>
       ) : (
         <p className="hint">
-          채팅은 이 웹의 메시지 아이콘에서 확인합니다. 이 페이지에서 텔레그램 알림을 켭니다.
+          Check chats via the site message icon. Turn on Telegram alerts from this page.
         </p>
       )}
       <p className="hint">
-        다른 참가자에게 텔레그램 주소는 보이지 않습니다. 채팅은 이 사이트에 남습니다.
+        Other participants never see your Telegram. Chats stay on this site.
       </p>
 
       {configured && !linked ? (
-        <button className="btn-ghost btn-bi" type="button" onClick={() => void openTelegram()} style={{ marginTop: 10 }}>
-          텔레그램으로 받기
-          <small>Get Telegram alerts</small>
+        <button className="btn-ghost" type="button" onClick={() => void openTelegram()} style={{ marginTop: 10 }}>
+          Get Telegram alerts
         </button>
       ) : null}
       {linked ? (
         <button className="text-btn" type="button" onClick={() => void unlink()}>
-          텔레그램 연결 해제
+          Disconnect Telegram
         </button>
       ) : null}
-      {!configured ? <p className="hint">봇 설정이 아직 없습니다.</p> : null}
+      {!configured ? <p className="hint">Telegram bot is not configured yet.</p> : null}
       {note ? <p className="hint">{note}</p> : null}
     </main>
   );

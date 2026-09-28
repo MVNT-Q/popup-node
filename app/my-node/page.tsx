@@ -53,7 +53,7 @@ export default function MyNodePage() {
         stars?: Star[];
         edges?: { a: string; b: string; questions: number[] }[];
       };
-      if (!response.ok) throw new Error(data.error || "내 노드를 열지 못했습니다.");
+      if (!response.ok) throw new Error(data.error || "Could not open your node.");
       if (stop) return;
       const nextMe = data.me ?? null;
       const nextStars = data.stars ?? [];
@@ -75,7 +75,7 @@ export default function MyNodePage() {
       }
     }
     load().catch((reason) => {
-      if (!stop) setError(reason instanceof Error ? reason.message : "내 노드를 열지 못했습니다.");
+      if (!stop) setError(reason instanceof Error ? reason.message : "Could not open your node.");
     });
     return () => {
       stop = true;
@@ -153,8 +153,11 @@ export default function MyNodePage() {
   const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";
   const resonance = stars.filter((star) => midStrongHits(star.hits).length > 0).length;
 
+  // 기본 셋 다 켜짐. 하나를 누르면 그 슬롯만 남김(줄이 바뀌게). 다시 누르면 셋 복구. 꺼진 슬롯을 누르면 합집합에 추가.
   function toggle(index: number) {
     setOn((prev) => {
+      if (prev.length === 3) return [index];
+      if (prev.length === 1 && prev[0] === index) return [0, 1, 2];
       if (prev.includes(index)) {
         if (prev.length === 1) return prev;
         return prev.filter((item) => item !== index);
@@ -168,7 +171,7 @@ export default function MyNodePage() {
       <GroveBackdrop />
       <header className="cyp-sky-head">
         <div>
-          <p className="fine">MY NODE / 나의 NODE</p>
+          <p className="fine">MY NODE</p>
           <h1 className="cyp-sky-title">{codeLabel || "…"}</h1>
           <p className="cyp-sky-meta">
             ACTIVE · {stars.length ? `${resonance} RESONANT` : "NO RESONANCE YET"}
@@ -193,14 +196,13 @@ export default function MyNodePage() {
       {error ? <p className="cyp-error">{error}</p> : null}
 
       {!me ? (
-        <p className="hint center">불러오는 중</p>
+        <p className="hint center">Loading…</p>
       ) : (
         <>
           {/* 중·강 타인 없음: 문장만. 내 별(me)은 아래 하늘에 항상 그림 */}
           {stars.length === 0 ? (
             <div className="cyp-empty cyp-empty-with-self">
               <p>No overlapping nodes yet.</p>
-              <p className="ko">아직 공명하는 다른 노드가 없습니다.</p>
               <p className="hint">Someone who overlaps you on SEEK, OFFER, or IMAGINE will appear here.</p>
             </div>
           ) : null}
@@ -219,14 +221,10 @@ export default function MyNodePage() {
 
       <nav className="cyp-sky-actions">
         <Link className="cyp-btn ghost" href="/signals">
-          <span>MY SIGNALS</span>
-          <small>내 시그널</small>
+          MY SIGNALS
         </Link>
         <Link className="cyp-btn" href="/usershow">
-          <span>
-            EXPLORE THE NODE GROVE <i aria-hidden>→</i>
-          </span>
-          <small>노드 그로브 탐색하기</small>
+          EXPLORE THE NODE GROVE <i aria-hidden>→</i>
         </Link>
       </nav>
 
