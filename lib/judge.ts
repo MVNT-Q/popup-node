@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v8";
+const CRITERIA_VERSION = "criteria-v9";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -222,6 +222,16 @@ function applyLexicalMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores
     }
     if (hit.seek || hit.offer || hit.imagine) {
       storeDirected(pairs, aId, bId, hit.seek, hit.offer, hit.imagine);
+    }
+    // IMAGINE is identical/near-copy only — drop soft LLM atmosphere scores.
+    const key = pairKey(aId, bId);
+    const cur = pairs.get(key);
+    if (cur) {
+      pairs.set(key, {
+        seek: cur.seek,
+        offer: cur.offer,
+        imagine: clampScore(hit.imagine),
+      });
     }
   }
 }
