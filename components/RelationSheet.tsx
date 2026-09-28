@@ -180,6 +180,11 @@ export function RelationSheet({
             <span aria-hidden>{lang}</span>
           </button>
         </div>
+        <Link className="cyp-btn cyp-sheet-channel" href={`/chat/${id}`}>
+          <span>
+            {chrome.channel} <i aria-hidden>→</i>
+          </span>
+        </Link>
         <div className="cyp-sheet-blocks" key={`${variant}-${lang}`}>
           {variant === "answers"
             ? answerRows.map((block) => {
@@ -204,11 +209,6 @@ export function RelationSheet({
                 );
               })}
         </div>
-        <Link className="cyp-btn" href={`/chat/${id}`}>
-          <span>
-            {chrome.channel} <i aria-hidden>→</i>
-          </span>
-        </Link>
       </div>
     </>
   );

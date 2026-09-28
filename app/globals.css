@@ -1755,11 +1755,11 @@ textarea.cyp-input {
 .cyp-sheet {
   position: fixed;
   z-index: 40;
+  display: flex;
+  flex-direction: column;
   width: min(300px, calc(100vw - 24px));
   max-height: min(36dvh, 280px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding: 10px 12px 12px;
   border-radius: 14px;
   border: 1px solid rgba(28, 255, 138, 0.35);
@@ -1787,9 +1787,14 @@ textarea.cyp-input {
 }
 
 .cyp-sheet .cyp-btn {
+  flex: 0 0 auto;
   min-height: 44px;
-  margin-top: 8px;
+  margin-top: 0;
   letter-spacing: 0.08em;
+}
+
+.cyp-sheet-channel {
+  margin-bottom: 8px;
 }
 
 .cyp-sheet-close {
@@ -1830,11 +1835,12 @@ textarea.cyp-input {
 
 .cyp-sheet-blocks {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 6px;
-  flex: 0 0 auto;
   min-height: 0;
-  /* 높이 0으로 접히지 않게 — 카드 max-height 안에서 스크롤 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .cyp-sheet-row {
