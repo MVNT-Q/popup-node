@@ -70,7 +70,7 @@ export function zoomCam(cam: Cam, px: number, py: number, factor: number): Cam {
 
 /**
  * 선택한 별을 focusY(하늘 뷰포트 로컬 Y)에 두고 살짝 줌.
- * focusY는 제목 아래~카드(없으면 틱커) 위 빈 구간의 세로 중앙 — 고정 % 금지.
+ * focusY는 상단 카드 아래~틱커/액션/모드바 위 빈 하늘 중앙 — 고정 % 금지.
  */
 export function focusCam(star: Point, width: number, height: number, focusY?: number): Cam {
   if (width < 10 || height < 10) return { x: 0, y: 0, s: 1 };
@@ -83,7 +83,7 @@ export function focusCam(star: Point, width: number, height: number, focusY?: nu
   return { s, x: fx - star.x * s, y: fy - star.y * s };
 }
 
-/** 제목 블록 하단과 정보 카드(없으면 틱커·액션) 상단 사이 중앙 → 하늘 로컬 Y */
+/** 상단 정보 카드(없으면 제목) 아래와 틱커·액션·모드바 사이 중앙 → 하늘 로컬 Y */
 export function focusBandY(skyEl: HTMLElement): number {
   const sky = skyEl.getBoundingClientRect();
   const page = skyEl.closest(".cyp-sky-page");
@@ -91,11 +91,14 @@ export function focusBandY(skyEl: HTMLElement): number {
   const sheet = page?.querySelector(".cyp-sheet") ?? document.querySelector(".cyp-sheet");
   const ticker = page?.querySelector(".cyp-ticker");
   const actions = page?.querySelector(".cyp-sky-actions");
-  const topBound = head ? head.getBoundingClientRect().bottom : sky.top;
+  const modeBar = page?.querySelector(".cyp-mode-bar");
+  // 카드가 제목 아래 상단 — 별은 카드 밑 열린 하늘에 보이게
+  let topBound = head ? head.getBoundingClientRect().bottom : sky.top;
+  if (sheet) topBound = Math.max(topBound, sheet.getBoundingClientRect().bottom);
   let bottomBound = sky.bottom;
-  if (sheet) bottomBound = sheet.getBoundingClientRect().top;
-  else if (ticker) bottomBound = ticker.getBoundingClientRect().top;
-  else if (actions) bottomBound = actions.getBoundingClientRect().top;
+  if (ticker) bottomBound = Math.min(bottomBound, ticker.getBoundingClientRect().top);
+  else if (actions) bottomBound = Math.min(bottomBound, actions.getBoundingClientRect().top);
+  if (modeBar) bottomBound = Math.min(bottomBound, modeBar.getBoundingClientRect().top);
   if (bottomBound <= topBound + 16) return sky.height * 0.5;
   return (topBound + bottomBound) / 2 - sky.top;
 }

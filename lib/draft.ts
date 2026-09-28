@@ -2,6 +2,7 @@ export const DRAFT_KEY = "cyp3-node-draft";
 
 export type NodeDraft = {
   callsign: string;
+  email: string;
   seek: string;
   offer: string;
   tags: string[];
@@ -16,6 +17,7 @@ export function readDraft(): NodeDraft | null {
     if (!data.callsign || !data.seek) return null;
     return {
       callsign: String(data.callsign),
+      email: String(data.email ?? ""),
       seek: String(data.seek),
       offer: String(data.offer ?? ""),
       tags: Array.isArray(data.tags) ? data.tags.map((tag) => String(tag)) : [],

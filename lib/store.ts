@@ -6,7 +6,13 @@ import { emptySlots } from "./prompts";
 import { materializeSeed, patchSeedSlots, SEEDS } from "./seed";
 import type { Bag, Message, NodeRecord, Slot } from "./types";
 
-function blankGuest(code: number, name: string, slots: Slot[], tag: string | null): NodeRecord {
+function blankGuest(
+  code: number,
+  name: string,
+  slots: Slot[],
+  tag: string | null,
+  email: string | null = null,
+): NodeRecord {
   return {
     id: crypto.randomUUID(),
     code,
@@ -14,6 +20,7 @@ function blankGuest(code: number, name: string, slots: Slot[], tag: string | nul
     kind: "guest",
     tag,
     slots,
+    email,
     push: null,
     createdAt: new Date().toISOString(),
   };
@@ -154,6 +161,7 @@ async function ensurePg() {
           push jsonb,
           created_at timestamptz not null
         );
+        alter table node_person add column if not exists email text;
         create unique index if not exists node_person_tag on node_person (tag) where tag is not null;
         create table if not exists node_message (
           id text primary key,
@@ -216,6 +224,7 @@ type PersonRow = {
   kind: NodeRecord["kind"];
   tag: string | null;
   slots: Slot[];
+  email?: string | null;
   push: NodeRecord["push"];
   created_at: Date | string;
 };
@@ -228,6 +237,7 @@ function rowToNode(row: PersonRow): NodeRecord {
     kind: row.kind,
     tag: row.tag,
     slots: row.slots,
+    email: row.email ?? null,
     push: row.push,
     createdAt: new Date(row.created_at).toISOString(),
   };
@@ -267,7 +277,7 @@ export async function saveNode(node: NodeRecord): Promise<NodeRecord> {
   }
   const sql = sqlClient();
   await sql`
-    insert into node_person (id, code, name, kind, tag, slots, push, created_at)
+    insert into node_person (id, code, name, kind, tag, slots, email, push, created_at)
     values (
       ${node.id},
       ${node.code},
@@ -275,12 +285,14 @@ export async function saveNode(node: NodeRecord): Promise<NodeRecord> {
       ${node.kind},
       ${node.tag},
       ${sql.json(node.slots as unknown as postgres.JSONValue)},
+      ${node.email ?? null},
       ${node.push ? sql.json(node.push as unknown as postgres.JSONValue) : null},
       ${node.createdAt}
     )
     on conflict (id) do update set
       name = excluded.name,
       slots = excluded.slots,
+      email = excluded.email,
       push = excluded.push,
       tag = excluded.tag
   `;
@@ -311,11 +323,15 @@ export async function deleteNode(id: string): Promise<boolean> {
   return true;
 }
 
-export async function createGuest(name: string, slots: Slot[]): Promise<NodeRecord> {
+export async function createGuest(
+  name: string,
+  slots: Slot[],
+  email: string | null = null,
+): Promise<NodeRecord> {
   await requireStorage();
   if (!usePg()) {
     return withFile((bag, dirty) => {
-      const node = blankGuest(nextCode(bag.nodes), name, slots, null);
+      const node = blankGuest(nextCode(bag.nodes), name, slots, null, email);
       bag.nodes.push(node);
       dirty();
       return node;
@@ -324,7 +340,7 @@ export async function createGuest(name: string, slots: Slot[]): Promise<NodeReco
   const sql = sqlClient();
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const codeRows = await sql<{ c: number }[]>`select coalesce(max(code), 10) + 1 as c from node_person`;
-    const node = blankGuest(codeRows[0].c, name, slots, null);
+    const node = blankGuest(codeRows[0].c, name, slots, null, email);
     try {
       await saveNode(node);
       return node;
@@ -348,6 +364,7 @@ export async function claimTag(token: string): Promise<NodeRecord> {
         kind: "guest",
         tag: token,
         slots: emptySlots(),
+        email: null,
         push: null,
         createdAt: new Date().toISOString(),
       };
@@ -368,6 +385,7 @@ export async function claimTag(token: string): Promise<NodeRecord> {
       kind: "guest",
       tag: token,
       slots: emptySlots(),
+      email: null,
       push: null,
       createdAt: new Date().toISOString(),
     };

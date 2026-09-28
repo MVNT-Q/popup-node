@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { themeHits } from "@/lib/match";
 import {
   answerBlocks,
@@ -91,6 +91,33 @@ export function RelationSheet({
   const scrimArmedAt = useRef(0);
   useEffect(() => {
     scrimArmedAt.current = performance.now() + SCRIM_ARM_MS;
+  }, [id]);
+
+  // 제목(.cyp-sky-head) 바로 아래 — 하단 모드바·탭 위에 두지 않음
+  useLayoutEffect(() => {
+    const page = document.querySelector(".cyp-sky-page") as HTMLElement | null;
+    if (!page) return;
+    const place = () => {
+      const head = page.querySelector(".cyp-sky-head");
+      const gap = 8;
+      if (head) {
+        page.style.setProperty("--cyp-sheet-top", `${head.getBoundingClientRect().bottom + gap}px`);
+        return;
+      }
+      page.style.setProperty(
+        "--cyp-sheet-top",
+        `calc(env(safe-area-inset-top, 0px) + 72px)`,
+      );
+    };
+    place();
+    window.addEventListener("resize", place);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("resize", place);
+      vv?.removeEventListener("resize", place);
+      page.style.removeProperty("--cyp-sheet-top");
+    };
   }, [id]);
 
   function closeFromScrim(event: { preventDefault: () => void; stopPropagation: () => void }) {

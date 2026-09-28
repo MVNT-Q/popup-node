@@ -37,6 +37,7 @@ export default function ImaginePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: draft.callsign,
+          email: draft.email || undefined,
           slots: [{ answer: draft.seek }, { answer: draft.offer, tags: draft.tags }, { words, selected: [] }],
         }),
       });

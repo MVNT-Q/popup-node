@@ -18,6 +18,8 @@ export type NodeRecord = {
   kind: NodeKind;
   tag: string | null;
   slots: Slot[];
+  /** 행사 연락용. publicNode·그로브·정보 카드·타 참가자 API에 넣지 않음 */
+  email?: string | null;
   push: PushSub | null;
   createdAt: string;
 };

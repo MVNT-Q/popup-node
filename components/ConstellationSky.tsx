@@ -196,8 +196,9 @@ export function ConstellationSky({
       setCam(focusCam(target, node.clientWidth, node.clientHeight, focusBandY(node)));
     };
     apply();
-    // 카드가 같은 프레임에 붙을 수 있어 한 번 더
+    // 상단 카드가 붙고 --cyp-sheet-top이 잡힌 뒤 한 번 더 (별이 카드 밑에 남게)
     const raf = requestAnimationFrame(apply);
+    const later = window.setTimeout(apply, 80);
     const onResize = () => apply();
     window.addEventListener("resize", onResize);
     const vv = window.visualViewport;
@@ -205,6 +206,7 @@ export function ConstellationSky({
     vv?.addEventListener("scroll", onResize);
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(later);
       window.removeEventListener("resize", onResize);
       vv?.removeEventListener("resize", onResize);
       vv?.removeEventListener("scroll", onResize);

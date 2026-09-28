@@ -9,6 +9,16 @@ function fail(message: string, status: number) {
   return Response.json({ error: message }, { status });
 }
 
+/** 선택 입력. 비우면 null. 채우면 형식만 가볍게 검사. 응답·공개 API에는 넣지 않음 */
+function cleanEmail(raw: unknown): string | null | { error: string } {
+  const text = String(raw ?? "").trim().slice(0, 120);
+  if (!text) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) {
+    return { error: "이메일 형식을 확인해 주세요." };
+  }
+  return text.toLowerCase();
+}
+
 export async function GET() {
   if (!storageReady()) {
     return fail(storageMissingMessage(), 503);
@@ -28,6 +38,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     agent?: string;
     name?: string;
+    email?: unknown;
     slots?: unknown;
     update?: boolean;
   } | null;
@@ -48,6 +59,9 @@ export async function POST(request: Request) {
   }
   const name = String(body.name ?? "").trim().slice(0, 20);
   if (name.length < 2) return fail("콜사인을 두 글자 이상 적어 주세요.", 400);
+  const emailOrErr = cleanEmail(body.email);
+  if (emailOrErr && typeof emailOrErr === "object") return fail(emailOrErr.error, 400);
+  const email = emailOrErr;
 
   if (body.update) {
     const id = await readSessionId();
@@ -63,7 +77,7 @@ export async function POST(request: Request) {
   const existing = existingId ? await getNode(existingId) : null;
   if (existing) return fail("이 브라우저에는 이미 노드가 있습니다.", 409);
 
-  const node = await createGuest(name, slots);
+  const node = await createGuest(name, slots, email);
   await setSessionId(node.id);
   return Response.json({ me: publicNode(node) });
 }

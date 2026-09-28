@@ -1768,17 +1768,18 @@ textarea.cyp-input {
   box-sizing: border-box;
 }
 
+/* 정보 카드는 하늘 상단(제목 아래). 하단 GROVE/COLLECTIVE 바는 건드리지 않음 */
 .cyp-sheet-float {
   left: 50%;
-  top: auto;
   right: auto;
-  bottom: max(16px, env(safe-area-inset-bottom, 0px) + 8px);
+  bottom: auto;
+  top: var(--cyp-sheet-top, calc(env(safe-area-inset-top, 0px) + 96px));
   transform: translateX(-50%);
 }
 
-/* 그로브·전시: 카드·스크림은 모드바 바로 위 고정. 바를 가리지 않음 */
+/* 그로브·전시: 스크림만 모드바 위까지. 카드는 상단 유지 */
 .cyp-grove .cyp-sheet-float {
-  bottom: calc(var(--cyp-mode-bar-h, 60px) + 8px);
+  bottom: auto;
 }
 
 .cyp-grove .cyp-sheet-scrim {

@@ -48,6 +48,7 @@ export function personaRecords(now = new Date().toISOString()): NodeRecord[] {
     kind: "guest" as const,
     tag: null,
     slots: p.slots.map((slot) => ({ ...slot })),
+    email: null,
     push: null,
     createdAt: now,
   }));
