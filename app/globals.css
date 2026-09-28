@@ -1459,6 +1459,13 @@ textarea.cyp-input {
   min-height: 0;
 }
 
+/* /my-node: 빈 공명 문구 + 내 별 하늘이 같이 있을 때 — 문구가 flex를 먹지 않게 */
+.cyp-my-node > .cyp-empty-with-self {
+  flex: 0 0 auto;
+  padding: 8px 12px 4px;
+  justify-content: flex-start;
+}
+
 .cyp-sky {
   position: relative;
   flex: 1 1 auto;

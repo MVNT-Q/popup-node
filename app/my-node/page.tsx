@@ -194,23 +194,27 @@ export default function MyNodePage() {
 
       {!me ? (
         <p className="hint center">불러오는 중</p>
-      ) : stars.length === 0 ? (
-        <div className="cyp-empty">
-          <p>No overlapping nodes yet.</p>
-          <p className="ko">아직 공명하는 노드가 없습니다.</p>
-          <p className="hint">Someone who overlaps you on SEEK, OFFER, or IMAGINE will appear here.</p>
-        </div>
       ) : (
-        <ConstellationSky
-          stars={skyStars}
-          edges={skyEdges}
-          focusId={picked}
-          onPick={(id) => {
-            // 내 별은 청록 링만 — 정보 카드 열지 않음. 타인 별만 토글.
-            if (me && id === me.id) return;
-            setPicked((prev) => (prev === id ? null : id));
-          }}
-        />
+        <>
+          {/* 중·강 타인 없음: 문장만. 내 별(me)은 아래 하늘에 항상 그림 */}
+          {stars.length === 0 ? (
+            <div className="cyp-empty cyp-empty-with-self">
+              <p>No overlapping nodes yet.</p>
+              <p className="ko">아직 공명하는 다른 노드가 없습니다.</p>
+              <p className="hint">Someone who overlaps you on SEEK, OFFER, or IMAGINE will appear here.</p>
+            </div>
+          ) : null}
+          <ConstellationSky
+            stars={skyStars}
+            edges={skyEdges}
+            focusId={picked}
+            onPick={(id) => {
+              // 내 별은 청록 링만 — 정보 카드 열지 않음. 타인 별만 토글.
+              if (me && id === me.id) return;
+              setPicked((prev) => (prev === id ? null : id));
+            }}
+          />
+        </>
       )}
 
       <nav className="cyp-sky-actions">
