@@ -180,7 +180,16 @@ export function RelationSheet({
             <span aria-hidden>{lang}</span>
           </button>
         </div>
-        <Link className="cyp-btn cyp-sheet-channel" href={`/chat/${id}`}>
+        <Link
+          className="cyp-btn cyp-sheet-channel"
+          href={`/chat/${id}`}
+          onClick={(event) => {
+            if (performance.now() < scrimArmedAt.current) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }}
+        >
           <span>
             {chrome.channel} <i aria-hidden>→</i>
           </span>

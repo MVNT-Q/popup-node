@@ -5,6 +5,21 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { rememberNode } from "@/lib/nodePresence";
 
+function BellIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <path
+        d="M8 2.2a3.1 3.1 0 0 0-3.1 3.1v2L3.4 9.4v.9h9.2v-.9L11.1 7.3v-2A3.1 3.1 0 0 0 8 2.2Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M6.8 11.3a1.2 1.2 0 0 0 2.4 0" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 function MessageIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
@@ -66,6 +81,9 @@ export function Header() {
       </Link>
       {code != null && nodeLabel ? (
         <div className="top-actions">
+          <Link href="/alerts" className="bell" aria-label="알림 켜기">
+            <BellIcon />
+          </Link>
           <Link
             href="/inbox"
             className="bell"
