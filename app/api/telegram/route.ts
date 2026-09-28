@@ -1,4 +1,4 @@
-import { bindTelegramStart, sendTelegram, webhookSecretOk } from "@/lib/telegram";
+import { bindTelegramStart, connectHint, expiredNotice, linkedNotice, roomNotice, sendTelegram, webhookSecretOk } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,17 +18,19 @@ export async function POST(request: Request) {
   const update = (await request.json().catch(() => null)) as Update | null;
   const text = update?.message?.text?.trim() ?? "";
   const chatId = update?.message?.chat?.id;
-  if (!text.startsWith("/start") || chatId == null) {
+  if (chatId == null) return Response.json({ ok: true });
+  if (!text.startsWith("/start")) {
+    if (text) await sendTelegram(String(chatId), roomNotice());
     return Response.json({ ok: true });
   }
   const payload = text.replace(/^\/start(?:@\w+)?/, "").trim();
   const node = payload ? await bindTelegramStart(payload, String(chatId)) : null;
   if (node) {
-    await sendTelegram(String(chatId), `NODE #${String(node.code).padStart(3, "0")}에 연결됐습니다. 채팅이 오면 여기로 옵니다. 알림 탭을 닫아도 그대로 옵니다.`);
+    await sendTelegram(String(chatId), linkedNotice(node.code));
   } else if (payload) {
-    await sendTelegram(String(chatId), "연결 시간이 지났습니다. 알림 화면에서 다시 열어 주세요.");
+    await sendTelegram(String(chatId), expiredNotice());
   } else {
-    await sendTelegram(String(chatId), "알림 화면의 텔레그램으로 받기 버튼으로 연결해 주세요.");
+    await sendTelegram(String(chatId), connectHint());
   }
   return Response.json({ ok: true });
 }

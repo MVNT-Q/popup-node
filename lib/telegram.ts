@@ -63,15 +63,50 @@ export async function sendTelegram(chatId: string, text: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: text.slice(0, 500),
+      text: text.slice(0, 1200),
       disable_web_page_preview: true,
     }),
   });
 }
 
+const ALERT_ONLY = `채팅은 CYP3 사이트에서 하세요. 이 텔레그램은 알림만 오는 곳이고, 여기 적은 글은 상대에게 가지 않습니다.
+Chat on the CYP3 site. This Telegram is only for alerts. Anything you type here is not sent to them.
+${SITE}`;
+
+export function linkedNotice(code: number) {
+  const label = String(code).padStart(3, "0");
+  return `NODE #${label}에 연결됐습니다. 채팅이 오면 여기로 옵니다. 알림 탭을 닫아도 그대로 옵니다.
+NODE #${label} is connected. Chats arrive here even if you close the alerts tab.
+
+${ALERT_ONLY}`;
+}
+
+export function expiredNotice() {
+  return `연결 시간이 지났습니다. 알림 화면에서 텔레그램으로 받기를 다시 눌러 주세요.
+This link expired. On the Alerts page, tap Telegram alerts again.
+
+${ALERT_ONLY}`;
+}
+
+export function connectHint() {
+  return `알림 화면의 텔레그램으로 받기 버튼으로 연결해 주세요.
+Connect from the Alerts page, with the Telegram button.
+
+${ALERT_ONLY}`;
+}
+
+export function roomNotice() {
+  return ALERT_ONLY;
+}
+
 export function chatNotice(code: number, fromId: string) {
   const label = String(code).padStart(3, "0");
-  return `NODE #${label} 채팅이 왔습니다.\n${SITE}/chat/${fromId}`;
+  return `NODE #${label} 채팅이 왔습니다.
+NODE #${label} sent a chat.
+${SITE}/chat/${fromId}
+
+채팅은 위 링크의 CYP3에서 하세요. 이 텔레그램은 알림만 옵니다.
+Reply on CYP3 using the link above. This Telegram only sends alerts.`;
 }
 
 export async function nodeById(id: string) {

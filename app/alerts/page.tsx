@@ -63,7 +63,7 @@ export default function AlertsPage() {
       <p className="hint">
         {linked ? "텔레그램 켜짐. 채팅이 오면 노드 번호와 링크만 옵니다. 이 탭을 닫아도 옵니다." : "텔레그램 꺼짐."}
       </p>
-      <p className="hint">다른 참가자에게 텔레그램 주소는 보이지 않습니다.</p>
+      <p className="hint">다른 참가자에게 텔레그램 주소는 보이지 않습니다. 채팅은 이 사이트에서 하고, 텔레그램은 알림만 옵니다.</p>
       {configured && !linked ? (
         <button className="btn-ghost" type="button" onClick={() => void openTelegram()} style={{ marginTop: 10 }}>
           텔레그램으로 받기
