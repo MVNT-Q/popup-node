@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BackButton } from "@/components/BackButton";
 
@@ -12,7 +12,6 @@ function clock(iso: string) {
 
 export default function ChatPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const otherId = params.id;
   const [meId, setMeId] = useState("");
   const [code, setCode] = useState<number | null>(null);
@@ -28,7 +27,8 @@ export default function ChatPage() {
     async function load() {
       const response = await fetch(`/api/chat/${otherId}`, { cache: "no-store" });
       if (response.status === 401) {
-        router.replace("/");
+        if (!stop) setError("이 브라우저에는 노드가 없습니다. 텔레그램의 채팅 링크를 다시 눌러 주세요.");
+        stop = true;
         return;
       }
       const data = (await response.json()) as {
@@ -54,17 +54,20 @@ export default function ChatPage() {
     }
     let timer = 0;
     const tick = () => {
-      load().catch((reason) => {
-        if (!stop) setError(reason instanceof Error ? reason.message : "채팅을 열지 못했습니다.");
-      });
-      if (!stop) timer = window.setTimeout(tick, 700);
+      load()
+        .catch((reason) => {
+          if (!stop) setError(reason instanceof Error ? reason.message : "채팅을 열지 못했습니다.");
+        })
+        .finally(() => {
+          if (!stop) timer = window.setTimeout(tick, 700);
+        });
     };
     tick();
     return () => {
       stop = true;
       window.clearTimeout(timer);
     };
-  }, [otherId, router]);
+  }, [otherId]);
 
   useEffect(() => {
     if (!stick.current) return;

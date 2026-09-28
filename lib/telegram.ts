@@ -1,3 +1,4 @@
+import { chatOpenUrl } from "./chatLink";
 import { getNode, listNodes, saveNode } from "./store";
 import type { NodeRecord } from "./types";
 
@@ -99,11 +100,11 @@ export function roomNotice() {
   return ALERT_ONLY;
 }
 
-export function chatNotice(code: number, fromId: string) {
+export function chatNotice(code: number, fromId: string, toId: string) {
   const label = String(code).padStart(3, "0");
   return `NODE #${label} 채팅이 왔습니다.
 NODE #${label} sent a chat.
-${SITE}/chat/${fromId}
+${chatOpenUrl(toId, fromId)}
 
 채팅은 위 링크의 CYP3에서 하세요. 이 텔레그램은 알림만 옵니다.
 Reply on CYP3 using the link above. This Telegram only sends alerts.`;

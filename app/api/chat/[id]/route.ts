@@ -3,6 +3,7 @@ import { sendPush } from "@/lib/push";
 import { readSessionId } from "@/lib/session";
 import { publicNode } from "@/lib/slots";
 import { addMessage, getNode, listThread, markRead, saveNode, storageMissingMessage, storageReady } from "@/lib/store";
+import { chatOpenPath } from "@/lib/chatLink";
 import { chatNotice, sendTelegram } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +57,7 @@ export async function POST(request: Request, ctx: Ctx) {
     const otherId = other.id;
     after(async () => {
       if (sub) {
-        const result = await sendPush(sub, { title, body: text, url: `/chat/${fromId}` });
+        const result = await sendPush(sub, { title, body: text, url: chatOpenPath(otherId, fromId) });
         if (result.gone) {
           const fresh = await getNode(otherId);
           if (fresh) {
@@ -66,7 +67,7 @@ export async function POST(request: Request, ctx: Ctx) {
         }
       }
       if (telegramChatId) {
-        await sendTelegram(telegramChatId, chatNotice(fromCode, fromId));
+        await sendTelegram(telegramChatId, chatNotice(fromCode, fromId, otherId));
       }
     });
   }
