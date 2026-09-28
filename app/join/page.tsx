@@ -81,8 +81,10 @@ export default function JoinPage() {
         />
         <p className="fine">e.g. HEX3 / LUNA / ORBIT / NULL</p>
         <label className="label" htmlFor="join-email">
-          EMAIL <span aria-hidden>(optional)</span> / 이메일 <span aria-hidden>(선택)</span>
+          EMAIL (Optional)
         </label>
+        <p>Leave your email so we can reconnect as the network grows.</p>
+        <p className="ko">네트워크가 확장될 때 다시 연결될 수 있도록 이메일을 남겨주세요.</p>
         <input
           id="join-email"
           className="cyp-input"
@@ -91,15 +93,11 @@ export default function JoinPage() {
           autoComplete="email"
           value={email}
           maxLength={120}
-          placeholder="you@example.com"
+          placeholder="you@email.com"
           onChange={(event) => setEmail(event.target.value)}
         />
-        <p className="fine">
-          이메일은 이 행사에서 당신에게 연락할 때만 쓰며, 다른 참가자에게 보이지 않습니다.
-        </p>
-        <p className="fine">
-          Your email is used only to contact you about this event and is not shown to other participants.
-        </p>
+        <p className="fine">Not shown to other participants.</p>
+        <p className="fine ko">다른 참여자에게 공개되지 않습니다.</p>
       </section>
 
       <section className="block">

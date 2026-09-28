@@ -1,19 +1,32 @@
 import { NextResponse } from "next/server";
-import { issueTicket, openLinkOk } from "@/lib/chatLink";
-import { COOKIE } from "@/lib/session";
+import { issueTicket, openLinkOk, sessionLinkOk } from "@/lib/chatLink";
+import { COOKIE, setSessionId } from "@/lib/session";
 import { getNode, storageMissingMessage, storageReady } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** 알림 링크. 받는 노드로 들어온 뒤 그 사람과의 채팅으로 보낸다. */
+/** 알림 링크. with 있으면 채팅, 없으면 세션만 심고 /my-node. */
 export async function GET(request: Request) {
   if (!storageReady()) return new Response(storageMissingMessage(), { status: 503 });
   const url = new URL(request.url);
   const meId = url.searchParams.get("me") ?? "";
-  const withId = url.searchParams.get("with") ?? "";
+  const withId = url.searchParams.get("with");
   const exp = Number(url.searchParams.get("exp") ?? "");
   const sig = url.searchParams.get("sig") ?? "";
+
+  if (!withId) {
+    if (!sessionLinkOk(meId, exp, sig)) {
+      return new Response("링크가 맞지 않습니다. 텔레그램의 링크를 다시 눌러 주세요.", { status: 400 });
+    }
+    const me = await getNode(meId);
+    if (!me) {
+      return new Response("노드를 찾지 못했습니다.", { status: 404 });
+    }
+    await setSessionId(me.id);
+    return NextResponse.redirect(new URL("/my-node", request.url));
+  }
+
   if (!openLinkOk(meId, withId, exp, sig)) {
     return new Response("채팅 링크가 맞지 않습니다. 텔레그램의 링크를 다시 눌러 주세요.", { status: 400 });
   }

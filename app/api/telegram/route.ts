@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const payload = text.replace(/^\/start(?:@\w+)?/, "").trim();
   const node = payload ? await bindTelegramStart(payload, String(chatId)) : null;
   if (node) {
-    await sendTelegram(String(chatId), linkedNotice(node.code));
+    await sendTelegram(String(chatId), linkedNotice(node.code, node.id));
   } else if (payload) {
     await sendTelegram(String(chatId), expiredNotice());
   } else {

@@ -177,7 +177,7 @@ export function RelationSheet({
             aria-pressed={true}
             onClick={() => setLang((prev) => (prev === "en" ? "ko" : "en"))}
           >
-            <span aria-hidden>{lang}</span>
+            <span aria-hidden>{lang === "en" ? "KR" : "EN"}</span>
           </button>
         </div>
         <Link

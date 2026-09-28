@@ -16,7 +16,7 @@ export function BackButton({ fallback }: { fallback: string }) {
         router.push(fallback);
       }}
     >
-      뒤로
+      {"<- Back"}
     </button>
   );
 }

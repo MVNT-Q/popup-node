@@ -1,4 +1,4 @@
-import { chatOpenUrl } from "./chatLink";
+import { chatOpenUrl, sessionOpenUrl } from "./chatLink";
 import { getNode, listNodes, saveNode } from "./store";
 import type { NodeRecord } from "./types";
 
@@ -74,12 +74,16 @@ Chat on the CYP3 site. This Telegram is only for alerts. Anything you type here 
 노드를 만든 브라우저나 홈 화면 아이콘으로 돌아가세요. 이 텔레그램 안에서 링크를 열면 다른 브라우저가 열려 노드를 다시 만들게 됩니다.
 Go back to the browser or home-screen icon where you created your node. Opening a link inside Telegram opens another browser, and you may be asked to create a node again.`;
 
-export function linkedNotice(code: number) {
+export function linkedNotice(code: number, nodeId: string) {
   const label = String(code).padStart(3, "0");
-  return `NODE #${label}에 연결됐습니다. 채팅이 오면 여기로 옵니다. 알림 탭을 닫아도 그대로 옵니다.
-NODE #${label} is connected. Chats arrive here even if you close the alerts tab.
+  const url = sessionOpenUrl(nodeId);
+  return `NODE #${label}에 연결됐습니다. 아래 주소를 열면 내 노드가 열립니다.
+NODE #${label} is connected. Open the link below to land in your node.
 
-${ALERT_ONLY}`;
+${url}
+
+채팅이 오면 여기로 옵니다. 이 텔레그램에 적은 글은 상대에게 가지 않습니다.
+Chats arrive here. Anything you type in this Telegram is not sent to them.`;
 }
 
 export function expiredNotice() {
