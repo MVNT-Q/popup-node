@@ -20,6 +20,10 @@ export type NodeRecord = {
   slots: Slot[];
   /** 행사 연락용. publicNode·그로브·정보 카드·타 참가자 API에 넣지 않음 */
   email?: string | null;
+  /** 봇 대화방. 공개 API에 넣지 않음 */
+  telegramChatId?: string | null;
+  telegramLinkCode?: string | null;
+  telegramLinkUntil?: string | null;
   push: PushSub | null;
   createdAt: string;
 };

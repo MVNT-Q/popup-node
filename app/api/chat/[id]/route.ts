@@ -3,6 +3,7 @@ import { sendPush } from "@/lib/push";
 import { readSessionId } from "@/lib/session";
 import { publicNode } from "@/lib/slots";
 import { addMessage, getNode, listThread, markRead, saveNode, storageMissingMessage, storageReady } from "@/lib/store";
+import { chatNotice, sendTelegram } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,17 +47,27 @@ export async function POST(request: Request, ctx: Ctx) {
   };
   await addMessage(message);
   await markRead(me.id, other.id, message.at);
-  if (other.push) {
+  if (other.push || other.telegramChatId) {
     const sub = other.push;
+    const telegramChatId = other.telegramChatId ?? "";
     const title = `NODE ${me.code}`;
+    const fromId = me.id;
+    const fromCode = me.code;
     const otherId = other.id;
     after(async () => {
-      const result = await sendPush(sub, { title, body: text, url: `/chat/${me.id}` });
-      if (!result.gone) return;
-      const fresh = await getNode(otherId);
-      if (!fresh) return;
-      fresh.push = null;
-      await saveNode(fresh);
+      if (sub) {
+        const result = await sendPush(sub, { title, body: text, url: `/chat/${fromId}` });
+        if (result.gone) {
+          const fresh = await getNode(otherId);
+          if (fresh) {
+            fresh.push = null;
+            await saveNode(fresh);
+          }
+        }
+      }
+      if (telegramChatId) {
+        await sendTelegram(telegramChatId, chatNotice(fromCode, fromId));
+      }
     });
   }
   return Response.json({ message });

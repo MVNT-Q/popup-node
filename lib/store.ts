@@ -162,6 +162,9 @@ async function ensurePg() {
           created_at timestamptz not null
         );
         alter table node_person add column if not exists email text;
+        alter table node_person add column if not exists telegram_chat_id text;
+        alter table node_person add column if not exists telegram_link_code text;
+        alter table node_person add column if not exists telegram_link_until timestamptz;
         create unique index if not exists node_person_tag on node_person (tag) where tag is not null;
         create table if not exists node_message (
           id text primary key,
@@ -229,6 +232,9 @@ type PersonRow = {
   tag: string | null;
   slots: Slot[];
   email?: string | null;
+  telegram_chat_id?: string | null;
+  telegram_link_code?: string | null;
+  telegram_link_until?: Date | string | null;
   push: NodeRecord["push"];
   created_at: Date | string;
 };
@@ -242,6 +248,11 @@ function rowToNode(row: PersonRow): NodeRecord {
     tag: row.tag,
     slots: row.slots,
     email: row.email ?? null,
+    telegramChatId: row.telegram_chat_id ?? null,
+    telegramLinkCode: row.telegram_link_code ?? null,
+    telegramLinkUntil: row.telegram_link_until
+      ? new Date(row.telegram_link_until).toISOString()
+      : null,
     push: row.push,
     createdAt: new Date(row.created_at).toISOString(),
   };
@@ -281,7 +292,10 @@ export async function saveNode(node: NodeRecord): Promise<NodeRecord> {
   }
   const sql = sqlClient();
   await sql`
-    insert into node_person (id, code, name, kind, tag, slots, email, push, created_at)
+    insert into node_person (
+      id, code, name, kind, tag, slots, email, push, created_at,
+      telegram_chat_id, telegram_link_code, telegram_link_until
+    )
     values (
       ${node.id},
       ${node.code},
@@ -291,14 +305,20 @@ export async function saveNode(node: NodeRecord): Promise<NodeRecord> {
       ${sql.json(node.slots as unknown as postgres.JSONValue)},
       ${node.email ?? null},
       ${node.push ? sql.json(node.push as unknown as postgres.JSONValue) : null},
-      ${node.createdAt}
+      ${node.createdAt},
+      ${node.telegramChatId ?? null},
+      ${node.telegramLinkCode ?? null},
+      ${node.telegramLinkUntil ?? null}
     )
     on conflict (id) do update set
       name = excluded.name,
       slots = excluded.slots,
       email = excluded.email,
       push = excluded.push,
-      tag = excluded.tag
+      tag = excluded.tag,
+      telegram_chat_id = excluded.telegram_chat_id,
+      telegram_link_code = excluded.telegram_link_code,
+      telegram_link_until = excluded.telegram_link_until
   `;
   return node;
 }
