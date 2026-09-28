@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v6";
+const CRITERIA_VERSION = "criteria-v7";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -120,38 +120,99 @@ function storeDirected(
   }
 }
 
+/** Shared content words — backs short Korean near-copies without a name list. */
+function tokenFit(left: string, right: string): number {
+  const stop = new Set([
+    "같이",
+    "사람",
+    "하고",
+    "싶은",
+    "싶음",
+    "있는",
+    "없는",
+    "및",
+    "또는",
+    "the",
+    "and",
+    "for",
+    "with",
+    "need",
+    "want",
+    "help",
+  ]);
+  const toks = (text: string) =>
+    normText(text)
+      .split(/[\s,/·|,]+/)
+      .map((t) => t.replace(/[만와과을를이가요]$/u, ""))
+      .filter((t) => t.length >= 2 && !stop.has(t));
+  const a = toks(left);
+  const b = toks(right);
+  if (!a.length || !b.length) return 0;
+  let strong = 0;
+  for (const t of a) {
+    for (const u of b) {
+      if (t === u || (t.length >= 3 && u.length >= 3 && (t.includes(u) || u.includes(t)))) {
+        if (Math.min(t.length, u.length) >= 3) strong += 1;
+        break;
+      }
+    }
+  }
+  if (strong >= 2) return 0.9;
+  if (strong >= 1) return 0.6;
+  return 0;
+}
+
 /**
- * Identical text is a match without the model — covers near-copy regressions
- * where a busy completion returns 0 for the same sentence.
+ * Phrase overlap for short/near-copy sentences the model often zeros in batches.
+ * Not persona-specific — shared contiguous text / content tokens only.
  */
-function exactScores(a: NodeRecord, b: NodeRecord): JudgeScores {
+function phraseFit(left: string, right: string): number {
+  const a = normText(left);
+  const b = normText(right);
+  if (!a || !b) return 0;
+  if (a === b) return 0.9;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  if (shorter.length >= 6 && longer.includes(shorter)) return 0.9;
+  for (let len = Math.min(shorter.length, 16); len >= 8; len -= 1) {
+    for (let i = 0; i <= shorter.length - len; i += 1) {
+      if (longer.includes(shorter.slice(i, i + len))) return 0.9;
+    }
+  }
+  for (let i = 0; i <= shorter.length - 6; i += 1) {
+    if (longer.includes(shorter.slice(i, i + 6))) return 0.6;
+  }
+  return tokenFit(left, right);
+}
+
+/**
+ * Identical / near-copy text is a match without trusting a busy completion.
+ * Empty seekers (Nobody) opt out of all axes for that person-pair.
+ */
+function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   const left = answersOf(a);
   const right = answersOf(b);
-  const seek =
-    !isEmptySeek(left[0]) && normText(left[0]) && normText(left[0]) === normText(right[1])
-      ? 0.9
-      : 0;
-  const offer =
-    !isEmptySeek(right[0]) && normText(left[1]) && normText(left[1]) === normText(right[0])
-      ? 0.9
-      : 0;
+  if (isEmptySeek(left[0]) || isEmptySeek(right[0])) {
+    return { seek: 0, offer: 0, imagine: 0 };
+  }
+  const seek = phraseFit(left[0], right[1]);
+  const offer = phraseFit(left[1], right[0]);
   const imagine =
-    !isVagueImagine(left[2]) &&
-    !isVagueImagine(right[2]) &&
-    normText(left[2]) &&
-    normText(left[2]) === normText(right[2])
-      ? 0.9
-      : 0;
+    isVagueImagine(left[2]) || isVagueImagine(right[2]) ? 0 : phraseFit(left[2], right[2]);
   return { seek, offer, imagine };
 }
 
-function applyExactMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores>) {
+function applyLexicalMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores>) {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   for (const [aId, bId] of unorderedPairs(nodes.map((node) => node.id))) {
     const a = byId.get(aId);
     const b = byId.get(bId);
     if (!a || !b) continue;
-    const hit = exactScores(a, b);
+    const hit = lexicalScores(a, b);
+    if (isEmptySeek(answersOf(a)[0]) || isEmptySeek(answersOf(b)[0])) {
+      pairs.set(pairKey(aId, bId), { seek: 0, offer: 0, imagine: 0 });
+      continue;
+    }
     if (hit.seek || hit.offer || hit.imagine) {
       storeDirected(pairs, aId, bId, hit.seek, hit.offer, hit.imagine);
     }
@@ -344,8 +405,8 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
         pairs.set(k, mergeScore(pairs.get(k), scores));
       }
     }
-    // Deterministic identical-text hits win over a lazy 0 from the model.
-    applyExactMatches(nodes, pairs);
+    // Deterministic phrase hits win over a lazy 0; Nobody seekers clear the pair.
+    applyLexicalMatches(nodes, pairs);
     for (const [a, b] of unorderedPairs([...ids])) {
       if (!pairs.has(pairKey(a, b))) {
         throw new Error("매칭 판단 불완전");
