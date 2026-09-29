@@ -35,7 +35,6 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
-  const laid = useRef(false);
   const touching = useRef(false);
   const collectiveSince = useRef(0);
   const pickedRef = useRef<string | null>(null);
@@ -67,8 +66,8 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
       setImagines(data.imagines ?? []);
       setCounts(data.counts ?? { nodes: 0, connections: 0 });
       setError("");
-      if (nextAll.length && !laid.current) {
-        laid.current = true;
+      // 폴링 합류도 새로고침과 같은 layoutGrove. laid 한 번만이면 신규가 (500,500)에 겹침.
+      if (nextAll.length) {
         setLayout(layoutGrove(nextAll.map((n) => ({ id: n.id, code: n.code })), nextEdges));
       }
     }
