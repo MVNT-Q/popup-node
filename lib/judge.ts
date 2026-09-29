@@ -31,7 +31,7 @@ function kindsOf(node: NodeRecord, index: number) {
 }
 
 /** Bump when match criteria change so node_judge cache re-asks the model. */
-const CRITERIA_VERSION = "criteria-v13";
+const CRITERIA_VERSION = "criteria-v14";
 
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
@@ -133,6 +133,10 @@ function tokenFit(left: string, right: string): number {
   const stop = new Set([
     "같이",
     "사람",
+    "세상",
+    "미래",
+    "기술",
+    "행복",
     "하고",
     "싶은",
     "싶음",
@@ -147,6 +151,19 @@ function tokenFit(left: string, right: string): number {
     "need",
     "want",
     "help",
+    "people",
+    "person",
+    "community",
+    "creative",
+    "future",
+    "world",
+    "better",
+    "good",
+    "happy",
+    "tech",
+    "technology",
+    "network",
+    "networking",
   ]);
   const toks = (text: string) =>
     normText(text)
@@ -165,17 +182,9 @@ function tokenFit(left: string, right: string): number {
       }
     }
   }
-  if (strong >= 2) return 0.9;
-  if (strong >= 1 && Math.max(...a.map((t) => t.length), ...b.map((t) => t.length)) >= 3) {
-    // one solid content word (3+ chars) is enough for mid
-    for (const t of a) {
-      for (const u of b) {
-        if ((t === u || t.includes(u) || u.includes(t)) && Math.min(t.length, u.length) >= 3) {
-          return 0.6;
-        }
-      }
-    }
-  }
+  // Two+ shared content tokens = near-copy mid/strong. One vague word is not a line.
+  if (strong >= 3) return 0.9;
+  if (strong >= 2) return 0.6;
   return 0;
 }
 
@@ -330,16 +339,19 @@ async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
         {
           role: "system",
           content: [
-            "You match people at a gathering by meaning. Matching is OR across axes — one direction is enough.",
+            "You match people at a gathering by concrete meaning. Matching is OR across axes — one direction is enough.",
             "SEEK is what they look for. OFFER is what they can give. IMAGINE is the future life they want.",
             "For each required pair (a,b): seek = a SEEK vs b OFFER; offer = a OFFER vs b SEEK; imagine = both IMAGINE.",
-            "If one side can give what the other is looking for — even in a short or almost identical sentence — that direction is a match.",
-            "Score 0.9 when the fit is clear and strong. Score 0.6 when it clearly fits. Score 0 when it does not.",
+            "A line needs the written sentences to name the same concrete exchange: one side is looking for X and the other can actually do or give that X, OR both IMAGINE the same specific picture of life.",
+            "Short text and Korean/English still count when that concrete X is clear — including near-identical SEEK/OFFER wording.",
+            "Shared atmosphere alone is NOT a match (score 0): both \"tech\", both \"creative\", both \"community\", both \"a better future\", both \"people\", both hopeful, or vague networking without the same concrete X.",
+            "Example of NOT a match: fashion/NFC/AI community experiment SEEK vs growth-hacking networking OFFER — related vibe, different X → 0.",
+            "IMAGINE: same specific picture only. Same hopeful direction with different lives (existence questions vs AI takes labor vs people matter more) → 0.",
+            "Vague backdrop (\"world\", \"good world\", \"everyone happy\", \"모두가 행복\") is imagine 0.",
+            "Score 0.9 when the concrete fit is clear and strong. Score 0.6 when the concrete X fits. Score 0 when it does not. Never score 0.1–0.39 to \"almost\" — use 0 or 0.6+.",
             "A match on ANY ONE axis is enough (OR, not AND). Do NOT require both seek and offer. Do NOT require imagine on top of a seek/offer hit.",
-            "IMAGINE: match when the two futures are the same kind of life or the same picture, even if one side wrote only a few words. A two or three character answer can be a full match when it points at the same thing. Infer meaning the way a person would — do not use character count.",
-            "Vague backdrop that does not name a life (\"world\", \"good world\", \"everyone happy\", \"모두가 행복\") is imagine 0 — that refusal is meaning, not length.",
-            "Korean and English match when the meaning fits.",
-            "seekKinds / offerKinds are chips: they support when they fit the sentences, but are not a free pass.",
+            "seekKinds / offerKinds are chips (hints only, max four). They may weakly support when they agree with the sentences.",
+            "Chips alone never become a line: if the sentences do not name the same concrete X, that axis is 0 even when chips overlap.",
             "If a sentence contradicts a chip, trust the sentence.",
             "Empty SEEK (Nobody / no one / blank): seek and offer for that pair are 0. Do not zero a real IMAGINE overlap just because SEEK is Nobody.",
             "You MUST return exactly one row for every entry in requiredPairs. Never omit a pair — use 0,0,0 if none of the three fit.",
