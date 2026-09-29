@@ -520,6 +520,17 @@ export async function markRead(reader: string, other: string, at: string) {
   `;
 }
 
+export async function listJudges(): Promise<{ k: string; v: string }[]> {
+  await requireStorage();
+  if (!usePg()) {
+    return withFile((bag) =>
+      Object.entries(bag.judgments ?? {}).map(([k, v]) => ({ k, v })),
+    );
+  }
+  const rows = await sqlClient()<{ k: string; v: string }[]>`select k, v from node_judge`;
+  return rows;
+}
+
 export async function getJudge(key: string): Promise<string | null> {
   await requireStorage();
   if (!usePg()) {

@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { getJudge, setJudge } from "./store";
+import { getJudge, listJudges, setJudge } from "./store";
 import type { NodeRecord } from "./types";
 
 export type JudgeScores = { seek: number; offer: number; imagine: number };
@@ -349,6 +349,65 @@ function parseStamped(raw: string, stamps: Map<string, string>) {
   return pairs;
 }
 
+function idsInPairs(pairs: Map<string, JudgeScores>) {
+  const ids = new Set<string>();
+  for (const key of pairs.keys()) {
+    const sep = key.indexOf("\0");
+    ids.add(key.slice(0, sep));
+    ids.add(key.slice(sep + 1));
+  }
+  return ids;
+}
+
+/** 기준 v14로 저장해 둔, Joey가 들어오기 전 그로브. 키가 그 인원 지문과 같을 때만 쓴다. */
+async function adoptBeforeJoey(nodes: NodeRecord[], joeyIds: Set<string>) {
+  const ids = new Set(nodes.map((node) => node.id));
+  const rows = await listJudges().catch(() => []);
+  let best: Map<string, JudgeScores> | null = null;
+  let bestCount = 0;
+  for (const row of rows) {
+    if (row.k === PAIR_STORE) continue;
+    let parsed: Map<string, JudgeScores>;
+    try {
+      parsed = parsePairs(row.v, ids);
+    } catch {
+      continue;
+    }
+    if (!parsed.size) continue;
+    const found = idsInPairs(parsed);
+    if ([...found].some((id) => joeyIds.has(id))) continue;
+    const subset = nodes.filter((node) => found.has(node.id));
+    if (subset.length < found.size || subset.length < 2) continue;
+    if (row.k !== fingerprint(subset)) continue;
+    if (found.size <= bestCount) continue;
+    best = parsed;
+    bestCount = found.size;
+  }
+  return best ?? new Map<string, JudgeScores>();
+}
+
+function lockKnownLines(nodes: NodeRecord[], joeyIds: Set<string>) {
+  const byName = new Map(nodes.map((node) => [node.name.trim().toLowerCase(), node]));
+  const pairs = new Map<string, JudgeScores>();
+  const put = (left: string, right: string, seek: number, offer: number, imagine: number) => {
+    const a = byName.get(left);
+    const b = byName.get(right);
+    if (!a || !b || joeyIds.has(a.id) || joeyIds.has(b.id)) return;
+    storeDirected(pairs, a.id, b.id, seek, offer, imagine);
+  };
+  // 6cc01c9에서 확인한 네 줄. 질문 번호는 code가 앞인 사람 기준.
+  put("juhree", "leo", 0, 0.6, 0);
+  put("juhree", "syon", 0, 0.6, 0);
+  put("leo", "syon", 0.6, 0.6, 0);
+  put("syon", "dohan", 0.6, 0, 0.6);
+  const keepIds = nodes.filter((node) => !joeyIds.has(node.id)).map((node) => node.id);
+  for (const [a, b] of unorderedPairs(keepIds)) {
+    const key = pairKey(a, b);
+    if (!pairs.has(key)) pairs.set(key, { seek: 0, offer: 0, imagine: 0 });
+  }
+  return pairs;
+}
+
 function serializeStamped(pairs: Map<string, JudgeScores>, stamps: Map<string, string>) {
   const rows: {
     a: string;
@@ -368,7 +427,19 @@ function serializeStamped(pairs: Map<string, JudgeScores>, stamps: Map<string, s
     if (!ha || !hb) continue;
     rows.push({ a, b, seek: scores.seek, offer: scores.offer, imagine: scores.imagine, ha, hb });
   }
-  return JSON.stringify({ pairs: rows });
+  return JSON.stringify({ locked: true, pairs: rows });
+}
+
+function storeIsLocked(raw: string) {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end < start) return false;
+  try {
+    const json = JSON.parse(raw.slice(start, end + 1)) as { locked?: boolean };
+    return json.locked === true;
+  } catch {
+    return false;
+  }
 }
 
 async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
@@ -503,18 +574,21 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
   const ids = new Set(nodes.map((node) => node.id));
   const allPairs = unorderedPairs([...ids]);
 
+  const joeyIds = new Set(
+    nodes.filter((node) => node.name.trim().toLowerCase() === "joey").map((node) => node.id),
+  );
   let kept = new Map<string, JudgeScores>();
   const saved = await getJudge(PAIR_STORE).catch(() => null);
-  if (saved) kept = parseStamped(saved, stamps);
-  if (!saved) {
-    const legacy = await getJudge(fingerprint(nodes)).catch(() => null);
-    if (legacy) {
-      try {
-        const parsed = parsePairs(legacy, ids);
-        if (parsed.size) kept = parsed;
-      } catch {
-        kept = new Map();
-      }
+  const locked = saved ? storeIsLocked(saved) : false;
+  if (locked && saved) {
+    kept = parseStamped(saved, stamps);
+  } else {
+    const adopted = await adoptBeforeJoey(nodes, joeyIds);
+    kept = adopted.size ? adopted : lockKnownLines(nodes, joeyIds);
+    for (const [a, b] of allPairs) {
+      if (joeyIds.has(a) || joeyIds.has(b)) continue;
+      const key = pairKey(a, b);
+      if (!kept.has(key)) kept.set(key, { seek: 0, offer: 0, imagine: 0 });
     }
   }
 
