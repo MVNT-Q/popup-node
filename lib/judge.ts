@@ -7,6 +7,7 @@ export type JudgeScores = { seek: number; offer: number; imagine: number };
 type GroveCache = {
   key: string;
   pairs: Map<string, JudgeScores>;
+  complete: boolean;
 };
 
 let memory: GroveCache | null = null;
@@ -33,19 +34,37 @@ function kindsOf(node: NodeRecord, index: number) {
 /** Bump when match criteria change so node_judge cache re-asks the model. */
 const CRITERIA_VERSION = "criteria-v14";
 
+/** 쌍 점수 저장. 기준 버전이 바뀌면 이 키가 달라져 전체를 다시 본다. */
+const PAIR_STORE = `grove-pairs:${CRITERIA_VERSION}`;
+
 /** How many unordered pairs one completion must score (small → no omission / lazy zeros). */
 const PAIR_BATCH = 8;
 
 const ASK_CONCURRENCY = 3;
 
+function nodeBody(node: NodeRecord) {
+  const answers = answersOf(node);
+  const seekKinds = kindsOf(node, 0).join(",");
+  const offerKinds = kindsOf(node, 1).join(",");
+  return `${answers.join("\n")}|seekKinds:${seekKinds}|offerKinds:${offerKinds}`;
+}
+
+function nodeStamp(node: NodeRecord) {
+  return createHash("sha256").update(nodeBody(node)).digest("hex").slice(0, 16);
+}
+
+function groveMemoryKey(nodes: NodeRecord[]) {
+  const body = nodes
+    .map((node) => `${node.id}:${nodeStamp(node)}`)
+    .sort()
+    .join("\n");
+  return `${CRITERIA_VERSION}\n${body}`;
+}
+
+/** 예전 전체 지문. 기준을 안 바꾼 현재 그로브 캐시를 한 번 이어 받을 때만 쓴다. */
 function fingerprint(nodes: NodeRecord[]) {
   const body = nodes
-    .map((node) => {
-      const answers = answersOf(node);
-      const seekKinds = kindsOf(node, 0).join(",");
-      const offerKinds = kindsOf(node, 1).join(",");
-      return `${node.id}|${answers.join("\n")}|seekKinds:${seekKinds}|offerKinds:${offerKinds}`;
-    })
+    .map((node) => `${node.id}|${nodeBody(node)}`)
     .sort()
     .join("\n---\n");
   return createHash("sha256").update(`${CRITERIA_VERSION}\n${body}`).digest("hex").slice(0, 24);
@@ -237,9 +256,15 @@ function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   return { seek, offer, imagine };
 }
 
-function applyLexicalMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores>) {
+function applyLexicalMatches(
+  nodes: NodeRecord[],
+  pairs: Map<string, JudgeScores>,
+  only?: Set<string>,
+) {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   for (const [aId, bId] of unorderedPairs(nodes.map((node) => node.id))) {
+    const key = pairKey(aId, bId);
+    if (only && !only.has(key)) continue;
     const a = byId.get(aId);
     const b = byId.get(bId);
     if (!a || !b) continue;
@@ -249,7 +274,6 @@ function applyLexicalMatches(nodes: NodeRecord[], pairs: Map<string, JudgeScores
     if (hit.seek || hit.offer || hit.imagine) {
       storeDirected(pairs, aId, bId, hit.seek, hit.offer, hit.imagine);
     }
-    const key = pairKey(aId, bId);
     const cur = pairs.get(key) ?? { seek: 0, offer: 0, imagine: 0 };
     // Keep LLM IMAGINE meaning scores; identical text only boosts, never wipes.
     let imagine = Math.max(cur.imagine, hit.imagine);
@@ -294,17 +318,55 @@ function parsePairs(raw: string, ids: Set<string>) {
   return pairs;
 }
 
-function serializePairs(pairs: Map<string, JudgeScores>) {
-  const rows: { a: string; b: string; seek: number; offer: number; imagine: number }[] = [];
+function parseStamped(raw: string, stamps: Map<string, string>) {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end < start) return new Map<string, JudgeScores>();
+  let json: {
+    pairs?: {
+      a?: string;
+      b?: string;
+      seek?: number;
+      offer?: number;
+      imagine?: number;
+      ha?: string;
+      hb?: string;
+    }[];
+  };
+  try {
+    json = JSON.parse(raw.slice(start, end + 1)) as typeof json;
+  } catch {
+    return new Map<string, JudgeScores>();
+  }
+  const pairs = new Map<string, JudgeScores>();
+  for (const row of json.pairs ?? []) {
+    if (!row.a || !row.b || row.a === row.b) continue;
+    const ha = stamps.get(row.a);
+    const hb = stamps.get(row.b);
+    if (!ha || !hb || row.ha !== ha || row.hb !== hb) continue;
+    storeDirected(pairs, row.a, row.b, clampScore(row.seek), clampScore(row.offer), clampScore(row.imagine));
+  }
+  return pairs;
+}
+
+function serializeStamped(pairs: Map<string, JudgeScores>, stamps: Map<string, string>) {
+  const rows: {
+    a: string;
+    b: string;
+    seek: number;
+    offer: number;
+    imagine: number;
+    ha: string;
+    hb: string;
+  }[] = [];
   for (const [key, scores] of pairs) {
     const sep = key.indexOf("\0");
-    rows.push({
-      a: key.slice(0, sep),
-      b: key.slice(sep + 1),
-      seek: scores.seek,
-      offer: scores.offer,
-      imagine: scores.imagine,
-    });
+    const a = key.slice(0, sep);
+    const b = key.slice(sep + 1);
+    const ha = stamps.get(a);
+    const hb = stamps.get(b);
+    if (!ha || !hb) continue;
+    rows.push({ a, b, seek: scores.seek, offer: scores.offer, imagine: scores.imagine, ha, hb });
   }
   return JSON.stringify({ pairs: rows });
 }
@@ -400,10 +462,8 @@ async function askComplete(
   return merged;
 }
 
-function buildJobs(nodes: NodeRecord[]) {
-  const sortedIds = [...nodes].map((node) => node.id).sort((a, b) => a.localeCompare(b));
-  const all = unorderedPairs(sortedIds);
-  return chunkPairs(all, PAIR_BATCH).map((requiredPairs) => {
+function buildJobs(nodes: NodeRecord[], required: [string, string][]) {
+  return chunkPairs(required, PAIR_BATCH).map((requiredPairs) => {
     const peopleIds = new Set<string>();
     for (const [a, b] of requiredPairs) {
       peopleIds.add(a);
@@ -429,46 +489,69 @@ async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => P
   return results;
 }
 
-/** 이번 하늘 전체를 판단한다. 키가 없거나 실패하면 false. */
+/**
+ * 이미 판단된 쌍은 다시 묻지 않는다.
+ * 새 사람, 또는 글을 고친 사람이 들어간 쌍만 본다.
+ * 기준 버전을 올릴 때만 전체가 다시 열린다.
+ */
 export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
   if (!openaiKey() || nodes.length < 2) return false;
-  const key = fingerprint(nodes);
-  if (memory?.key === key) return true;
+  const memoryKey = groveMemoryKey(nodes);
+  if (memory?.complete && memory.key === memoryKey) return true;
 
-  const saved = await getJudge(key).catch(() => null);
+  const stamps = new Map(nodes.map((node) => [node.id, nodeStamp(node)]));
   const ids = new Set(nodes.map((node) => node.id));
-  if (saved) {
-    try {
-      memory = { key, pairs: parsePairs(saved, ids) };
-      return true;
-    } catch {
-      memory = null;
+  const allPairs = unorderedPairs([...ids]);
+
+  let kept = new Map<string, JudgeScores>();
+  const saved = await getJudge(PAIR_STORE).catch(() => null);
+  if (saved) kept = parseStamped(saved, stamps);
+  if (!saved) {
+    const legacy = await getJudge(fingerprint(nodes)).catch(() => null);
+    if (legacy) {
+      try {
+        const parsed = parsePairs(legacy, ids);
+        if (parsed.size) kept = parsed;
+      } catch {
+        kept = new Map();
+      }
     }
   }
 
+  const missing = allPairs.filter(([a, b]) => !kept.has(pairKey(a, b)));
+  if (!missing.length) {
+    memory = { key: memoryKey, pairs: kept, complete: true };
+    await setJudge(PAIR_STORE, serializeStamped(kept, stamps)).catch(() => undefined);
+    return true;
+  }
+
   try {
-    const jobs = buildJobs(nodes);
+    const jobs = buildJobs(nodes, missing);
     const batchMaps = await mapPool(jobs, ASK_CONCURRENCY, (job) =>
       askComplete(job.people, job.requiredPairs, ids),
     );
-    const pairs = new Map<string, JudgeScores>();
+    const fresh = new Map<string, JudgeScores>();
     for (const batch of batchMaps) {
       for (const [k, scores] of batch) {
-        pairs.set(k, mergeScore(pairs.get(k), scores));
+        fresh.set(k, scores);
       }
     }
-    // Deterministic phrase hits win over a lazy 0; Nobody SEEK clears seek/offer only.
-    applyLexicalMatches(nodes, pairs);
-    for (const [a, b] of unorderedPairs([...ids])) {
-      if (!pairs.has(pairKey(a, b))) {
-        throw new Error("매칭 판단 불완전");
-      }
+    const freshKeys = new Set<string>();
+    for (const [a, b] of missing) {
+      const key = pairKey(a, b);
+      if (!fresh.has(key)) throw new Error("매칭 판단 불완전");
+      freshKeys.add(key);
     }
-    const merged = serializePairs(pairs);
-    memory = { key, pairs };
-    await setJudge(key, merged).catch(() => undefined);
+    applyLexicalMatches(nodes, fresh, freshKeys);
+    for (const [key, scores] of fresh) kept.set(key, scores);
+    memory = { key: memoryKey, pairs: kept, complete: true };
+    await setJudge(PAIR_STORE, serializeStamped(kept, stamps)).catch(() => undefined);
     return true;
   } catch {
+    if (kept.size) {
+      memory = { key: "", pairs: kept, complete: false };
+      return true;
+    }
     memory = null;
     return false;
   }
