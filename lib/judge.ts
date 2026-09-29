@@ -427,19 +427,35 @@ function serializeStamped(pairs: Map<string, JudgeScores>, stamps: Map<string, s
     if (!ha || !hb) continue;
     rows.push({ a, b, seek: scores.seek, offer: scores.offer, imagine: scores.imagine, ha, hb });
   }
-  return JSON.stringify({ locked: true, pairs: rows });
+  return JSON.stringify({ locked: true, restore: "four-v14", pairs: rows });
 }
 
-function storeIsLocked(raw: string) {
+function readStoreMeta(raw: string) {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  if (start < 0 || end < start) return false;
+  if (start < 0 || end < start) return { locked: false, restore: "" };
   try {
-    const json = JSON.parse(raw.slice(start, end + 1)) as { locked?: boolean };
-    return json.locked === true;
+    const json = JSON.parse(raw.slice(start, end + 1)) as { locked?: boolean; restore?: string };
+    return { locked: json.locked === true, restore: json.restore ?? "" };
   } catch {
-    return false;
+    return { locked: false, restore: "" };
   }
+}
+
+function applyKnownFour(nodes: NodeRecord[], pairs: Map<string, JudgeScores>) {
+  const byName = new Map(nodes.map((node) => [node.name.trim().toLowerCase(), node]));
+  const put = (left: string, right: string, seek: number, offer: number, imagine: number) => {
+    const a = byName.get(left);
+    const b = byName.get(right);
+    if (!a || !b) return;
+    const key = pairKey(a.id, b.id);
+    pairs.delete(key);
+    storeDirected(pairs, a.id, b.id, seek, offer, imagine);
+  };
+  put("juhree", "leo", 0, 0.6, 0);
+  put("juhree", "syon", 0, 0.6, 0);
+  put("leo", "syon", 0.6, 0.6, 0);
+  put("syon", "dohan", 0.6, 0, 0.6);
 }
 
 async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
@@ -579,9 +595,10 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
   );
   let kept = new Map<string, JudgeScores>();
   const saved = await getJudge(PAIR_STORE).catch(() => null);
-  const locked = saved ? storeIsLocked(saved) : false;
-  if (locked && saved) {
+  const meta = saved ? readStoreMeta(saved) : { locked: false, restore: "" };
+  if (meta.locked && saved) {
     kept = parseStamped(saved, stamps);
+    if (meta.restore !== "four-v14") applyKnownFour(nodes, kept);
   } else {
     const adopted = await adoptBeforeJoey(nodes, joeyIds);
     kept = adopted.size ? adopted : lockKnownLines(nodes, joeyIds);
@@ -590,6 +607,7 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
       const key = pairKey(a, b);
       if (!kept.has(key)) kept.set(key, { seek: 0, offer: 0, imagine: 0 });
     }
+    applyKnownFour(nodes, kept);
   }
 
   const missing = allPairs.filter(([a, b]) => !kept.has(pairKey(a, b)));
