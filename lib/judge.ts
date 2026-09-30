@@ -427,7 +427,7 @@ function serializeStamped(pairs: Map<string, JudgeScores>, stamps: Map<string, s
     if (!ha || !hb) continue;
     rows.push({ a, b, seek: scores.seek, offer: scores.offer, imagine: scores.imagine, ha, hb });
   }
-  return JSON.stringify({ locked: true, restore: "four-v14", pairs: rows });
+  return JSON.stringify({ locked: true, restore: "four-v14", phezFix: "v1", pairs: rows });
 }
 
 function readStoreMeta(raw: string) {
@@ -435,10 +435,14 @@ function readStoreMeta(raw: string) {
   const end = raw.lastIndexOf("}");
   if (start < 0 || end < start) return { locked: false, restore: "" };
   try {
-    const json = JSON.parse(raw.slice(start, end + 1)) as { locked?: boolean; restore?: string };
-    return { locked: json.locked === true, restore: json.restore ?? "" };
+    const json = JSON.parse(raw.slice(start, end + 1)) as {
+      locked?: boolean;
+      restore?: string;
+      phezFix?: string;
+    };
+    return { locked: json.locked === true, restore: json.restore ?? "", phezFix: json.phezFix ?? "" };
   } catch {
-    return { locked: false, restore: "" };
+    return { locked: false, restore: "", phezFix: "" };
   }
 }
 
@@ -494,6 +498,7 @@ async function askOnce(nodes: NodeRecord[], requiredPairs: [string, string][]) {
             "A line needs the written sentences to name the same concrete exchange: one side is looking for X and the other can actually do or give that X, OR both IMAGINE the same specific picture of life.",
             "Short text and Korean/English still count when that concrete X is clear — including near-identical SEEK/OFFER wording.",
             "Shared atmosphere alone is NOT a match (score 0): both \"tech\", both \"creative\", both \"community\", both \"a better future\", both \"people\", both hopeful, or vague networking without the same concrete X.",
+            "A generic offer is 0 unless it names the same concrete work the other person seeks. \"Advice\", \"development support\", \"help\", or \"I can contribute\" do not match mentors, friends, marketing, design-in-general, a new start, teaching, or DJing.",
             "Example of NOT a match: fashion/NFC/AI community experiment SEEK vs growth-hacking networking OFFER — related vibe, different X → 0.",
             "IMAGINE: same specific picture only. Same hopeful direction with different lives (existence questions vs AI takes labor vs people matter more) → 0.",
             "Vague backdrop (\"world\", \"good world\", \"everyone happy\", \"모두가 행복\") is imagine 0.",
@@ -595,10 +600,19 @@ export async function warmJudgments(nodes: NodeRecord[]): Promise<boolean> {
   );
   let kept = new Map<string, JudgeScores>();
   const saved = await getJudge(PAIR_STORE).catch(() => null);
-  const meta = saved ? readStoreMeta(saved) : { locked: false, restore: "" };
+  const meta = saved ? readStoreMeta(saved) : { locked: false, restore: "", phezFix: "" };
   if (meta.locked && saved) {
     kept = parseStamped(saved, stamps);
     if (meta.restore !== "four-v14") applyKnownFour(nodes, kept);
+    if (meta.phezFix !== "v1") {
+      const phezIds = new Set(
+        nodes.filter((node) => node.name.trim().toLowerCase() === "phezman").map((node) => node.id),
+      );
+      for (const [a, b] of allPairs) {
+        if (!phezIds.has(a) && !phezIds.has(b)) continue;
+        kept.delete(pairKey(a, b));
+      }
+    }
   } else {
     const adopted = await adoptBeforeJoey(nodes, joeyIds);
     kept = adopted.size ? adopted : lockKnownLines(nodes, joeyIds);
