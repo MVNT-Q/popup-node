@@ -2,14 +2,14 @@ import type { Point } from "./layout";
 import type { Edge } from "./constellation";
 
 /**
- * 전시 그로브에 그리는 18줄. false면 예전 방사 배치·저장된 줄 전부.
+ * 전시 그로브에 그리는 26줄. false면 예전 방사 배치·저장된 줄 전부.
  * 저장된 판단은 지우지 않고, 화면에 깔 줄과 자리만 고른다.
  */
 export const GROVE_PICTURE = true;
 
 type Link = { a: string; b: string; bright: boolean };
 
-/** 이름이 맞는 줄. 밝은 줄은 일이 맞고, 흐린 줄은 분야·이매진이 맞다. */
+/** 이름이 맞는 줄. 밝은 줄 17, 흐린 줄 9. */
 const LINKS: Link[] = [
   { a: "juhree", b: "syon", bright: true },
   { a: "juhree", b: "mia", bright: true },
@@ -20,6 +20,14 @@ const LINKS: Link[] = [
   { a: "teson", b: "soundbeats", bright: true },
   { a: "phezman", b: "soundbeats", bright: true },
   { a: "qq", b: "doy", bright: true },
+  { a: "juhree", b: "toa", bright: true },
+  { a: "hannah", b: "toa", bright: true },
+  { a: "sh", b: "toa", bright: true },
+  { a: "doy", b: "toa", bright: true },
+  { a: "syon", b: "convengers", bright: true },
+  { a: "convengers", b: "keen", bright: true },
+  { a: "phezman", b: "toa", bright: true },
+  { a: "mia", b: "belle", bright: true },
   { a: "dohan", b: "sh", bright: false },
   { a: "mia", b: "dohan", bright: false },
   { a: "jean", b: "starr b", bright: false },
@@ -33,38 +41,38 @@ const LINKS: Link[] = [
 
 /** 화면 % . 제목 띠(위쪽 가운데)에는 두지 않는다. */
 const PLACES: Record<string, [number, number]> = {
-  sh: [14, 30],
-  dohan: [28, 34],
-  mia: [36, 26],
-  syon: [28, 46],
-  leo: [16, 54],
-  juhree: [44, 40],
-  hannah: [44, 56],
-  teson: [64, 28],
-  qq: [64, 44],
-  doy: [64, 60],
-  soundbeats: [78, 44],
-  phezman: [92, 30],
-  convengers: [92, 58],
-  "starr b": [16, 78],
-  jean: [32, 82],
-  joey: [8, 64],
-  belle: [24, 70],
-  rayray: [78, 74],
-  paul: [46, 88],
-  oberheim: [14, 92],
-  jayray: [64, 88],
-  keen: [94, 72],
-  toa: [94, 84],
+  leo: [11, 14],
+  syon: [24, 19],
+  convengers: [37, 19],
+  keen: [59, 17],
+  belle: [28, 30],
+  mia: [22, 42],
+  dohan: [10, 49],
+  sh: [17, 64],
+  juhree: [52, 40],
+  hannah: [54, 68],
+  toa: [42, 82],
+  teson: [66, 35],
+  qq: [68, 49],
+  doy: [69, 65],
+  soundbeats: [86, 36],
+  phezman: [79, 76],
+  joey: [8, 32],
+  "starr b": [8, 74],
+  jean: [22, 88],
+  oberheim: [8, 90],
+  paul: [56, 92],
+  jayray: [74, 92],
+  rayray: [94, 56],
 };
 
 /** 이름표에 없는 사람이 생기면 줄 사이 빈칸. 위쪽 가운데(제목)는 비움. */
 const SPARES: [number, number][] = [
-  [8, 42],
-  [8, 84],
-  [46, 74],
-  [84, 64],
-  [96, 46],
+  [94, 18],
+  [94, 84],
+  [40, 52],
+  [84, 58],
+  [4, 58],
 ];
 
 function keyName(name: string) {
