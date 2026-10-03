@@ -110,9 +110,9 @@ function componentRadius(ids: string[], points: Map<string, Point>, center: Poin
   return maxR + 18;
 }
 
-// 그로브: 조각 안은 짧은 줄·별 최소거리. 조각끼리는 (반지름+여백)만 밀고 화면 끝까지 안 흩음.
-// 고독별은 조각 사이 빈칸. 질문 토글은 호출부가 자리를 다시 안 잡음.
-export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point> {
+// 2026-09-27 배치. 줄은 짧게 당기고 조각은 가운데로 모아서, 사람이 늘면 이름과 점이 겹친다.
+// GROVE_LAYOUT_MODE를 "packed"로 바꾸면 이 함수로 바로 돌아간다.
+export function layoutGrovePacked(nodes: NodeRef[], edges: Edge[]): Map<string, Point> {
   const points = new Map<string, Point>();
   if (!nodes.length) return points;
 
@@ -294,4 +294,214 @@ export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point>
 
   for (const point of points.values()) clamp(point);
   return points;
+}
+
+// 한 줄만 바꾸면 예전 화면으로 돌아간다. 줄 데이터는 어느 쪽이든 안 고친다.
+export const GROVE_LAYOUT_MODE: "spread" | "packed" = "spread";
+
+function fitGrove(points: Map<string, Point>, pad = 120) {
+  const list = [...points.values()];
+  if (!list.length) return;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of list) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  const spanX = Math.max(maxX - minX, 1);
+  const spanY = Math.max(maxY - minY, 1);
+  const box = 1000 - pad * 2;
+  // 큰 덩어리만 상자에 맞춘다. 두 점짜리를 화면 끝까지 벌리지 않는다.
+  const scale = Math.min(box / spanX, box / spanY, 1);
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  for (const point of list) {
+    point.x = 500 + (point.x - cx) * scale;
+    point.y = 500 + (point.y - cy) * scale;
+  }
+}
+
+// 이어진 사람은 가까이, 점은 이름 칸만큼 떨어뜨린다. 화면 가장자리로 우겨 넣지 않는다.
+function relaxSpread(ids: string[], edges: Edge[], byId: Map<string, NodeRef>): Map<string, Point> {
+  const local = new Map<string, Point>();
+  const ordered = [...ids].sort((a, b) => (byId.get(a)?.code ?? 0) - (byId.get(b)?.code ?? 0));
+  const count = ordered.length;
+  ordered.forEach((id, index) => {
+    const angle = (index / Math.max(count, 1)) * Math.PI * 2 + hashAngle(id) * 0.2;
+    const radius = count <= 2 ? 90 : 80 + count * 18;
+    local.set(id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
+  });
+  if (count < 2) return local;
+
+  const idSet = new Set(ordered);
+  const localEdges = edges.filter((edge) => idSet.has(edge.a) && idSet.has(edge.b));
+  const IDEAL = 136;
+  const MIN = 118;
+  const REACH = MIN * 1.7;
+
+  for (let iter = 0; iter < 160; iter += 1) {
+    const cool = 1 - iter / 160;
+    for (const edge of localEdges) {
+      const a = local.get(edge.a)!;
+      const b = local.get(edge.b)!;
+      const d = dist(a, b);
+      const pull = (d - IDEAL) * (0.04 + cool * 0.025);
+      const ux = (b.x - a.x) / d;
+      const uy = (b.y - a.y) / d;
+      a.x += ux * pull;
+      a.y += uy * pull;
+      b.x -= ux * pull;
+      b.y -= uy * pull;
+    }
+    for (let i = 0; i < count; i += 1) {
+      for (let j = i + 1; j < count; j += 1) {
+        const a = local.get(ordered[i])!;
+        const b = local.get(ordered[j])!;
+        const d = dist(a, b);
+        if (d >= REACH) continue;
+        const push = (REACH - d) * (0.07 + cool * 0.04);
+        const ux = (b.x - a.x) / d;
+        const uy = (b.y - a.y) / d;
+        a.x -= ux * push;
+        a.y -= uy * push;
+        b.x += ux * push;
+        b.y += uy * push;
+      }
+    }
+  }
+
+  for (let iter = 0; iter < 90; iter += 1) {
+    let clear = true;
+    for (let i = 0; i < count; i += 1) {
+      for (let j = i + 1; j < count; j += 1) {
+        const a = local.get(ordered[i])!;
+        const b = local.get(ordered[j])!;
+        const d = dist(a, b);
+        if (d >= MIN) continue;
+        clear = false;
+        const push = (MIN - d) * 0.5;
+        const ux = (b.x - a.x) / d;
+        const uy = (b.y - a.y) / d;
+        a.x -= ux * push;
+        a.y -= uy * push;
+        b.x += ux * push;
+        b.y += uy * push;
+      }
+    }
+    if (clear) break;
+  }
+  return local;
+}
+
+function layoutGroveSpread(nodes: NodeRef[], edges: Edge[]): Map<string, Point> {
+  const points = new Map<string, Point>();
+  if (!nodes.length) return points;
+
+  const ids = nodes.map((node) => node.id);
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const comps = componentsOf(ids, edges);
+  const multi = comps.filter((comp) => comp.length >= 2);
+  const solo = comps.filter((comp) => comp.length === 1).map((comp) => comp[0]);
+
+  const PIECE_GAP = 70;
+  const centers: Point[] = [];
+  const locals: Map<string, Point>[] = [];
+  const radii: number[] = [];
+
+  multi.forEach((comp) => {
+    const local = relaxSpread(comp, edges, byId);
+    locals.push(local);
+    const mid = componentCenter(comp, local);
+    radii.push(componentRadius(comp, local, mid));
+  });
+
+  const count = Math.max(multi.length, 1);
+  let ringR = 0;
+  if (multi.length > 1) {
+    const step =
+      radii.reduce((sum, radius, index) => sum + radius + radii[(index + 1) % radii.length]! + PIECE_GAP, 0) /
+      multi.length;
+    ringR = Math.max(80, (step * multi.length) / (Math.PI * 2));
+  }
+  multi.forEach((_, index) => {
+    const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
+    centers.push({
+      x: Math.cos(angle) * ringR,
+      y: Math.sin(angle) * ringR,
+    });
+  });
+
+  for (let iter = 0; iter < 40; iter += 1) {
+    for (let i = 0; i < multi.length; i += 1) {
+      for (let j = i + 1; j < multi.length; j += 1) {
+        const ca = centers[i]!;
+        const cb = centers[j]!;
+        const need = radii[i]! + radii[j]! + PIECE_GAP;
+        const d = dist(ca, cb);
+        if (d >= need) continue;
+        const push = (need - d) * 0.35;
+        const ux = (cb.x - ca.x) / d;
+        const uy = (cb.y - ca.y) / d;
+        ca.x -= ux * push;
+        ca.y -= uy * push;
+        cb.x += ux * push;
+        cb.y += uy * push;
+      }
+    }
+  }
+
+  multi.forEach((comp, index) => {
+    const local = locals[index]!;
+    const mid = componentCenter(comp, local);
+    const center = centers[index] ?? { x: 0, y: 0 };
+    for (const id of comp) {
+      const point = local.get(id)!;
+      points.set(id, {
+        x: point.x - mid.x + center.x,
+        y: point.y - mid.y + center.y,
+      });
+    }
+  });
+
+  const occupied = [...points.values()];
+  const soloMin = 118;
+  solo
+    .sort((a, b) => (byId.get(a)?.code ?? 0) - (byId.get(b)?.code ?? 0))
+    .forEach((id, index) => {
+      let best: Point | null = null;
+      let bestScore = -Infinity;
+      for (let tryN = 0; tryN < 48; tryN += 1) {
+        const angle = (index / Math.max(solo.length, 1)) * Math.PI * 2 + tryN * 0.41 + hashAngle(id) * 0.08;
+        const band = 160 + (tryN % 7) * 36;
+        const x = Math.cos(angle) * band;
+        const y = Math.sin(angle) * band;
+        let closest = Infinity;
+        for (const point of occupied) closest = Math.min(closest, Math.hypot(point.x - x, point.y - y));
+        if (closest < soloMin) continue;
+        const score = Math.min(closest, 220) - Math.hypot(x, y) * 0.04;
+        if (score > bestScore) {
+          bestScore = score;
+          best = { x, y };
+        }
+      }
+      const point = best ?? {
+        x: Math.cos(hashAngle(id)) * (200 + index * 24),
+        y: Math.sin(hashAngle(id)) * (200 + index * 24),
+      };
+      points.set(id, point);
+      occupied.push(point);
+    });
+
+  fitGrove(points);
+  return points;
+}
+
+// 그로브 자리. 줄은 호출부가 넘긴 그대로 두고 좌표만 낸다.
+export function layoutGrove(nodes: NodeRef[], edges: Edge[]): Map<string, Point> {
+  if (GROVE_LAYOUT_MODE === "packed") return layoutGrovePacked(nodes, edges);
+  return layoutGroveSpread(nodes, edges);
 }
