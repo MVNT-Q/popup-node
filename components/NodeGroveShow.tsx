@@ -10,6 +10,7 @@ import { RelationSheet } from "@/components/RelationSheet";
 import { SkyTitle } from "@/components/SkyTitle";
 import { WordSphere } from "@/components/WordSphere";
 import { layoutGrove } from "@/lib/constellation";
+import { GROVE_PICTURE, layoutGrovePicture, pictureEdges } from "@/lib/grovePicture";
 import type { HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
@@ -34,7 +35,6 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
   const [mode, setMode] = useState<Mode>("grove");
   const [picked, setPicked] = useState<string | null>(null);
   const [error, setError] = useState("");
-  const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
   const touching = useRef(false);
   const collectiveSince = useRef(0);
   const pickedRef = useRef<string | null>(null);
@@ -66,10 +66,6 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
       setImagines(data.imagines ?? []);
       setCounts(data.counts ?? { nodes: 0, connections: 0 });
       setError("");
-      // 폴링 합류도 새로고침과 같은 layoutGrove. laid 한 번만이면 신규가 (500,500)에 겹침.
-      if (nextAll.length) {
-        setLayout(layoutGrove(nextAll.map((n) => ({ id: n.id, code: n.code })), nextEdges));
-      }
     }
     load().catch((reason) => {
       if (!stop) setError(reason instanceof Error ? reason.message : "전시 화면을 열지 못했습니다.");
@@ -106,12 +102,30 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
     return () => window.clearInterval(timer);
   }, [nav]);
 
+  const shown = useMemo(() => {
+    if (!all.length) return null;
+    if (!GROVE_PICTURE) {
+      return {
+        points: layoutGrove(
+          all.map((node) => ({ id: node.id, code: node.code })),
+          edges,
+        ),
+        edges: edges.map((edge) => ({ ...edge, bright: true })),
+      };
+    }
+    return {
+      points: layoutGrovePicture(all),
+      edges: pictureEdges(all, edges),
+    };
+  }, [all, edges]);
+
   const skyStars: SkyPoint[] = useMemo(() => {
-    if (!layout) return [];
+    if (!shown) return [];
     return all.map((node) => {
-      const point = layout.get(node.id) ?? { x: 500, y: 500 };
+      const point = shown.points.get(node.id) ?? { x: 500, y: 500 };
       const against = stars.find((star) => star.id === node.id);
       // 청록 self는 이 브라우저 세션 쿠키의 노드만. 무세션·렌즈 노드는 초록.
+      // 그림 모드에서는 줄 없는 별도 같은 빛. 흐림은 줄에만 둔다.
       const self = Boolean(me && node.id === me.id);
       return {
         id: node.id,
@@ -119,16 +133,20 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
         name: node.name,
         x: point.x,
         y: point.y,
-        band: self ? "self" : against?.band && against.band !== "dim" ? against.band : "weak",
+        band: self
+          ? "self"
+          : GROVE_PICTURE
+            ? "mid"
+            : against?.band && against.band !== "dim"
+              ? against.band
+              : "weak",
         selected: picked === node.id,
       };
     });
-  }, [all, layout, me, picked, stars]);
+  }, [all, shown, me, picked, stars]);
 
-  const skyEdges: SkyEdge[] = useMemo(
-    () => edges.map((edge) => ({ ...edge, bright: true })),
-    [edges],
-  );
+  const skyEdges: SkyEdge[] = shown?.edges ?? [];
+  const connectionCount = GROVE_PICTURE && shown ? shown.edges.length : counts.connections;
 
   const pickedNode = all.find((node) => node.id === picked) ?? null;
   const pickedHits = stars.find((star) => star.id === picked)?.hits ?? [];
@@ -171,14 +189,14 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
             </Link>
           </div>
         ) : null}
-        <SkyTitle mode={mode} nodes={counts.nodes} connections={counts.connections} />
+        <SkyTitle mode={mode} nodes={counts.nodes} connections={connectionCount} />
       </header>
 
       {error ? <p className="cyp-error">{error}</p> : null}
 
       <div className={`cyp-grove-stage ${mode}`}>
         <div className={mode === "grove" ? "cyp-fade on" : "cyp-fade"}>
-          {layout ? (
+          {shown ? (
             <ConstellationSky
               stars={skyStars}
               edges={skyEdges}
