@@ -325,73 +325,102 @@ function fitGrove(points: Map<string, Point>, pad = 120) {
   }
 }
 
-// 이어진 사람은 가까이, 점은 이름 칸만큼 떨어뜨린다. 화면 가장자리로 우겨 넣지 않는다.
+function wrapAng(delta: number) {
+  return Math.atan2(Math.sin(delta), Math.cos(delta));
+}
+
+// 줄 많은 사람은 안쪽, 적은 사람은 바깥. 각도는 번호 원에서 조금만 흔든 뒤
+// 이어진 쌍만 짧은 줄로 당긴다. 이름 칸이 닿을 때만 옆으로, 바깥 사람은 더 바깥으로.
 function relaxSpread(ids: string[], edges: Edge[], byId: Map<string, NodeRef>): Map<string, Point> {
   const local = new Map<string, Point>();
   const ordered = [...ids].sort((a, b) => (byId.get(a)?.code ?? 0) - (byId.get(b)?.code ?? 0));
   const count = ordered.length;
-  ordered.forEach((id, index) => {
-    const angle = (index / Math.max(count, 1)) * Math.PI * 2 + hashAngle(id) * 0.2;
-    const radius = count <= 2 ? 90 : 80 + count * 18;
-    local.set(id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
-  });
-  if (count < 2) return local;
+  if (!count) return local;
+  if (count === 1) {
+    local.set(ordered[0]!, { x: 0, y: 0 });
+    return local;
+  }
 
   const idSet = new Set(ordered);
   const localEdges = edges.filter((edge) => idSet.has(edge.a) && idSet.has(edge.b));
-  const IDEAL = 136;
-  const MIN = 118;
-  const REACH = MIN * 1.7;
+  const degree = new Map(ordered.map((id) => [id, 0]));
+  for (const edge of localEdges) {
+    degree.set(edge.a, (degree.get(edge.a) ?? 0) + 1);
+    degree.set(edge.b, (degree.get(edge.b) ?? 0) + 1);
+  }
+  const degValues = ordered.map((id) => degree.get(id) ?? 0);
+  const dMin = Math.min(...degValues);
+  const dMax = Math.max(...degValues);
+  const inner = 78;
+  const outer = dMax === dMin ? 118 + count * 6 : 164 + count * 3;
+  const radiusOf = new Map<string, number>();
+  const angleOf = new Map<string, number>();
+  ordered.forEach((id, index) => {
+    const t = dMax === dMin ? 0.5 : ((degree.get(id) ?? 0) - dMin) / (dMax - dMin);
+    const jitter = (hashAngle(id) - Math.PI) * 0.08;
+    angleOf.set(id, (index / count) * Math.PI * 2 - Math.PI / 2 + jitter);
+    radiusOf.set(id, inner + (1 - t) * (outer - inner));
+  });
 
-  for (let iter = 0; iter < 160; iter += 1) {
-    const cool = 1 - iter / 160;
+  const write = () => {
+    for (const id of ordered) {
+      const radius = radiusOf.get(id)!;
+      const angle = angleOf.get(id)!;
+      local.set(id, { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius });
+    }
+  };
+  write();
+
+  const CLEAR = 74;
+  for (let iter = 0; iter < 140; iter += 1) {
+    const delta = new Map(ordered.map((id) => [id, 0]));
     for (const edge of localEdges) {
-      const a = local.get(edge.a)!;
-      const b = local.get(edge.b)!;
-      const d = dist(a, b);
-      const pull = (d - IDEAL) * (0.04 + cool * 0.025);
-      const ux = (b.x - a.x) / d;
-      const uy = (b.y - a.y) / d;
-      a.x += ux * pull;
-      a.y += uy * pull;
-      b.x -= ux * pull;
-      b.y -= uy * pull;
+      const turn = wrapAng((angleOf.get(edge.b) ?? 0) - (angleOf.get(edge.a) ?? 0));
+      delta.set(edge.a, (delta.get(edge.a) ?? 0) + turn * 0.055);
+      delta.set(edge.b, (delta.get(edge.b) ?? 0) - turn * 0.055);
     }
     for (let i = 0; i < count; i += 1) {
       for (let j = i + 1; j < count; j += 1) {
-        const a = local.get(ordered[i])!;
-        const b = local.get(ordered[j])!;
-        const d = dist(a, b);
-        if (d >= REACH) continue;
-        const push = (REACH - d) * (0.07 + cool * 0.04);
-        const ux = (b.x - a.x) / d;
-        const uy = (b.y - a.y) / d;
-        a.x -= ux * push;
-        a.y -= uy * push;
-        b.x += ux * push;
-        b.y += uy * push;
+        const idA = ordered[i]!;
+        const idB = ordered[j]!;
+        const gap = wrapAng((angleOf.get(idA) ?? 0) - (angleOf.get(idB) ?? 0));
+        const push = Math.min(0.018, 0.004 / Math.max(Math.abs(gap), 0.22));
+        const sign = gap >= 0 ? 1 : -1;
+        delta.set(idA, (delta.get(idA) ?? 0) + sign * push);
+        delta.set(idB, (delta.get(idB) ?? 0) - sign * push);
       }
     }
+    for (const id of ordered) angleOf.set(id, (angleOf.get(id) ?? 0) + (delta.get(id) ?? 0));
+    write();
   }
 
-  for (let iter = 0; iter < 90; iter += 1) {
+  for (let iter = 0; iter < 48; iter += 1) {
     let clear = true;
     for (let i = 0; i < count; i += 1) {
       for (let j = i + 1; j < count; j += 1) {
-        const a = local.get(ordered[i])!;
-        const b = local.get(ordered[j])!;
+        const idA = ordered[i]!;
+        const idB = ordered[j]!;
+        const a = local.get(idA)!;
+        const b = local.get(idB)!;
         const d = dist(a, b);
-        if (d >= MIN) continue;
+        if (d >= CLEAR) continue;
         clear = false;
-        const push = (MIN - d) * 0.5;
-        const ux = (b.x - a.x) / d;
-        const uy = (b.y - a.y) / d;
-        a.x -= ux * push;
-        a.y -= uy * push;
-        b.x += ux * push;
-        b.y += uy * push;
+        const ra = radiusOf.get(idA)!;
+        const rb = radiusOf.get(idB)!;
+        const angA = angleOf.get(idA)!;
+        const angB = angleOf.get(idB)!;
+        const gap = wrapAng(angA - angB);
+        const sign = gap === 0 ? 1 : Math.sign(gap);
+        const push = ((CLEAR - d) / Math.max((ra + rb) / 2, 1)) * 0.35;
+        angleOf.set(idA, angA + sign * push);
+        angleOf.set(idB, angB - sign * push);
+        const outerId = ra >= rb ? idA : idB;
+        if ((degree.get(outerId) ?? 0) <= (dMin + dMax) / 2) {
+          radiusOf.set(outerId, Math.min(outer + 24, (radiusOf.get(outerId) ?? outer) + (CLEAR - d) * 0.05));
+        }
       }
     }
+    write();
     if (clear) break;
   }
   return local;
