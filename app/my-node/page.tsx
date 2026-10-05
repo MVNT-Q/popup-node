@@ -69,7 +69,9 @@ export default function MyNodePage() {
       const apiEdges = data.edges ?? [];
       // 전시 그림이 켜져 있으면 그로브와 같은 자리·같은 줄만. 나에게 붙은 줄만 남긴다.
       const mine: PictureEdge[] = GROVE_PICTURE
-        ? pictureEdges(nextAll, apiEdges).filter((edge) => edge.a === nextMe.id || edge.b === nextMe.id)
+        ? pictureEdges(nextAll, apiEdges, nextMe.id).filter(
+            (edge) => edge.a === nextMe.id || edge.b === nextMe.id,
+          )
         : apiEdges
             .filter((edge) => edge.a === nextMe.id || edge.b === nextMe.id)
             .map((edge) => ({ ...edge, bright: true }));
@@ -98,7 +100,7 @@ export default function MyNodePage() {
 
   const points = layout;
 
-  // 세 버튼이 다 켜지면 그림의 내 줄 전부. 하나만 누르면 그 질문이 적힌 줄만.
+  // 세 버튼이 다 켜지면 그림의 내 줄 전부. 하나만 누르면 그 질문 줄만.
   const visibleEdges = useMemo(() => {
     return edgesRaw.filter((edge) => {
       if (on.length === 3) return true;

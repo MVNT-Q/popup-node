@@ -7,7 +7,13 @@ import type { Edge } from "./constellation";
  */
 export const GROVE_PICTURE = true;
 
-type Link = { a: string; b: string; bright: boolean };
+type Link = {
+  a: string;
+  b: string;
+  bright: boolean;
+  /** 저장된 맞음에 질문이 없을 때만. 그 사람 기준 0 SEEK, 1 OFFER, 2 IMAGINE. */
+  as?: Partial<Record<string, number[]>>;
+};
 
 /** 이름이 맞는 줄. 밝은 줄 17, 흐린 줄 9. */
 const LINKS: Link[] = [
@@ -16,27 +22,27 @@ const LINKS: Link[] = [
   { a: "syon", b: "mia", bright: true },
   { a: "leo", b: "syon", bright: true },
   { a: "syon", b: "dohan", bright: true },
-  { a: "juhree", b: "hannah", bright: true },
+  { a: "juhree", b: "hannah", bright: true, as: { juhree: [2], hannah: [2] } },
   { a: "teson", b: "soundbeats", bright: true },
   { a: "phezman", b: "soundbeats", bright: true },
   { a: "qq", b: "doy", bright: true },
-  { a: "juhree", b: "toa", bright: true },
-  { a: "hannah", b: "toa", bright: true },
-  { a: "sh", b: "toa", bright: true },
-  { a: "doy", b: "toa", bright: true },
-  { a: "syon", b: "convengers", bright: true },
+  { a: "juhree", b: "toa", bright: true, as: { juhree: [2], toa: [2] } },
+  { a: "hannah", b: "toa", bright: true, as: { hannah: [2], toa: [2] } },
+  { a: "sh", b: "toa", bright: true, as: { sh: [2], toa: [2] } },
+  { a: "doy", b: "toa", bright: true, as: { doy: [0], toa: [2] } },
+  { a: "syon", b: "convengers", bright: true, as: { syon: [2], convengers: [2] } },
   { a: "convengers", b: "keen", bright: true },
   { a: "phezman", b: "toa", bright: true },
-  { a: "mia", b: "belle", bright: true },
+  { a: "mia", b: "belle", bright: true, as: { mia: [0], belle: [1] } },
   { a: "dohan", b: "sh", bright: false },
-  { a: "mia", b: "dohan", bright: false },
-  { a: "jean", b: "starr b", bright: false },
+  { a: "mia", b: "dohan", bright: false, as: { mia: [1], dohan: [1] } },
+  { a: "jean", b: "starr b", bright: false, as: { jean: [0], "starr b": [1] } },
   { a: "convengers", b: "soundbeats", bright: false },
-  { a: "qq", b: "soundbeats", bright: false },
+  { a: "qq", b: "soundbeats", bright: false, as: { qq: [1], soundbeats: [0] } },
   { a: "juhree", b: "doy", bright: false },
   { a: "hannah", b: "doy", bright: false },
   { a: "juhree", b: "teson", bright: false },
-  { a: "juhree", b: "qq", bright: false },
+  { a: "juhree", b: "qq", bright: false, as: { juhree: [0], qq: [1] } },
 ];
 
 /** 화면 % . 제목 띠(위쪽 가운데)에는 두지 않는다. */
@@ -90,18 +96,21 @@ function pairKey(a: string, b: string) {
 export function pictureEdges(
   nodes: { id: string; name: string }[],
   edges: Edge[],
+  viewerId?: string,
 ): (Edge & { bright: boolean })[] {
   const byName = new Map(nodes.map((node) => [keyName(node.name), node.id]));
+  const viewer = keyName(nodes.find((node) => node.id === viewerId)?.name ?? "");
   const questions = new Map(edges.map((edge) => [pairKey(edge.a, edge.b), edge.questions]));
   const shown: (Edge & { bright: boolean })[] = [];
   for (const link of LINKS) {
     const a = byName.get(link.a);
     const b = byName.get(link.b);
     if (!a || !b || a === b) continue;
+    const stored = questions.get(pairKey(a, b));
     shown.push({
       a,
       b,
-      questions: questions.get(pairKey(a, b)) ?? [],
+      questions: stored && stored.length ? stored : viewer ? (link.as?.[viewer] ?? []) : [],
       bright: link.bright,
     });
   }
