@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/ConstellationSky";
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { RelationSheet } from "@/components/RelationSheet";
 import { layoutMyNode } from "@/lib/constellation";
-import { midStrongHits, type HitLite } from "@/lib/relation";
+import { GROVE_PICTURE, layoutGrovePicture, pictureEdges } from "@/lib/grovePicture";
+import { type HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
 type Star = {
@@ -21,6 +22,10 @@ type Star = {
 
 type Me = { id: string; code: number; name: string; slots: Slot[] };
 
+type NodeCard = { id: string; code: number; name: string; slots: Slot[] };
+
+type PictureEdge = { a: string; b: string; questions: number[]; bright: boolean };
+
 const Q = [
   { key: "SEEK", index: 0 },
   { key: "OFFER", index: 1 },
@@ -30,14 +35,13 @@ const Q = [
 export default function MyNodePage() {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
+  const [all, setAll] = useState<NodeCard[]>([]);
   const [stars, setStars] = useState<Star[]>([]);
-  const [edgesRaw, setEdgesRaw] = useState<{ a: string; b: string; questions: number[] }[]>([]);
+  const [edgesRaw, setEdgesRaw] = useState<PictureEdge[]>([]);
   const [on, setOn] = useState<number[]>([0, 1, 2]);
   const [picked, setPicked] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [layout, setLayout] = useState<Map<string, { x: number; y: number }> | null>(null);
-
-  const laid = useRef(false);
 
   useEffect(() => {
     let stop = false;
@@ -50,29 +54,39 @@ export default function MyNodePage() {
       const data = (await response.json()) as {
         error?: string;
         me?: Me;
+        all?: NodeCard[];
         stars?: Star[];
         edges?: { a: string; b: string; questions: number[] }[];
       };
       if (!response.ok) throw new Error(data.error || "Could not open your node.");
-      if (stop) return;
-      const nextMe = data.me ?? null;
-      const nextStars = data.stars ?? [];
-      const nextEdges = data.edges ?? [];
-      setMe(nextMe);
-      setStars(nextStars);
-      setEdgesRaw(nextEdges);
-      setError("");
-      // 자리는 중·강 줄 합집합으로 한 번만.
-      if (nextMe && !laid.current) {
-        laid.current = true;
-        setLayout(
-          layoutMyNode(
-            nextMe,
-            nextStars.map((star) => ({ id: star.id, code: star.code })),
-            nextEdges,
-          ),
-        );
+      if (stop || !data.me) {
+        if (!stop && !data.me) router.replace("/");
+        return;
       }
+      const nextMe = data.me;
+      const nextAll = data.all ?? [];
+      const nextStars = data.stars ?? [];
+      const apiEdges = data.edges ?? [];
+      // 전시 그림이 켜져 있으면 그로브와 같은 자리·같은 줄만. 나에게 붙은 줄만 남긴다.
+      const mine: PictureEdge[] = GROVE_PICTURE
+        ? pictureEdges(nextAll, apiEdges).filter((edge) => edge.a === nextMe.id || edge.b === nextMe.id)
+        : apiEdges
+            .filter((edge) => edge.a === nextMe.id || edge.b === nextMe.id)
+            .map((edge) => ({ ...edge, bright: true }));
+      setMe(nextMe);
+      setAll(nextAll);
+      setStars(nextStars);
+      setEdgesRaw(mine);
+      setError("");
+      setLayout(
+        GROVE_PICTURE
+          ? layoutGrovePicture(nextAll)
+          : layoutMyNode(
+              nextMe,
+              nextStars.map((star) => ({ id: star.id, code: star.code })),
+              mine,
+            ),
+      );
     }
     load().catch((reason) => {
       if (!stop) setError(reason instanceof Error ? reason.message : "Could not open your node.");
@@ -84,14 +98,23 @@ export default function MyNodePage() {
 
   const points = layout;
 
-  // 켜진 질문에 mid/strong 히트가 있는 별만 (합집합). 자리 고정, 보이기만 바꿈.
-  const visibleStars = useMemo(() => {
-    return stars.filter((star) => {
-      const solid = midStrongHits(star.hits);
-      if (!solid.length) return false;
-      return solid.some((hit) => on.includes(hit.questionIndex));
+  // 세 버튼이 다 켜지면 그림의 내 줄 전부. 하나만 누르면 그 질문이 적힌 줄만.
+  const visibleEdges = useMemo(() => {
+    return edgesRaw.filter((edge) => {
+      if (on.length === 3) return true;
+      return edge.questions.some((question) => on.includes(question));
     });
-  }, [stars, on]);
+  }, [edgesRaw, on]);
+
+  const neighborIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const edge of visibleEdges) {
+      ids.add(edge.a);
+      ids.add(edge.b);
+    }
+    if (me) ids.delete(me.id);
+    return ids;
+  }, [visibleEdges, me]);
 
   useEffect(() => {
     if (!picked || !me) return;
@@ -99,8 +122,8 @@ export default function MyNodePage() {
       setPicked(null);
       return;
     }
-    if (!visibleStars.some((star) => star.id === picked)) setPicked(null);
-  }, [picked, me, visibleStars]);
+    if (!neighborIds.has(picked)) setPicked(null);
+  }, [picked, me, neighborIds]);
 
   const skyStars: SkyPoint[] = useMemo(() => {
     if (!me || !points) return [];
@@ -116,42 +139,60 @@ export default function MyNodePage() {
         selected: false,
       },
     ];
-    for (const star of visibleStars) {
-      const point = points.get(star.id);
+    for (const node of all) {
+      if (!neighborIds.has(node.id)) continue;
+      const point = points.get(node.id);
       if (!point) continue;
+      const lit = visibleEdges.some(
+        (edge) => edge.bright && (edge.a === node.id || edge.b === node.id),
+      );
       list.push({
-        id: star.id,
-        code: star.code,
-        name: star.name,
+        id: node.id,
+        code: node.code,
+        name: node.name,
         x: point.x,
         y: point.y,
-        band: star.band,
-        selected: picked === star.id,
+        band: lit ? "mid" : "dim",
+        selected: picked === node.id,
       });
     }
     return list;
-  }, [me, visibleStars, points, picked]);
+  }, [me, all, neighborIds, visibleEdges, points, picked]);
 
-  // 켜진 슬롯의 줄만. 안 켠 질문만으로 묶인 별·줄은 숨김.
   const skyEdges: SkyEdge[] = useMemo(() => {
     if (!me || !points) return [];
     const ids = new Set(skyStars.map((star) => star.id));
-    return edgesRaw
-      .map((edge) => {
-        const qs = edge.questions.filter((q) => on.includes(q));
-        return { ...edge, questions: qs, bright: qs.length > 0 };
-      })
-      .filter((edge) => edge.bright && ids.has(edge.a) && ids.has(edge.b));
-  }, [edgesRaw, on, me, points, skyStars]);
+    return visibleEdges
+      .filter((edge) => ids.has(edge.a) && ids.has(edge.b))
+      .map((edge) => ({
+        a: edge.a,
+        b: edge.b,
+        questions: edge.questions.filter((question) => on.includes(question)),
+        bright: edge.bright,
+      }));
+  }, [visibleEdges, on, me, points, skyStars]);
 
   // 타인 별만 시트. 내 별은 골라지지 않음(청록 링만 유지).
-  const pickedStar: Star | null = useMemo(() => {
+  const pickedNode = useMemo(() => {
     if (!me || !picked || picked === me.id) return null;
-    return stars.find((star) => star.id === picked) ?? null;
-  }, [me, picked, stars]);
+    return all.find((node) => node.id === picked) ?? null;
+  }, [me, picked, all]);
+
+  const pickedHits = useMemo(() => {
+    if (!picked) return [] as HitLite[];
+    return stars.find((star) => star.id === picked)?.hits ?? [];
+  }, [picked, stars]);
 
   const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";
-  const resonance = stars.filter((star) => midStrongHits(star.hits).length > 0).length;
+  const resonance = useMemo(() => {
+    const ids = new Set<string>();
+    for (const edge of edgesRaw) {
+      ids.add(edge.a);
+      ids.add(edge.b);
+    }
+    if (me) ids.delete(me.id);
+    return ids.size;
+  }, [edgesRaw, me]);
 
   // 기본 셋 다 켜짐. 하나를 누르면 그 슬롯만 남김(줄이 바뀌게). 다시 누르면 셋 복구. 꺼진 슬롯을 누르면 합집합에 추가.
   function toggle(index: number) {
@@ -174,7 +215,7 @@ export default function MyNodePage() {
           <p className="fine">MY NODE</p>
           <h1 className="cyp-sky-title">{codeLabel || "…"}</h1>
           <p className="cyp-sky-meta">
-            ACTIVE · {stars.length ? `${resonance} RESONANT` : "NO RESONANCE YET"}
+            ACTIVE · {resonance ? `${resonance} RESONANT` : "NO RESONANCE YET"}
           </p>
         </div>
       </header>
@@ -200,7 +241,7 @@ export default function MyNodePage() {
       ) : (
         <>
           {/* 중·강 타인 없음: 문장만. 내 별(me)은 아래 하늘에 항상 그림 */}
-          {stars.length === 0 ? (
+          {resonance === 0 ? (
             <div className="cyp-empty cyp-empty-with-self">
               <p>No overlapping nodes yet.</p>
               <p className="hint">Someone who overlaps you on SEEK, OFFER, or IMAGINE will appear here.</p>
@@ -228,14 +269,14 @@ export default function MyNodePage() {
         </Link>
       </nav>
 
-      {pickedStar && me ? (
+      {pickedNode && me ? (
         <RelationSheet
           meSlots={me.slots}
-          theirSlots={pickedStar.slots}
-          code={pickedStar.code}
-          name={pickedStar.name}
-          id={pickedStar.id}
-          hits={pickedStar.hits}
+          theirSlots={pickedNode.slots}
+          code={pickedNode.code}
+          name={pickedNode.name}
+          id={pickedNode.id}
+          hits={pickedHits}
           onClose={() => setPicked(null)}
         />
       ) : null}

@@ -139,15 +139,12 @@ export async function GET(request: Request) {
         }
       : null,
     stars: againstMe,
-    all:
-      view === "grove" || view === "show"
-        ? nodes.map((node) => ({
-            id: node.id,
-            code: node.code,
-            name: node.name,
-            slots: node.slots,
-          }))
-        : undefined,
+    all: nodes.map((node) => ({
+      id: node.id,
+      code: node.code,
+      name: node.name,
+      slots: node.slots,
+    })),
     edges,
     imagines,
     counts: {
