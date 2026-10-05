@@ -13,6 +13,11 @@ type Link = {
   bright: boolean;
   /** 저장된 맞음에 질문이 없을 때만. 그 사람 기준 0 SEEK, 1 OFFER, 2 IMAGINE. */
   as?: Partial<Record<string, number[]>>;
+  /**
+   * 카드에 보여줄 상대 칸. 질문 순서와 같다.
+   * 없으면 SEEK는 상대 OFFER, OFFER는 상대 SEEK, IMAGINE은 상대 IMAGINE.
+   */
+  quote?: Partial<Record<string, number[]>>;
 };
 
 /** 이름이 맞는 줄. 밝은 줄 17, 흐린 줄 9. */
@@ -29,13 +34,25 @@ const LINKS: Link[] = [
   { a: "juhree", b: "toa", bright: true, as: { juhree: [2], toa: [2] } },
   { a: "hannah", b: "toa", bright: true, as: { hannah: [2], toa: [2] } },
   { a: "sh", b: "toa", bright: true, as: { sh: [2], toa: [2] } },
-  { a: "doy", b: "toa", bright: true, as: { doy: [0], toa: [2] } },
+  {
+    a: "doy",
+    b: "toa",
+    bright: true,
+    as: { doy: [0], toa: [2] },
+    quote: { doy: [2], toa: [0] },
+  },
   { a: "syon", b: "convengers", bright: true, as: { syon: [2], convengers: [2] } },
   { a: "convengers", b: "keen", bright: true },
   { a: "phezman", b: "toa", bright: true },
   { a: "mia", b: "belle", bright: true, as: { mia: [0], belle: [1] } },
   { a: "dohan", b: "sh", bright: false },
-  { a: "mia", b: "dohan", bright: false, as: { mia: [1], dohan: [1] } },
+  {
+    a: "mia",
+    b: "dohan",
+    bright: false,
+    as: { mia: [1], dohan: [1] },
+    quote: { mia: [1], dohan: [1] },
+  },
   { a: "jean", b: "starr b", bright: false, as: { jean: [0], "starr b": [1] } },
   { a: "convengers", b: "soundbeats", bright: false },
   { a: "qq", b: "soundbeats", bright: false, as: { qq: [1], soundbeats: [0] } },
@@ -91,6 +108,31 @@ function at(px: number, py: number): Point {
 
 function pairKey(a: string, b: string) {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/** SEEK → 상대 OFFER, OFFER → 상대 SEEK, IMAGINE → 상대 IMAGINE. */
+const COUNTERPART = [1, 0, 2];
+
+/**
+ * 저장된 맞음이 없는 전시 줄의 카드 칸.
+ * 이름을 기준으로 찾으므로, 나중에 줄을 추가해도 질문만 적으면 누구 노드에서나 같다.
+ */
+export function pictureReasons(
+  viewerName: string,
+  otherName: string,
+): { questionIndex: number; theirIndex: number }[] {
+  const viewer = keyName(viewerName);
+  const other = keyName(otherName);
+  const link = LINKS.find(
+    (item) => (item.a === viewer && item.b === other) || (item.a === other && item.b === viewer),
+  );
+  const questions = link?.as?.[viewer];
+  if (!questions?.length) return [];
+  const quotes = link?.quote?.[viewer];
+  return questions.map((questionIndex, index) => ({
+    questionIndex,
+    theirIndex: quotes?.[index] ?? COUNTERPART[questionIndex] ?? questionIndex,
+  }));
 }
 
 export function pictureEdges(

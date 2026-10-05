@@ -7,6 +7,8 @@ export type HitLite = {
   band: Band;
   score?: number;
   answer?: string;
+  /** 있으면 이 칸 원문을 인용. 저장된 맞음은 비우고 짝 칸을 쓴다. */
+  quoteSlot?: number;
 };
 
 export type RelationBlock = {
@@ -52,7 +54,7 @@ function solidSlotHit(hits: HitLite[], questionIndex: number): HitLite | undefin
 
 /** mid를 넘긴 슬롯의 짝 문장만 — IMAGINE이 SEEK/OFFER로 새지 않게 */
 function counterpartQuote(theirSlots: Slot[], hit: HitLite, questionIndex: number): string {
-  const idx = SLOT_COUNTERPART[questionIndex];
+  const idx = hit.quoteSlot ?? SLOT_COUNTERPART[questionIndex];
   if (idx == null) return "";
   // 짝 칸 원문. hit.answer는 같은 칸일 때만 보조.
   return tidy(

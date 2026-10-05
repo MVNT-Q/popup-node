@@ -7,7 +7,7 @@ import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/Cons
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { RelationSheet } from "@/components/RelationSheet";
 import { layoutMyNode } from "@/lib/constellation";
-import { GROVE_PICTURE, layoutGrovePicture, pictureEdges } from "@/lib/grovePicture";
+import { GROVE_PICTURE, layoutGrovePicture, pictureEdges, pictureReasons } from "@/lib/grovePicture";
 import { type HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
@@ -181,9 +181,30 @@ export default function MyNodePage() {
   }, [me, picked, all]);
 
   const pickedHits = useMemo(() => {
-    if (!picked) return [] as HitLite[];
-    return stars.find((star) => star.id === picked)?.hits ?? [];
-  }, [picked, stars]);
+    if (!picked || !me) return [] as HitLite[];
+    const stored = stars.find((star) => star.id === picked)?.hits ?? [];
+    const other = all.find((node) => node.id === picked);
+    const edge = edgesRaw.find(
+      (item) => (item.a === me.id && item.b === picked) || (item.b === me.id && item.a === picked),
+    );
+    if (!other || !edge) return stored;
+    const wanted = new Set(edge.questions);
+    const covered = new Set(
+      stored
+        .filter((hit) => (hit.band === "mid" || hit.band === "strong") && wanted.has(hit.questionIndex))
+        .map((hit) => hit.questionIndex),
+    );
+    const extra: HitLite[] = pictureReasons(me.name, other.name)
+      .filter((hit) => wanted.has(hit.questionIndex) && !covered.has(hit.questionIndex))
+      .map((hit) => ({
+        questionIndex: hit.questionIndex,
+        theirIndex: hit.theirIndex,
+        quoteSlot: hit.theirIndex,
+        band: "mid",
+        answer: other.slots[hit.theirIndex]?.answer ?? "",
+      }));
+    return [...stored.filter((hit) => wanted.has(hit.questionIndex)), ...extra];
+  }, [picked, me, stars, all, edgesRaw]);
 
   const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";
   const resonance = useMemo(() => {
