@@ -182,28 +182,22 @@ export default function MyNodePage() {
 
   const pickedHits = useMemo(() => {
     if (!picked || !me) return [] as HitLite[];
-    const stored = stars.find((star) => star.id === picked)?.hits ?? [];
+    if (!GROVE_PICTURE) return stars.find((star) => star.id === picked)?.hits ?? [];
     const other = all.find((node) => node.id === picked);
     const edge = edgesRaw.find(
       (item) => (item.a === me.id && item.b === picked) || (item.b === me.id && item.a === picked),
     );
-    if (!other || !edge) return stored;
+    if (!other || !edge) return [];
     const wanted = new Set(edge.questions);
-    const covered = new Set(
-      stored
-        .filter((hit) => (hit.band === "mid" || hit.band === "strong") && wanted.has(hit.questionIndex))
-        .map((hit) => hit.questionIndex),
-    );
-    const extra: HitLite[] = pictureReasons(me.name, other.name)
-      .filter((hit) => wanted.has(hit.questionIndex) && !covered.has(hit.questionIndex))
+    return pictureReasons(me.name, other.name)
+      .filter((hit) => wanted.has(hit.questionIndex))
       .map((hit) => ({
         questionIndex: hit.questionIndex,
         theirIndex: hit.theirIndex,
         quoteSlot: hit.theirIndex,
-        band: "mid",
+        band: "mid" as const,
         answer: other.slots[hit.theirIndex]?.answer ?? "",
       }));
-    return [...stored.filter((hit) => wanted.has(hit.questionIndex)), ...extra];
   }, [picked, me, stars, all, edgesRaw]);
 
   const codeLabel = me ? `#${String(me.code).padStart(3, "0")} / ${me.name}` : "";

@@ -2,101 +2,101 @@ import type { Point } from "./layout";
 import type { Edge } from "./constellation";
 
 /**
- * 전시 그로브에 그리는 26줄. false면 예전 방사 배치·저장된 줄 전부.
- * 저장된 판단은 지우지 않고, 화면에 깔 줄과 자리만 고른다.
+ * 전시 그로브. 세 중심(Juhree, phezman, HANNAH) 배치와 고른 37줄.
+ * 저장된 판단은 지우지 않는다. 화면에 깔 줄·자리·질문만 이 목록을 쓴다.
+ * qa는 a에게, qb는 b에게 이 줄이 걸리는 질문. 0 SEEK, 1 OFFER, 2 IMAGINE.
+ * quoteA/quoteB는 그 질문 순서의 상대 칸. 없으면 SEEK↔OFFER, IMAGINE↔IMAGINE.
  */
 export const GROVE_PICTURE = true;
 
 type Link = {
   a: string;
   b: string;
+  qa: number[];
+  qb: number[];
   bright: boolean;
-  /** 저장된 맞음에 질문이 없을 때만. 그 사람 기준 0 SEEK, 1 OFFER, 2 IMAGINE. */
-  as?: Partial<Record<string, number[]>>;
-  /**
-   * 카드에 보여줄 상대 칸. 질문 순서와 같다.
-   * 없으면 SEEK는 상대 OFFER, OFFER는 상대 SEEK, IMAGINE은 상대 IMAGINE.
-   */
-  quote?: Partial<Record<string, number[]>>;
+  quoteA?: number[];
+  quoteB?: number[];
 };
 
-/** 이름이 맞는 줄. 밝은 줄 17, 흐린 줄 9. */
 const LINKS: Link[] = [
-  { a: "juhree", b: "syon", bright: true },
-  { a: "juhree", b: "mia", bright: true },
-  { a: "syon", b: "mia", bright: true },
-  { a: "leo", b: "syon", bright: true },
-  { a: "syon", b: "dohan", bright: true },
-  { a: "juhree", b: "hannah", bright: true, as: { juhree: [2], hannah: [2] } },
-  { a: "teson", b: "soundbeats", bright: true },
-  { a: "phezman", b: "soundbeats", bright: true },
-  { a: "qq", b: "doy", bright: true },
-  { a: "juhree", b: "toa", bright: true, as: { juhree: [2], toa: [2] } },
-  { a: "hannah", b: "toa", bright: true, as: { hannah: [2], toa: [2] } },
-  { a: "sh", b: "toa", bright: true, as: { sh: [2], toa: [2] } },
-  {
-    a: "doy",
-    b: "toa",
-    bright: true,
-    as: { doy: [0], toa: [2] },
-    quote: { doy: [2], toa: [0] },
-  },
-  { a: "syon", b: "convengers", bright: true, as: { syon: [2], convengers: [2] } },
-  { a: "convengers", b: "keen", bright: true },
-  { a: "phezman", b: "toa", bright: true },
-  { a: "mia", b: "belle", bright: true, as: { mia: [0], belle: [1] } },
-  { a: "dohan", b: "sh", bright: false },
-  {
-    a: "mia",
-    b: "dohan",
-    bright: false,
-    as: { mia: [1], dohan: [1] },
-    quote: { mia: [1], dohan: [1] },
-  },
-  { a: "jean", b: "starr b", bright: false, as: { jean: [0], "starr b": [1] } },
-  { a: "convengers", b: "soundbeats", bright: false },
-  { a: "qq", b: "soundbeats", bright: false, as: { qq: [1], soundbeats: [0] } },
-  { a: "juhree", b: "doy", bright: false },
-  { a: "hannah", b: "doy", bright: false },
-  { a: "juhree", b: "teson", bright: false },
-  { a: "juhree", b: "qq", bright: false, as: { juhree: [0], qq: [1] } },
+  { a: "juhree", b: "qq", qa: [0], qb: [1], bright: true },
+  { a: "juhree", b: "soundbeats", qa: [0], qb: [0, 1], bright: true },
+  { a: "juhree", b: "doy", qa: [0], qb: [1], bright: true },
+  { a: "juhree", b: "phezman", qa: [1], qb: [0], bright: true },
+  { a: "juhree", b: "hannah", qa: [2], qb: [2], bright: true },
+  { a: "qq", b: "hannah", qa: [1], qb: [0], bright: true },
+  { a: "soundbeats", b: "hannah", qa: [0, 1], qb: [0, 1], bright: true },
+  { a: "phezman", b: "soundbeats", qa: [0], qb: [1], bright: true },
+  { a: "phezman", b: "doy", qa: [0], qb: [1], bright: true },
+  { a: "phezman", b: "dohan", qa: [0], qb: [1], bright: true },
+  { a: "phezman", b: "oberheim", qa: [0], qb: [0, 1], quoteB: [0, 0], bright: true },
+  { a: "oberheim", b: "doy", qa: [0], qb: [1], bright: true },
+  { a: "oberheim", b: "sh", qa: [1], qb: [0], bright: true },
+  { a: "doy", b: "jayray", qa: [1], qb: [0], quoteA: [1], bright: true },
+  { a: "syon", b: "leo", qa: [0], qb: [1], bright: true },
+  { a: "syon", b: "mia", qa: [0], qb: [1], bright: true },
+  { a: "syon", b: "dohan", qa: [0], qb: [1], bright: true },
+  { a: "leo", b: "hannah", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "rayray", b: "leo", qa: [0, 1], qb: [0, 1], bright: true },
+  { a: "rayray", b: "syon", qa: [1], qb: [0], bright: true },
+  { a: "rayray", b: "toa", qa: [1], qb: [0], bright: true },
+  { a: "rayray", b: "teson", qa: [1], qb: [0], bright: true },
+  { a: "mia", b: "jayray", qa: [1], qb: [0], quoteA: [1], bright: true },
+  { a: "sh", b: "jayray", qa: [0, 1], qb: [0, 1], bright: true },
+  { a: "belle", b: "toa", qa: [1], qb: [0], bright: true },
+  { a: "toa", b: "sh", qa: [2], qb: [2], bright: true },
+  { a: "toa", b: "keen", qa: [2], qb: [1], quoteA: [1], quoteB: [2], bright: true },
+  { a: "sh", b: "keen", qa: [2], qb: [1], quoteA: [1], quoteB: [2], bright: true },
+  { a: "belle", b: "keen", qa: [0, 1], qb: [1], quoteA: [1, 1], bright: true },
+  { a: "paul", b: "keen", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "paul", b: "hannah", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "paul", b: "joey", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "paul", b: "starr b", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "jean", b: "starr b", qa: [0], qb: [1], bright: true },
+  { a: "starr b", b: "soundbeats", qa: [0], qb: [0, 1], bright: true },
+  { a: "joey", b: "convengers", qa: [0], qb: [1], quoteB: [1], bright: true },
+  { a: "convengers", b: "teson", qa: [1], qb: [0], bright: true },
 ];
 
-/** 화면 % . 제목 띠(위쪽 가운데)에는 두지 않는다. */
+/** 세 중심 배치. 화면 %. */
 const PLACES: Record<string, [number, number]> = {
-  leo: [11, 14],
-  syon: [24, 19],
-  convengers: [37, 19],
-  keen: [59, 17],
-  belle: [28, 30],
-  mia: [22, 42],
-  dohan: [10, 49],
-  sh: [17, 64],
-  juhree: [52, 40],
-  hannah: [54, 68],
-  toa: [42, 82],
-  teson: [66, 35],
-  qq: [68, 49],
-  doy: [69, 65],
-  soundbeats: [86, 36],
-  phezman: [79, 76],
-  joey: [8, 32],
-  "starr b": [8, 74],
-  jean: [22, 88],
-  oberheim: [8, 90],
-  paul: [56, 92],
-  jayray: [74, 92],
-  rayray: [94, 56],
+  juhree: [40, 42],
+  phezman: [58, 46],
+  hannah: [46, 60],
+  qq: [24, 26],
+  doy: [58, 24],
+  soundbeats: [74, 38],
+  oberheim: [74, 58],
+  dohan: [26, 50],
+  "starr b": [88, 46],
+  jean: [88, 64],
+  leo: [22, 72],
+  syon: [10, 58],
+  mia: [10, 76],
+  rayray: [24, 88],
+  paul: [62, 76],
+  joey: [78, 74],
+  keen: [50, 88],
+  toa: [32, 86],
+  sh: [78, 16],
+  belle: [16, 90],
+  jayray: [56, 10],
+  teson: [10, 22],
+  convengers: [26, 10],
 };
 
-/** 이름표에 없는 사람이 생기면 줄 사이 빈칸. 위쪽 가운데(제목)는 비움. */
+/** 이름표에 없는 사람이 생기면 빈칸. */
 const SPARES: [number, number][] = [
   [94, 18],
   [94, 84],
-  [40, 52],
-  [84, 58],
-  [4, 58],
+  [4, 40],
+  [94, 58],
+  [50, 50],
 ];
+
+/** SEEK → 상대 OFFER, OFFER → 상대 SEEK, IMAGINE → 상대 IMAGINE. */
+const COUNTERPART = [1, 0, 2];
 
 function keyName(name: string) {
   return name.trim().toLowerCase();
@@ -106,57 +106,49 @@ function at(px: number, py: number): Point {
   return { x: 80 + px * 8.4, y: 90 + py * 7.6 };
 }
 
-function pairKey(a: string, b: string) {
-  return a < b ? `${a}|${b}` : `${b}|${a}`;
+function findLink(viewer: string, other: string) {
+  return LINKS.find(
+    (item) => (item.a === viewer && item.b === other) || (item.a === other && item.b === viewer),
+  );
 }
 
-/** SEEK → 상대 OFFER, OFFER → 상대 SEEK, IMAGINE → 상대 IMAGINE. */
-const COUNTERPART = [1, 0, 2];
+function sideOf(link: Link, viewer: string) {
+  if (viewer === link.a) return { questions: link.qa, quotes: link.quoteA };
+  if (viewer === link.b) return { questions: link.qb, quotes: link.quoteB };
+  return { questions: [] as number[], quotes: undefined };
+}
 
-/**
- * 저장된 맞음이 없는 전시 줄의 카드 칸.
- * 이름을 기준으로 찾으므로, 나중에 줄을 추가해도 질문만 적으면 누구 노드에서나 같다.
- */
+/** 카드에 쓸 질문과 상대 칸. 이름을 기준으로 찾는다. */
 export function pictureReasons(
   viewerName: string,
   otherName: string,
 ): { questionIndex: number; theirIndex: number }[] {
-  const viewer = keyName(viewerName);
-  const other = keyName(otherName);
-  const link = LINKS.find(
-    (item) => (item.a === viewer && item.b === other) || (item.a === other && item.b === viewer),
-  );
-  const questions = link?.as?.[viewer];
-  if (!questions?.length) return [];
-  const quotes = link?.quote?.[viewer];
-  return questions.map((questionIndex, index) => ({
+  const link = findLink(keyName(viewerName), keyName(otherName));
+  if (!link) return [];
+  const side = sideOf(link, keyName(viewerName));
+  return side.questions.map((questionIndex, index) => ({
     questionIndex,
-    theirIndex: quotes?.[index] ?? COUNTERPART[questionIndex] ?? questionIndex,
+    theirIndex: side.quotes?.[index] ?? COUNTERPART[questionIndex] ?? questionIndex,
   }));
 }
 
 export function pictureEdges(
   nodes: { id: string; name: string }[],
-  edges: Edge[],
+  _edges: Edge[],
   viewerId?: string,
 ): (Edge & { bright: boolean })[] {
   const byName = new Map(nodes.map((node) => [keyName(node.name), node.id]));
   const viewer = keyName(nodes.find((node) => node.id === viewerId)?.name ?? "");
-  const questions = new Map(edges.map((edge) => [pairKey(edge.a, edge.b), edge.questions]));
   const shown: (Edge & { bright: boolean })[] = [];
   for (const link of LINKS) {
     const a = byName.get(link.a);
     const b = byName.get(link.b);
     if (!a || !b || a === b) continue;
-    const stored = questions.get(pairKey(a, b));
-    shown.push({
-      a,
-      b,
-      questions: stored && stored.length ? stored : viewer ? (link.as?.[viewer] ?? []) : [],
-      bright: link.bright,
-    });
+    const questions = viewer
+      ? sideOf(link, viewer).questions
+      : [...new Set([...link.qa, ...link.qb])].sort((left, right) => left - right);
+    shown.push({ a, b, questions, bright: link.bright });
   }
-  shown.sort((left, right) => Number(left.bright) - Number(right.bright));
   return shown;
 }
 
