@@ -907,8 +907,8 @@ p { margin: 0; }
   opacity: 0.4;
 }
 
-/* 모드바·시트·스크림·born 알림 오버레이는 fixed 유지 — 여기 relative가 특이도로 fixed를 덮으면 탭 아래 검은 띠 / 폴드 아래로 밀림 */
-.cyp > :not(.grove-bg):not(.cyp-mode-bar):not(.cyp-sheet):not(.cyp-sheet-scrim):not(.born-notify-layer) {
+/* 모드바·시트·스크림·틱커·born 알림 오버레이는 fixed 유지 — 여기 relative가 특이도로 fixed를 덮으면 탭 아래 검은 띠 / 폴드 아래로 밀림 */
+.cyp > :not(.grove-bg):not(.cyp-mode-bar):not(.cyp-sheet):not(.cyp-sheet-scrim):not(.born-notify-layer):not(.cyp-ticker) {
   position: relative;
   z-index: 1;
 }
@@ -1221,7 +1221,8 @@ textarea.cyp-input {
 .cyp-sky-page.cyp-grove {
   /* 버튼(패딩+점+라벨) 실측보다 여유 — 틱커 두 줄이 탭에 먹히지 않게 */
   --cyp-mode-bar-h: calc(68px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: var(--cyp-mode-bar-h);
+  --cyp-ticker-h: 74px;
+  padding-bottom: calc(var(--cyp-mode-bar-h) + var(--cyp-ticker-h));
 }
 
 /* 제목·틱커만 읽기 폭. 하늘·스테이지는 가로 100% */
@@ -2242,9 +2243,18 @@ textarea.cyp-input {
   mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
 }
 
-/* 그로브: 틱커는 모드바 예약 여백 바로 위 — 글자 전체가 탭에 안 겹침 */
+/* 그로브: 틱커는 모드바 바로 위 고정. 짧은 폰에서 흐름 밖으로 잘리지 않게 */
 .cyp-sky-page.cyp-grove > .cyp-ticker {
-  margin-bottom: 0;
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: var(--cyp-mode-bar-h);
+  transform: translateX(-50%);
+  z-index: 5;
+  width: min(960px, 100%);
+  max-width: none;
+  margin: 0;
+  background: #020403;
 }
 
 .cyp-ticker-row {
@@ -2259,9 +2269,7 @@ textarea.cyp-input {
   display: inline-flex;
   gap: 72px;
   width: max-content;
-  will-change: transform;
-  /* 오른쪽 → 왼쪽 (문장이 오른쪽에서 들어와 왼쪽으로) */
-  animation: cyp-marquee-rtl 140s linear infinite;
+  /* 속도는 ImagineTicker. 한 바퀴가 예전 140s/170s보다 조금 느리다. */
   font-size: 16px;
   letter-spacing: 0.04em;
   color: #d0e4d8;
@@ -2273,14 +2281,8 @@ textarea.cyp-input {
 }
 
 .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
-  animation-duration: 170s;
   font-size: 15px;
   color: #a8c0b0;
-}
-
-@keyframes cyp-marquee-rtl {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
 }
 
 /* POC_7·8 하단 토글 — 보이는 창 맨 아래. safe-area는 여기 한 번만(컬럼과 이중 금지) */
@@ -2451,7 +2453,8 @@ textarea.cyp-input {
   }
   /* 그로브는 모드바 여백 유지 — 4px로 덮이면 틱커가 탭에 잘림 */
   .cyp-sky-page.cyp-grove {
-    padding-bottom: var(--cyp-mode-bar-h);
+    --cyp-ticker-h: 58px;
+    padding-bottom: calc(var(--cyp-mode-bar-h) + var(--cyp-ticker-h));
   }
   .cyp-sky-hero {
     font-size: clamp(18px, 3.6vw, 28px);
