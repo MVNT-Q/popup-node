@@ -55,98 +55,76 @@ function TickerRow({ lines, speed }: { lines: string[]; speed: number }) {
     const track = row?.querySelector(".cyp-ticker-track");
     if (!row || !(track instanceof HTMLElement)) return;
 
-    const source = signature ? signature.split("\n") : ["Waiting for imaginings…"];
+    const source = signature.split("\n").filter(Boolean);
+    if (!source.length) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const size = getComputedStyle(row).fontSize;
     track.replaceChildren();
 
-    type Item = { el: HTMLSpanElement; width: number };
+    type Item = { el: HTMLSpanElement; left: number; width: number };
     const items: Item[] = [];
     let next = 0;
+    let placed = 0;
 
     const append = () => {
       const span = document.createElement("span");
       span.style.fontSize = size;
       span.textContent = `· ${source[next % source.length]}`;
+      span.style.left = `${placed}px`;
       next += 1;
       track.appendChild(span);
-      items.push({ el: span, width: Math.max(span.offsetWidth + GAP, 8) });
-    };
-
-    const contentWidth = () => items.reduce((sum, item) => sum + item.width, 0);
-
-    const fill = (view: number) => {
-      const need = view * 2 + 240;
-      let guard = 0;
-      while (guard < source.length * 4 + 8) {
-        if (items.length >= 3 && contentWidth() >= need) break;
-        append();
-        guard += 1;
-      }
+      const width = Math.max(span.offsetWidth + GAP, 8);
+      items.push({ el: span, left: placed, width });
+      placed += width;
     };
 
     let view = row.clientWidth >= 40 ? row.clientWidth : 320;
-    fill(view);
-
-    if (reduced) {
-      track.style.transform = "translate3d(0,0,0)";
-      return;
+    placed = reduced ? 0 : view;
+    const ahead = view * 3 + 640;
+    let guard = 0;
+    while (placed < (reduced ? view : view + ahead) && guard < source.length * 4 + 8) {
+      append();
+      guard += 1;
     }
 
-    let startX = view;
-    let anim: Animation | null = null;
+    if (reduced) return;
 
-    const play = (from: number) => {
-      startX = from;
-      const distance = 120000;
-      anim = track.animate(
-        [
-          { transform: `translate3d(${from}px,0,0)` },
-          { transform: `translate3d(${from - distance}px,0,0)` },
-        ],
-        { duration: (distance / Math.max(speed, 1)) * 1000, easing: "linear", fill: "forwards" },
-      );
-    };
-
-    const currentX = () => {
-      const t = typeof anim?.currentTime === "number" ? anim.currentTime : 0;
-      return startX - (t / 1000) * speed;
-    };
-
-    play(view);
+    const speedPx = Math.max(speed, 1);
+    const distance = 240000;
+    const anim = track.animate(
+      [
+        { transform: "translate3d(0,0,0)" },
+        { transform: `translate3d(${-distance}px,0,0)` },
+      ],
+      { duration: (distance / speedPx) * 1000, easing: "linear", fill: "forwards" },
+    );
 
     const pump = () => {
-      const nextView = row.clientWidth;
-      if (nextView >= 40) view = nextView;
-      let x = currentX();
-      let moved = false;
-      let guard = 0;
-      while (items.length >= 2 && guard < 16) {
+      const travel = (Number(anim.currentTime) / 1000) * speedPx;
+      let drop = 0;
+      while (items.length > 2 && drop < 8) {
         const first = items[0]!;
-        if (x + first.width > -8) break;
-        x += first.width;
+        if (first.left + first.width - travel > -24) break;
         first.el.remove();
         items.shift();
-        append();
-        moved = true;
-        guard += 1;
+        drop += 1;
       }
       let extra = 0;
-      while (x + contentWidth() < view * 2 + 240 && extra < 8) {
+      while (placed < travel + view * 3 + 640 && extra < 4) {
         append();
-        moved = true;
         extra += 1;
-      }
-      if (moved) {
-        anim?.cancel();
-        play(x);
       }
     };
 
-    const timer = window.setInterval(pump, 180);
+    const onResize = () => {
+      if (row.clientWidth >= 40) view = row.clientWidth;
+    };
+    window.addEventListener("resize", onResize);
+    const timer = window.setInterval(pump, 400);
     return () => {
+      window.removeEventListener("resize", onResize);
       window.clearInterval(timer);
-      anim?.cancel();
+      anim.cancel();
     };
   }, [signature, speed]);
 
@@ -158,7 +136,7 @@ function TickerRow({ lines, speed }: { lines: string[]; speed: number }) {
 }
 
 export function ImagineTicker({ lines }: { lines: string[] }) {
-  // 새로고침할 때만 다시 뽑는다. 같은 문장 묶음이 다시 오면 순서를 유지한다.
+  // 새로고침할 때만 다시 뽑는다. 문장이 생기기 전에는 대기 문구를 그리지 않는다.
   const bag = useRef<{ sig: string; a: string[]; b: string[]; speed: number } | null>(null);
   const cleaned = cleanLines(lines);
   const sig = [...cleaned].sort().join("\n");
@@ -170,22 +148,19 @@ export function ImagineTicker({ lines }: { lines: string[] }) {
       b = shuffle(cleaned);
       guard += 1;
     }
-    const size = fontSizePx();
     bag.current = {
       sig,
       a,
       b,
-      speed: Math.max(24, measure(cleaned, size) / LOOP_SECONDS),
+      speed: Math.max(24, measure(cleaned, fontSizePx()) / LOOP_SECONDS),
     };
   }
-  const rowA = bag.current?.a ?? (cleaned.length ? cleaned : ["Waiting for imaginings…"]);
-  const rowB = bag.current?.b ?? rowA;
-  const speed = bag.current?.speed ?? 48;
+  if (!bag.current) return null;
 
   return (
     <div className="cyp-ticker" aria-hidden>
-      <TickerRow lines={rowA} speed={speed} />
-      <TickerRow lines={rowB} speed={speed} />
+      <TickerRow lines={bag.current.a} speed={bag.current.speed} />
+      <TickerRow lines={bag.current.b} speed={bag.current.speed} />
     </div>
   );
 }

@@ -2269,6 +2269,7 @@ textarea.cyp-input {
   max-width: none;
   margin: 0;
   background: #020403;
+  contain: layout paint;
 }
 
 .cyp-ticker-row {
@@ -2288,11 +2289,8 @@ textarea.cyp-input {
   position: absolute;
   left: 0;
   top: 0;
-  display: flex;
-  align-items: center;
-  gap: 72px;
   height: 100%;
-  width: max-content;
+  width: 100%;
   font-size: var(--ticker-size);
   line-height: 1.25;
   letter-spacing: 0.04em;
@@ -2307,7 +2305,8 @@ textarea.cyp-input {
 }
 
 .cyp-ticker-track span {
-  flex: none;
+  position: absolute;
+  top: 0;
   white-space: nowrap;
   -webkit-text-size-adjust: none;
   text-size-adjust: none;

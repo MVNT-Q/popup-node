@@ -281,6 +281,17 @@ export function WordSphere({
     root.addEventListener("pointerup", onUp);
     root.addEventListener("pointercancel", onUp);
 
+    for (const el of wordEls) {
+      el.style.left = "0";
+      el.style.top = "0";
+    }
+    for (const el of dustEls) {
+      el.style.left = "0";
+      el.style.top = "0";
+      el.style.width = "2px";
+      el.style.height = "2px";
+    }
+
     const tick = (now: number) => {
       raf = 0;
       if (!runningRef.current) return;
@@ -328,13 +339,21 @@ export function WordSphere({
         ...projDust.map((p) => ({ left: p.left, top: p.top, depth: p.depth })),
       ];
 
+      const w = root.clientWidth || 1;
+      const h = root.clientHeight || 1;
+
       for (let i = 0; i < wordEls.length; i++) {
         const el = wordEls[i];
         const p = projWords[i];
         if (!el || !p) continue;
-        el.style.left = `${p.left}%`;
-        el.style.top = `${p.top}%`;
-        el.style.fontSize = `${p.size}px`;
+        const x = (p.left / 100) * w;
+        const y = (p.top / 100) * h;
+        el.style.transform = `translate3d(${x}px, ${y}px, 0) translateY(-50%)`;
+        const sizePx = Math.round(p.size * 2) / 2;
+        if (el.dataset.s !== String(sizePx)) {
+          el.dataset.s = String(sizePx);
+          el.style.fontSize = `${sizePx}px`;
+        }
         el.style.opacity = String(p.opacity);
         el.style.zIndex = String(p.zIndex);
         el.style.setProperty("--word-glow", String(0.35 + p.glow * 0.7));
@@ -344,10 +363,10 @@ export function WordSphere({
         const el = dustEls[i];
         const p = projDust[i];
         if (!el || !p) continue;
-        el.style.left = `${p.left}%`;
-        el.style.top = `${p.top}%`;
-        el.style.width = `${p.size}px`;
-        el.style.height = `${p.size}px`;
+        const x = (p.left / 100) * w;
+        const y = (p.top / 100) * h;
+        const scale = Math.max(0.4, p.size / 2);
+        el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) scale(${scale})`;
         el.style.opacity = String(p.opacity);
         el.style.zIndex = String(p.zIndex);
       }
