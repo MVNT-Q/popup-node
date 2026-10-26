@@ -51,29 +51,40 @@ function TickerRow({
       track.appendChild(span);
     };
     const fill = () => {
-      const need = Math.max(row.clientWidth, 280) + 48;
+      const need = Math.max(row.clientWidth, 280) * 2 + 80;
       let guard = 0;
-      while (track.scrollWidth < need && guard < source.length + 4) {
+      while (track.scrollWidth < need && guard < source.length * 2 + 4) {
         append();
         guard += 1;
       }
     };
     fill();
-    if (reduced) return;
+    if (reduced) {
+      track.style.transform = "translate3d(0,0,0)";
+      return;
+    }
 
-    let offset = 0;
-    let last = performance.now();
+    // 오른쪽 바깥에서 들어와 왼쪽으로. 시간은 프레임이 늦어도 같은 속도.
+    const origin = performance.now();
+    let removed = 0;
     let raf = 0;
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      offset -= speed * dt;
-      const first = track.firstElementChild as HTMLElement | null;
-      if (first && -offset >= first.offsetWidth + GAP) {
-        offset += first.offsetWidth + GAP;
+      const travel = ((now - origin) / 1000) * speed;
+      let guard = 0;
+      while (guard < 8) {
+        const first = track.firstElementChild as HTMLElement | null;
+        const second = first?.nextElementSibling as HTMLElement | null;
+        if (!first || !second) break;
+        const shift = second.offsetLeft - first.offsetLeft;
+        if (shift <= 0) break;
+        const offset = row.clientWidth - (travel - removed);
+        if (-offset < shift) break;
+        removed += shift;
         first.remove();
         append();
+        guard += 1;
       }
+      const offset = row.clientWidth - (travel - removed);
       track.style.transform = `translate3d(${offset}px,0,0)`;
       raf = requestAnimationFrame(tick);
     };
@@ -97,7 +108,7 @@ export function ImagineTicker({ lines }: { lines: string[] }) {
   return (
     <div className="cyp-ticker" aria-hidden>
       <TickerRow lines={rowA} loopSeconds={161} />
-      <TickerRow lines={rowB} loopSeconds={196} />
+      <TickerRow lines={rowB} loopSeconds={161} />
     </div>
   );
 }
