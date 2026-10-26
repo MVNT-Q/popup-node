@@ -158,7 +158,19 @@ function projectPoint(
   return { x: x1, y: y2, z: z2 };
 }
 
-export function WordSphere({ imagines }: { imagines: string[] }) {
+export function WordSphere({
+  imagines,
+  running = true,
+}: {
+  imagines: string[];
+  running?: boolean;
+}) {
+  const runningRef = useRef(running);
+  runningRef.current = running;
+  const kickRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (running) kickRef.current?.();
+  }, [running]);
   const base = useMemo(() => basePlace(sphereWords(imagines)), [imagines]);
   // POC 촘촘함 — 표면 먼지점 늘림. 곡선/플라즈마 없음
   const dust = useMemo(() => makeDust(Math.max(140, Math.floor(base.length * 2.8))), [base.length]);
@@ -270,6 +282,8 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
     root.addEventListener("pointercancel", onUp);
 
     const tick = (now: number) => {
+      raf = 0;
+      if (!runningRef.current) return;
       const dt = Math.min(48, now - last);
       last = now;
       // 드래그 중이 아니면 현재 각도에서 Y축 자동 회전만 이어감
@@ -357,8 +371,14 @@ export function WordSphere({ imagines }: { imagines: string[] }) {
       raf = requestAnimationFrame(tick);
     };
 
-    raf = requestAnimationFrame(tick);
+    kickRef.current = () => {
+      if (raf) return;
+      last = performance.now();
+      raf = requestAnimationFrame(tick);
+    };
+    if (runningRef.current) kickRef.current();
     return () => {
+      kickRef.current = null;
       cancelAnimationFrame(raf);
       root.removeEventListener("pointerdown", onDown);
       root.removeEventListener("pointermove", onMove);

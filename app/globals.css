@@ -2226,6 +2226,7 @@ textarea.cyp-input {
 }
 
 .cyp-ticker {
+  --ticker-size: 15px;
   margin-top: 0;
   margin-bottom: 0;
   display: flex;
@@ -2240,11 +2241,20 @@ textarea.cyp-input {
   min-height: 0;
   padding-bottom: 2px;
   background: transparent;
-  font-size: 15px;
+  font-size: var(--ticker-size);
   line-height: 1.25;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
   mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+@media (max-width: 800px) {
+  .cyp-ticker {
+    --ticker-size: 12px;
+  }
+  .cyp-sky-page.cyp-grove {
+    --cyp-ticker-h: 40px;
+  }
 }
 
 /* 그로브: 틱커는 모드바 바로 위 고정. 짧은 폰에서 흐름 밖으로 잘리지 않게 */
@@ -2262,31 +2272,48 @@ textarea.cyp-input {
 }
 
 .cyp-ticker-row {
+  position: relative;
   overflow: hidden;
   white-space: nowrap;
   border: 0;
   background: transparent;
   padding: 0;
+  height: calc(var(--ticker-size) * 1.25);
+  font-size: var(--ticker-size);
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 .cyp-ticker-track {
-  display: inline-flex;
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
   gap: 72px;
+  height: 100%;
   width: max-content;
-  /* 두 줄 같은 크기. 속도는 ImagineTicker, 그로브·콜렉티브 동일. */
-  font-size: 15px;
+  font-size: var(--ticker-size);
   line-height: 1.25;
   letter-spacing: 0.04em;
   color: #d0e4d8;
+  will-change: transform;
+}
+
+.cyp-ticker-row .cyp-ticker-track,
+.cyp-ticker-row .cyp-ticker-track span {
+  font-size: var(--ticker-size);
+  line-height: 1.25;
 }
 
 .cyp-ticker-track span {
   flex: none;
   white-space: nowrap;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
-  font-size: 15px;
   color: #a8c0b0;
 }
 
@@ -2489,12 +2516,8 @@ textarea.cyp-input {
   .cyp-sphere {
     --sphere: min(520px, 58dvh, 78vw);
   }
-  .cyp-ticker,
-  .cyp-ticker-track,
-  .cyp-ticker-row:nth-child(2) .cyp-ticker-track {
-    font-size: 11px;
-  }
   .cyp-ticker {
+    --ticker-size: 12px;
     gap: 2px;
     margin-top: 0;
   }

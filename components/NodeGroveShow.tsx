@@ -213,7 +213,7 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
         </div>
         <div className={mode === "collective" ? "cyp-fade on" : "cyp-fade"}>
           <div className="cyp-collective">
-            <WordSphere imagines={imagines} />
+            <WordSphere imagines={imagines} running={mode === "collective"} />
           </div>
         </div>
       </div>
