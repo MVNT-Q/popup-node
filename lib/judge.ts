@@ -256,6 +256,11 @@ function lexicalScores(a: NodeRecord, b: NodeRecord): JudgeScores {
   return { seek, offer, imagine };
 }
 
+/** 한 쌍의 글자 신호. 모델을 부르지 않고, 저장된 쌍도 고치지 않는다. */
+export function lexicalPairScores(a: NodeRecord, b: NodeRecord): JudgeScores {
+  return lexicalScores(a, b);
+}
+
 function applyLexicalMatches(
   nodes: NodeRecord[],
   pairs: Map<string, JudgeScores>,

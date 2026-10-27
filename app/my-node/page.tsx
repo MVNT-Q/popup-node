@@ -7,7 +7,13 @@ import { ConstellationSky, type SkyEdge, type SkyPoint } from "@/components/Cons
 import { GroveBackdrop } from "@/components/GroveBackdrop";
 import { RelationSheet } from "@/components/RelationSheet";
 import { layoutMyNode } from "@/lib/constellation";
-import { GROVE_PICTURE, layoutGrovePicture, pictureEdges, pictureReasons } from "@/lib/grovePicture";
+import {
+  GROVE_PICTURE,
+  layoutGrovePicture,
+  pictureEdges,
+  pictureReasons,
+  type PictureInputEdge,
+} from "@/lib/grovePicture";
 import { type HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
@@ -56,7 +62,7 @@ export default function MyNodePage() {
         me?: Me;
         all?: NodeCard[];
         stars?: Star[];
-        edges?: { a: string; b: string; questions: number[] }[];
+        edges?: PictureInputEdge[];
       };
       if (!response.ok) throw new Error(data.error || "Could not open your node.");
       if (stop || !data.me) {
@@ -189,7 +195,7 @@ export default function MyNodePage() {
     );
     if (!other || !edge) return [];
     const wanted = new Set(edge.questions);
-    return pictureReasons(me.name, other.name)
+    return pictureReasons(me.name, other.name, edge.questions)
       .filter((hit) => wanted.has(hit.questionIndex))
       .map((hit) => ({
         questionIndex: hit.questionIndex,

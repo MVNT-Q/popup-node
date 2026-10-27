@@ -2,8 +2,9 @@ import type { Point } from "./layout";
 import type { Edge } from "./constellation";
 
 /**
- * 전시 그로브. 세 중심(Juhree, phezman, HANNAH) 배치와 고른 37줄.
- * 저장된 판단은 지우지 않는다. 화면에 깔 줄·자리·질문만 이 목록을 쓴다.
+ * 전시 그로브. 세 중심(Juhree, phezman, HANNAH) 배치와 고른 줄.
+ * LINKS는 항상 그대로 그린다. 이름을 다시 맞추거나 점수로 다시 만들지 않는다.
+ * LINKS에 이름이 없는 사람만, 이미 저장된 점수에서 줄을 최소 1·최대 5개 더한다.
  * qa는 a에게, qb는 b에게 이 줄이 걸리는 질문. 0 SEEK, 1 OFFER, 2 IMAGINE.
  * quoteA/quoteB는 그 질문 순서의 상대 칸. 없으면 SEEK↔OFFER, IMAGINE↔IMAGINE.
  */
@@ -109,6 +110,108 @@ function keyName(name: string) {
   return name.trim().toLowerCase();
 }
 
+/** LINKS의 끝점. 여기 이름이 있으면 1–5 상한을 적용하지 않는다. */
+export function curatedEndpoints(): Set<string> {
+  const names = new Set<string>();
+  for (const link of LINKS) {
+    names.add(keyName(link.a));
+    names.add(keyName(link.b));
+  }
+  return names;
+}
+
+export type PictureInputEdge = Edge & { auto?: boolean; score?: number; lexical?: number };
+
+const AUTO_CAP = 5;
+
+type AutoCand = {
+  a: string;
+  b: string;
+  /** 저장된 판단의 가장 센 칸. */
+  score: number;
+  /** 저장 점수가 0일 때, 그 쌍의 글자 신호. */
+  lexical: number;
+  /** endpoint a 기준 질문. */
+  questions: number[];
+};
+
+function pairKey(a: string, b: string) {
+  return a < b ? `${a}\0${b}` : `${b}\0${a}`;
+}
+
+function flipQuestions(questions: number[]) {
+  return [...new Set(questions.map((question) => COUNTERPART[question] ?? question))].sort(
+    (left, right) => left - right,
+  );
+}
+
+function questionsForViewer(cand: AutoCand, viewerId?: string) {
+  const own = [...cand.questions].sort((left, right) => left - right);
+  const flipped = flipQuestions(own);
+  if (viewerId === cand.a) return own;
+  if (viewerId === cand.b) return flipped;
+  return [...new Set([...own, ...flipped])].sort((left, right) => left - right);
+}
+
+function compareCand(left: AutoCand, right: AutoCand) {
+  if (right.score !== left.score) return right.score - left.score;
+  const a = pairKey(left.a, left.b);
+  const b = pairKey(right.a, right.b);
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+function compareFallback(left: AutoCand, right: AutoCand) {
+  if (right.lexical !== left.lexical) return right.lexical - left.lexical;
+  return compareCand(left, right);
+}
+
+/** 그림 밖 사람만. 점수가 있으면 강한 순으로 최대 5, 전부 0이면 그 사람당 1줄. */
+function pickAuto(cands: AutoCand[], freshIds: Set<string>): AutoCand[] {
+  const unique = new Map<string, AutoCand>();
+  for (const cand of cands) {
+    const key = pairKey(cand.a, cand.b);
+    const prev = unique.get(key);
+    if (!prev || cand.score > prev.score) unique.set(key, cand);
+  }
+  const rows = [...unique.values()];
+  const touching = (id: string) => rows.filter((row) => row.a === id || row.b === id);
+  const limit = new Map<string, number>();
+  const degree = new Map<string, number>();
+  for (const id of freshIds) {
+    limit.set(id, touching(id).some((row) => row.score > 0) ? AUTO_CAP : 1);
+    degree.set(id, 0);
+  }
+  const room = (id: string) => (degree.get(id) ?? 0) < (limit.get(id) ?? AUTO_CAP);
+  const chosen: AutoCand[] = [];
+  const chosenKeys = new Set<string>();
+  for (const row of rows.filter((row) => row.score > 0).sort(compareCand)) {
+    const ends = [row.a, row.b].filter((id) => freshIds.has(id));
+    if (ends.some((id) => !room(id))) continue;
+    chosen.push(row);
+    chosenKeys.add(pairKey(row.a, row.b));
+    for (const id of ends) degree.set(id, (degree.get(id) ?? 0) + 1);
+  }
+  const needy = [...freshIds].filter((id) => (degree.get(id) ?? 0) === 0).sort();
+  for (const id of needy) {
+    if ((degree.get(id) ?? 0) > 0) continue;
+    for (const row of touching(id).sort(compareFallback)) {
+      const key = pairKey(row.a, row.b);
+      if (chosenKeys.has(key)) continue;
+      const other = row.a === id ? row.b : row.a;
+      if (freshIds.has(other) && !room(other)) continue;
+      chosen.push(row);
+      chosenKeys.add(key);
+      for (const end of [row.a, row.b]) {
+        if (freshIds.has(end)) degree.set(end, (degree.get(end) ?? 0) + 1);
+      }
+      break;
+    }
+  }
+  return chosen;
+}
+
 function at(px: number, py: number): Point {
   return { x: 80 + px * 8.4, y: 90 + py * 7.6 };
 }
@@ -125,23 +228,32 @@ function sideOf(link: Link, viewer: string) {
   return { questions: [] as number[], quotes: undefined };
 }
 
-/** 카드에 쓸 질문과 상대 칸. 이름을 기준으로 찾는다. */
+/** 카드에 쓸 질문과 상대 칸. 이름을 기준으로 찾는다. 그림 밖 줄은 맞은 칸을 넘긴다. */
 export function pictureReasons(
   viewerName: string,
   otherName: string,
+  autoQuestions?: number[],
 ): { questionIndex: number; theirIndex: number }[] {
   const link = findLink(keyName(viewerName), keyName(otherName));
-  if (!link) return [];
-  const side = sideOf(link, keyName(viewerName));
-  return side.questions.map((questionIndex, index) => ({
+  if (link) {
+    const side = sideOf(link, keyName(viewerName));
+    return side.questions.map((questionIndex, index) => ({
+      questionIndex,
+      theirIndex: side.quotes?.[index] ?? COUNTERPART[questionIndex] ?? questionIndex,
+    }));
+  }
+  const questions = (autoQuestions ?? []).filter(
+    (question) => question === 0 || question === 1 || question === 2,
+  );
+  return questions.map((questionIndex) => ({
     questionIndex,
-    theirIndex: side.quotes?.[index] ?? COUNTERPART[questionIndex] ?? questionIndex,
+    theirIndex: COUNTERPART[questionIndex] ?? questionIndex,
   }));
 }
 
 export function pictureEdges(
   nodes: { id: string; name: string }[],
-  _edges: Edge[],
+  edges: PictureInputEdge[],
   viewerId?: string,
 ): (Edge & { bright: boolean })[] {
   const byName = new Map(nodes.map((node) => [keyName(node.name), node.id]));
@@ -155,6 +267,45 @@ export function pictureEdges(
       ? sideOf(link, viewer).questions
       : [...new Set([...link.qa, ...link.qb])].sort((left, right) => left - right);
     shown.push({ a, b, questions, bright: link.bright });
+  }
+
+  const curated = curatedEndpoints();
+  const freshIds = new Set(
+    nodes.filter((node) => !curated.has(keyName(node.name))).map((node) => node.id),
+  );
+  if (!freshIds.size) return shown;
+
+  const known = new Set(nodes.map((node) => node.id));
+  const taken = new Set(shown.map((edge) => pairKey(edge.a, edge.b)));
+  const cands: AutoCand[] = [];
+  for (const edge of edges) {
+    if (!edge.auto) continue;
+    if (!known.has(edge.a) || !known.has(edge.b) || edge.a === edge.b) continue;
+    if (!freshIds.has(edge.a) && !freshIds.has(edge.b)) continue;
+    if (taken.has(pairKey(edge.a, edge.b))) continue;
+    const questions = [...new Set(edge.questions.filter((question) => question >= 0 && question <= 2))].sort(
+      (left, right) => left - right,
+    );
+    const score = typeof edge.score === "number" && Number.isFinite(edge.score) ? edge.score : 0;
+    const lexical = typeof edge.lexical === "number" && Number.isFinite(edge.lexical) ? edge.lexical : 0;
+    cands.push({
+      a: edge.a,
+      b: edge.b,
+      score,
+      lexical,
+      questions: questions.length ? questions : [0],
+    });
+  }
+  for (const cand of pickAuto(cands, freshIds)) {
+    const key = pairKey(cand.a, cand.b);
+    if (taken.has(key)) continue;
+    taken.add(key);
+    shown.push({
+      a: cand.a,
+      b: cand.b,
+      questions: questionsForViewer(cand, viewerId),
+      bright: true,
+    });
   }
   return shown;
 }

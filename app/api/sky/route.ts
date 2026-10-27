@@ -1,4 +1,5 @@
 import { warmJudgments } from "@/lib/judge";
+import { newcomerCandidates } from "@/lib/newcomerLines";
 import { rankAgainst } from "@/lib/rank";
 import { brightestBand, midStrongHits } from "@/lib/relation";
 import { readSessionId, testAgentsEnabled } from "@/lib/session";
@@ -127,6 +128,9 @@ export async function GET(request: Request) {
     .map((node) => node.slots[2]?.answer?.trim() ?? "")
     .filter((text) => text.length >= 2);
 
+  // 그림 밖 사람의 후보. 모델에 다시 묻지 않고, 이미 있는 점수만 붙인다.
+  const autoEdges = newcomerCandidates(nodes);
+
   return Response.json({
     view,
     matcher: mode,
@@ -145,7 +149,7 @@ export async function GET(request: Request) {
       name: node.name,
       slots: node.slots,
     })),
-    edges,
+    edges: [...edges, ...autoEdges],
     imagines,
     counts: {
       nodes: nodes.length,

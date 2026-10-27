@@ -10,7 +10,7 @@ import { RelationSheet } from "@/components/RelationSheet";
 import { SkyTitle } from "@/components/SkyTitle";
 import { WordSphere } from "@/components/WordSphere";
 import { layoutGrove } from "@/lib/constellation";
-import { GROVE_PICTURE, layoutGrovePicture, pictureEdges } from "@/lib/grovePicture";
+import { GROVE_PICTURE, layoutGrovePicture, pictureEdges, type PictureInputEdge } from "@/lib/grovePicture";
 import type { HitLite } from "@/lib/relation";
 import type { Slot } from "@/lib/types";
 
@@ -29,7 +29,7 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
   const [me, setMe] = useState<Me | null>(null);
   const [stars, setStars] = useState<Star[]>([]);
   const [all, setAll] = useState<AllNode[]>([]);
-  const [edges, setEdges] = useState<{ a: string; b: string; questions: number[] }[]>([]);
+  const [edges, setEdges] = useState<PictureInputEdge[]>([]);
   const [imagines, setImagines] = useState<string[]>([]);
   const [counts, setCounts] = useState({ nodes: 0, connections: 0 });
   const [mode, setMode] = useState<Mode>("grove");
@@ -51,7 +51,7 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
         me?: Me | null;
         stars?: Star[];
         all?: AllNode[];
-        edges?: { a: string; b: string; questions: number[] }[];
+        edges?: PictureInputEdge[];
         imagines?: string[];
         counts?: { nodes: number; connections: number };
       };
@@ -105,12 +105,13 @@ export function NodeGroveShow({ nav = false }: { nav?: boolean }) {
   const shown = useMemo(() => {
     if (!all.length) return null;
     if (!GROVE_PICTURE) {
+      const plain = edges.filter((edge) => !edge.auto);
       return {
         points: layoutGrove(
           all.map((node) => ({ id: node.id, code: node.code })),
-          edges,
+          plain,
         ),
-        edges: edges.map((edge) => ({ ...edge, bright: true })),
+        edges: plain.map((edge) => ({ a: edge.a, b: edge.b, questions: edge.questions, bright: true })),
       };
     }
     return {
