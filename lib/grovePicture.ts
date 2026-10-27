@@ -60,6 +60,7 @@ const LINKS: Link[] = [
   { a: "flowy_state", b: "hannah", qa: [2], qb: [2], bright: true },
   { a: "aaron", b: "hannah", qa: [0], qb: [1], bright: true },
   { a: "aaron", b: "paul", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "covered", b: "toa", qa: [1], qb: [0], bright: true },
 ];
 
 /** 세 중심 배치. 화면 %. */
