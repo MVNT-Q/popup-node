@@ -18,6 +18,7 @@ export type SkyEdge = {
   b: string;
   questions: number[];
   bright: boolean;
+  auto?: boolean;
 };
 
 const WORLD = 1000;

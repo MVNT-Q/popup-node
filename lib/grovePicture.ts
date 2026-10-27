@@ -2,9 +2,11 @@ import type { Point } from "./layout";
 import type { Edge } from "./constellation";
 
 /**
- * 전시 그로브. 세 중심(Juhree, phezman, HANNAH) 배치와 고른 줄.
- * LINKS는 항상 그대로 그린다. 이름을 다시 맞추거나 점수로 다시 만들지 않는다.
- * LINKS에 이름이 없는 사람만, 이미 저장된 점수에서 줄을 최소 1·최대 5개 더한다.
+ * 전시 그로브. 선명한 줄은 적합도가 높은 연결, 흐린 줄은 근거가 약한 가능성이다.
+ * 이 26명의 그림은 고정이다. 선명한 줄은 한 노드당 5개 이하, 흐린 줄은 그 위에 얹어 5개 이하.
+ * 그림에 없는 새 사람은 arrivalMatch가 같은 기준으로 잇는다. 그 선명한 줄은 5명을 넘을 수 있다.
+ * 예전 판단 점수는 이 그림에 더하지 않는다.
+ * #26 covered는 세 칸 모두 근거가 없어 줄이 없다.
  * qa는 a에게, qb는 b에게 이 줄이 걸리는 질문. 0 SEEK, 1 OFFER, 2 IMAGINE.
  * quoteA/quoteB는 그 질문 순서의 상대 칸. 없으면 SEEK↔OFFER, IMAGINE↔IMAGINE.
  */
@@ -21,47 +23,69 @@ type Link = {
 };
 
 const LINKS: Link[] = [
-  { a: "juhree", b: "qq", qa: [0], qb: [1], bright: true },
-  { a: "juhree", b: "soundbeats", qa: [0], qb: [0, 1], bright: true },
-  { a: "juhree", b: "doy", qa: [0], qb: [1], bright: true },
-  { a: "juhree", b: "phezman", qa: [1], qb: [0], bright: true },
+  { a: "juhree", b: "doy", qa: [0, 2], qb: [1, 2], bright: true },
+  { a: "juhree", b: "phezman", qa: [0, 2], qb: [0], bright: true },
+  { a: "juhree", b: "soundbeats", qa: [0, 2], qb: [1], bright: true },
   { a: "juhree", b: "hannah", qa: [2], qb: [2], bright: true },
-  { a: "qq", b: "hannah", qa: [1], qb: [0], bright: true },
-  { a: "soundbeats", b: "hannah", qa: [0, 1], qb: [0, 1], bright: true },
+  { a: "juhree", b: "flowy_state", qa: [0, 2], qb: [0, 1, 2], bright: true },
+  { a: "qq", b: "oberheim", qa: [1], qb: [0], bright: true },
+  { a: "rayray", b: "leo", qa: [1], qb: [0], bright: true },
+  { a: "leo", b: "syon", qa: [1], qb: [0], bright: true },
+  { a: "leo", b: "mia", qa: [1], qb: [0], bright: true },
+  { a: "syon", b: "mia", qa: [0, 1], qb: [0, 1], bright: true },
+  { a: "syon", b: "dohan", qa: [0], qb: [1], bright: true },
+  { a: "syon", b: "convengers", qa: [2], qb: [2], bright: true },
   { a: "phezman", b: "soundbeats", qa: [0], qb: [1], bright: true },
   { a: "phezman", b: "doy", qa: [0], qb: [1], bright: true },
   { a: "phezman", b: "dohan", qa: [0], qb: [1], bright: true },
-  { a: "phezman", b: "oberheim", qa: [0], qb: [0, 1], quoteB: [0, 0], bright: true },
-  { a: "oberheim", b: "doy", qa: [0], qb: [1], bright: true },
-  { a: "oberheim", b: "sh", qa: [1], qb: [0], bright: true },
-  { a: "doy", b: "jayray", qa: [1], qb: [0], quoteA: [1], bright: true },
-  { a: "syon", b: "leo", qa: [0], qb: [1], bright: true },
-  { a: "syon", b: "mia", qa: [0], qb: [1], bright: true },
-  { a: "syon", b: "dohan", qa: [0], qb: [1], bright: true },
-  { a: "leo", b: "hannah", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
-  { a: "rayray", b: "leo", qa: [0, 1], qb: [0, 1], bright: true },
-  { a: "rayray", b: "syon", qa: [1], qb: [0], bright: true },
-  { a: "rayray", b: "toa", qa: [1], qb: [0], bright: true },
-  { a: "rayray", b: "teson", qa: [1], qb: [0], bright: true },
-  { a: "mia", b: "jayray", qa: [1], qb: [0], quoteA: [1], bright: true },
-  { a: "sh", b: "jayray", qa: [0, 1], qb: [0, 1], bright: true },
-  { a: "belle", b: "toa", qa: [1], qb: [0], bright: true },
-  { a: "toa", b: "sh", qa: [2], qb: [2], bright: true },
-  { a: "toa", b: "keen", qa: [2], qb: [1], quoteA: [1], quoteB: [2], bright: true },
-  { a: "sh", b: "keen", qa: [2], qb: [1], quoteA: [1], quoteB: [2], bright: true },
-  { a: "belle", b: "keen", qa: [0, 1], qb: [1], quoteA: [1, 1], bright: true },
-  { a: "paul", b: "keen", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
-  { a: "paul", b: "hannah", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
-  { a: "paul", b: "joey", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
-  { a: "paul", b: "starr b", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "phezman", b: "flowy_state", qa: [0], qb: [0], quoteA: [0], quoteB: [0], bright: true },
+  { a: "belle", b: "toa", qa: [1, 2], qb: [0, 2], bright: true },
+  { a: "belle", b: "sh", qa: [2], qb: [2], bright: true },
+  { a: "belle", b: "mia", qa: [2], qb: [2], bright: true },
+  { a: "sh", b: "toa", qa: [2], qb: [2], bright: true },
+  { a: "sh", b: "keen", qa: [2], qb: [1], quoteB: [1], bright: true },
   { a: "jean", b: "starr b", qa: [0], qb: [1], bright: true },
-  { a: "starr b", b: "soundbeats", qa: [0], qb: [0, 1], bright: true },
-  { a: "joey", b: "convengers", qa: [0], qb: [1], quoteB: [1], bright: true },
+  { a: "oberheim", b: "toa", qa: [2], qb: [2], bright: true },
+  { a: "oberheim", b: "aaron", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
   { a: "convengers", b: "teson", qa: [1], qb: [0], bright: true },
-  { a: "flowy_state", b: "hannah", qa: [2], qb: [2], bright: true },
-  { a: "aaron", b: "hannah", qa: [0], qb: [1], bright: true },
-  { a: "aaron", b: "paul", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
-  { a: "covered", b: "toa", qa: [1], qb: [0], bright: true },
+  { a: "convengers", b: "soundbeats", qa: [0], qb: [1], bright: true },
+  { a: "convengers", b: "keen", qa: [0, 2], qb: [0, 2], quoteA: [0, 2], quoteB: [0, 2], bright: true },
+  { a: "doy", b: "hannah", qa: [2], qb: [2], bright: true },
+  { a: "paul", b: "joey", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "paul", b: "flowy_state", qa: [1], qb: [0], bright: true },
+  { a: "paul", b: "aaron", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: true },
+  { a: "hannah", b: "soundbeats", qa: [0], qb: [1], bright: true },
+  { a: "hannah", b: "aaron", qa: [1], qb: [0], bright: true },
+  { a: "hannah", b: "flowy_state", qa: [1, 2], qb: [0, 2], bright: true },
+  { a: "soundbeats", b: "flowy_state", qa: [1], qb: [0], bright: true },
+  { a: "juhree", b: "qq", qa: [0], qb: [1], bright: false },
+  { a: "juhree", b: "teson", qa: [1], qb: [0], bright: false },
+  { a: "juhree", b: "starr b", qa: [1], qb: [0], bright: false },
+  { a: "qq", b: "hannah", qa: [1], qb: [0], bright: false },
+  { a: "qq", b: "convengers", qa: [1], qb: [0], bright: false },
+  { a: "qq", b: "soundbeats", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: false },
+  { a: "rayray", b: "syon", qa: [1], qb: [0], bright: false },
+  { a: "rayray", b: "toa", qa: [1], qb: [0], bright: false },
+  { a: "rayray", b: "teson", qa: [1], qb: [0], bright: false },
+  { a: "leo", b: "hannah", qa: [0], qb: [1], quoteA: [1], bright: false },
+  { a: "leo", b: "jean", qa: [2], qb: [2], bright: false },
+  { a: "syon", b: "doy", qa: [0], qb: [1], bright: false },
+  { a: "dohan", b: "sh", qa: [1], qb: [0], bright: false },
+  { a: "dohan", b: "mia", qa: [1], qb: [0], bright: false },
+  { a: "starr b", b: "mia", qa: [1], qb: [0], bright: false },
+  { a: "joey", b: "soundbeats", qa: [1], qb: [0], bright: false },
+  { a: "joey", b: "mia", qa: [2], qb: [2], bright: false },
+  { a: "phezman", b: "oberheim", qa: [0], qb: [1], bright: false },
+  { a: "phezman", b: "teson", qa: [0], qb: [0], quoteA: [0], quoteB: [0], bright: false },
+  { a: "belle", b: "convengers", qa: [1], qb: [0], bright: false },
+  { a: "belle", b: "keen", qa: [2], qb: [1], quoteB: [1], bright: false },
+  { a: "belle", b: "aaron", qa: [1], qb: [0], bright: false },
+  { a: "sh", b: "jayray", qa: [0], qb: [1], bright: false },
+  { a: "sh", b: "soundbeats", qa: [0], qb: [1], bright: false },
+  { a: "doy", b: "jayray", qa: [1], qb: [1], quoteA: [1], quoteB: [1], bright: false },
+  { a: "doy", b: "flowy_state", qa: [0], qb: [0], quoteA: [0], quoteB: [0], bright: false },
+  { a: "teson", b: "soundbeats", qa: [0], qb: [1], bright: false },
+  { a: "jayray", b: "aaron", qa: [2], qb: [2], bright: false },
 ];
 
 /** 세 중심 배치. 화면 %. */
@@ -110,30 +134,30 @@ function keyName(name: string) {
   return name.trim().toLowerCase();
 }
 
-/** LINKS의 끝점. 여기 이름이 있으면 1–5 상한을 적용하지 않는다. */
-export function curatedEndpoints(): Set<string> {
-  const names = new Set<string>();
-  for (const link of LINKS) {
-    names.add(keyName(link.a));
-    names.add(keyName(link.b));
-  }
-  return names;
+/** 이미 판단이 끝난 26명. 이 이름끼리의 줄은 LINKS만 그린다. */
+export function settledGroveNames(): Set<string> {
+  return new Set(Object.keys(PLACES));
 }
 
-export type PictureInputEdge = Edge & { auto?: boolean; score?: number; lexical?: number };
+/** LINKS에 이미 있는 흐린 줄 수. 새 흐린 줄은 이 수와 합쳐 5를 넘기지 않는다. */
+export function picturedDimByName(): Map<string, number> {
+  const dim = new Map<string, number>();
+  for (const link of LINKS) {
+    if (link.bright) continue;
+    dim.set(link.a, (dim.get(link.a) ?? 0) + 1);
+    dim.set(link.b, (dim.get(link.b) ?? 0) + 1);
+  }
+  return dim;
+}
 
-const AUTO_CAP = 5;
-
-type AutoCand = {
-  a: string;
-  b: string;
-  /** 저장된 판단의 가장 센 칸. */
-  score: number;
-  /** 저장 점수가 0일 때, 그 쌍의 글자 신호. */
-  lexical: number;
-  /** endpoint a 기준 질문. */
-  questions: number[];
+export type PictureInputEdge = Edge & {
+  auto?: boolean;
+  arrival?: boolean;
+  bright?: boolean;
+  score?: number;
+  lexical?: number;
 };
+export type PictureShownEdge = Edge & { bright: boolean; auto?: boolean };
 
 function pairKey(a: string, b: string) {
   return a < b ? `${a}\0${b}` : `${b}\0${a}`;
@@ -143,73 +167,6 @@ function flipQuestions(questions: number[]) {
   return [...new Set(questions.map((question) => COUNTERPART[question] ?? question))].sort(
     (left, right) => left - right,
   );
-}
-
-function questionsForViewer(cand: AutoCand, viewerId?: string) {
-  const own = [...cand.questions].sort((left, right) => left - right);
-  const flipped = flipQuestions(own);
-  if (viewerId === cand.a) return own;
-  if (viewerId === cand.b) return flipped;
-  return [...new Set([...own, ...flipped])].sort((left, right) => left - right);
-}
-
-function compareCand(left: AutoCand, right: AutoCand) {
-  if (right.score !== left.score) return right.score - left.score;
-  const a = pairKey(left.a, left.b);
-  const b = pairKey(right.a, right.b);
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-
-function compareFallback(left: AutoCand, right: AutoCand) {
-  if (right.lexical !== left.lexical) return right.lexical - left.lexical;
-  return compareCand(left, right);
-}
-
-/** 그림 밖 사람만. 점수가 있으면 강한 순으로 최대 5, 전부 0이면 그 사람당 1줄. */
-function pickAuto(cands: AutoCand[], freshIds: Set<string>): AutoCand[] {
-  const unique = new Map<string, AutoCand>();
-  for (const cand of cands) {
-    const key = pairKey(cand.a, cand.b);
-    const prev = unique.get(key);
-    if (!prev || cand.score > prev.score) unique.set(key, cand);
-  }
-  const rows = [...unique.values()];
-  const touching = (id: string) => rows.filter((row) => row.a === id || row.b === id);
-  const limit = new Map<string, number>();
-  const degree = new Map<string, number>();
-  for (const id of freshIds) {
-    limit.set(id, touching(id).some((row) => row.score > 0) ? AUTO_CAP : 1);
-    degree.set(id, 0);
-  }
-  const room = (id: string) => (degree.get(id) ?? 0) < (limit.get(id) ?? AUTO_CAP);
-  const chosen: AutoCand[] = [];
-  const chosenKeys = new Set<string>();
-  for (const row of rows.filter((row) => row.score > 0).sort(compareCand)) {
-    const ends = [row.a, row.b].filter((id) => freshIds.has(id));
-    if (ends.some((id) => !room(id))) continue;
-    chosen.push(row);
-    chosenKeys.add(pairKey(row.a, row.b));
-    for (const id of ends) degree.set(id, (degree.get(id) ?? 0) + 1);
-  }
-  const needy = [...freshIds].filter((id) => (degree.get(id) ?? 0) === 0).sort();
-  for (const id of needy) {
-    if ((degree.get(id) ?? 0) > 0) continue;
-    for (const row of touching(id).sort(compareFallback)) {
-      const key = pairKey(row.a, row.b);
-      if (chosenKeys.has(key)) continue;
-      const other = row.a === id ? row.b : row.a;
-      if (freshIds.has(other) && !room(other)) continue;
-      chosen.push(row);
-      chosenKeys.add(key);
-      for (const end of [row.a, row.b]) {
-        if (freshIds.has(end)) degree.set(end, (degree.get(end) ?? 0) + 1);
-      }
-      break;
-    }
-  }
-  return chosen;
 }
 
 function at(px: number, py: number): Point {
@@ -255,10 +212,10 @@ export function pictureEdges(
   nodes: { id: string; name: string }[],
   edges: PictureInputEdge[],
   viewerId?: string,
-): (Edge & { bright: boolean })[] {
+): PictureShownEdge[] {
   const byName = new Map(nodes.map((node) => [keyName(node.name), node.id]));
   const viewer = keyName(nodes.find((node) => node.id === viewerId)?.name ?? "");
-  const shown: (Edge & { bright: boolean })[] = [];
+  const shown: PictureShownEdge[] = [];
   for (const link of LINKS) {
     const a = byName.get(link.a);
     const b = byName.get(link.b);
@@ -268,43 +225,36 @@ export function pictureEdges(
       : [...new Set([...link.qa, ...link.qb])].sort((left, right) => left - right);
     shown.push({ a, b, questions, bright: link.bright });
   }
-
-  const curated = curatedEndpoints();
-  const freshIds = new Set(
-    nodes.filter((node) => !curated.has(keyName(node.name))).map((node) => node.id),
-  );
-  if (!freshIds.size) return shown;
-
-  const known = new Set(nodes.map((node) => node.id));
+  const settled = settledGroveNames();
   const taken = new Set(shown.map((edge) => pairKey(edge.a, edge.b)));
-  const cands: AutoCand[] = [];
+  const nameOf = new Map(nodes.map((node) => [node.id, keyName(node.name)]));
   for (const edge of edges) {
-    if (!edge.auto) continue;
-    if (!known.has(edge.a) || !known.has(edge.b) || edge.a === edge.b) continue;
-    if (!freshIds.has(edge.a) && !freshIds.has(edge.b)) continue;
-    if (taken.has(pairKey(edge.a, edge.b))) continue;
-    const questions = [...new Set(edge.questions.filter((question) => question >= 0 && question <= 2))].sort(
+    if (!edge.arrival) continue;
+    if (!nameOf.has(edge.a) || !nameOf.has(edge.b) || edge.a === edge.b) continue;
+    const leftName = nameOf.get(edge.a) ?? "";
+    const rightName = nameOf.get(edge.b) ?? "";
+    if (settled.has(leftName) && settled.has(rightName)) continue;
+    const key = pairKey(edge.a, edge.b);
+    if (taken.has(key)) continue;
+    const own = [...new Set(edge.questions.filter((question) => question >= 0 && question <= 2))].sort(
       (left, right) => left - right,
     );
-    const score = typeof edge.score === "number" && Number.isFinite(edge.score) ? edge.score : 0;
-    const lexical = typeof edge.lexical === "number" && Number.isFinite(edge.lexical) ? edge.lexical : 0;
-    cands.push({
-      a: edge.a,
-      b: edge.b,
-      score,
-      lexical,
-      questions: questions.length ? questions : [0],
-    });
-  }
-  for (const cand of pickAuto(cands, freshIds)) {
-    const key = pairKey(cand.a, cand.b);
-    if (taken.has(key)) continue;
+    const flipped = flipQuestions(own);
+    const questions = !viewerId
+      ? [...new Set([...own, ...flipped])].sort((left, right) => left - right)
+      : viewerId === edge.a
+        ? own
+        : viewerId === edge.b
+          ? flipped
+          : [...new Set([...own, ...flipped])].sort((left, right) => left - right);
+    if (!questions.length) continue;
     taken.add(key);
     shown.push({
-      a: cand.a,
-      b: cand.b,
-      questions: questionsForViewer(cand, viewerId),
-      bright: true,
+      a: edge.a,
+      b: edge.b,
+      questions,
+      bright: edge.bright !== false,
+      auto: true,
     });
   }
   return shown;

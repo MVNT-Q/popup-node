@@ -1,5 +1,6 @@
+import { GROVE_PICTURE } from "@/lib/grovePicture";
+import { arrivalLines } from "@/lib/arrivalMatch";
 import { warmJudgments } from "@/lib/judge";
-import { newcomerCandidates } from "@/lib/newcomerLines";
 import { rankAgainst } from "@/lib/rank";
 import { brightestBand, midStrongHits } from "@/lib/relation";
 import { readSessionId, testAgentsEnabled } from "@/lib/session";
@@ -65,7 +66,10 @@ export async function GET(request: Request) {
       ? [...nodes].sort((a, b) => a.code - b.code || a.id.localeCompare(b.id))[0]
       : null);
 
-  let mode: "theme" | "embed" | "llm" = (await warmJudgments(nodes)) ? "llm" : "theme";
+  let mode: "theme" | "embed" | "llm" | "arrival" = "arrival";
+  if (!GROVE_PICTURE) {
+    mode = (await warmJudgments(nodes)) ? "llm" : "theme";
+  }
   const againstMe: {
     id: string;
     code: number;
@@ -75,7 +79,7 @@ export async function GET(request: Request) {
     band: Band | "dim";
   }[] = [];
 
-  if (lens) {
+  if (lens && !GROVE_PICTURE) {
     for (const node of nodes) {
       if (node.id === lens.id) continue;
       const ranked = await pairHits(lens, node);
@@ -95,8 +99,9 @@ export async function GET(request: Request) {
   }
 
   // 그로브·전시: 모든 쌍의 중·강 줄. 약만 있으면 줄 없음.
+  // 전시 그림이 켜져 있으면 구운 26명의 줄은 LINKS가 맡고, 그 밖만 새 기준으로 잇는다.
   const edges: { a: string; b: string; questions: number[] }[] = [];
-  if (view === "grove" || view === "show") {
+  if ((view === "grove" || view === "show") && !GROVE_PICTURE) {
     for (let i = 0; i < nodes.length; i += 1) {
       for (let j = i + 1; j < nodes.length; j += 1) {
         const left = nodes[i];
@@ -112,7 +117,7 @@ export async function GET(request: Request) {
         });
       }
     }
-  } else if (sessionMe) {
+  } else if (view === "my" && sessionMe && !GROVE_PICTURE) {
     for (const star of againstMe) {
       const solid = midStrongHits(star.hits);
       if (!solid.length) continue;
@@ -128,8 +133,8 @@ export async function GET(request: Request) {
     .map((node) => node.slots[2]?.answer?.trim() ?? "")
     .filter((text) => text.length >= 2);
 
-  // 그림 밖 사람의 후보. 모델에 다시 묻지 않고, 이미 있는 점수만 붙인다.
-  const autoEdges = newcomerCandidates(nodes);
+  // 그림 밖 사람만 지금 기준으로 잇는다. 예전 저장 점수는 읽지 않는다.
+  const autoEdges = GROVE_PICTURE ? await arrivalLines(nodes) : [];
 
   return Response.json({
     view,

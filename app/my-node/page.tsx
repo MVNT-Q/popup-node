@@ -30,7 +30,7 @@ type Me = { id: string; code: number; name: string; slots: Slot[] };
 
 type NodeCard = { id: string; code: number; name: string; slots: Slot[] };
 
-type PictureEdge = { a: string; b: string; questions: number[]; bright: boolean };
+type PictureEdge = { a: string; b: string; questions: number[]; bright: boolean; auto?: boolean };
 
 const Q = [
   { key: "SEEK", index: 0 },
